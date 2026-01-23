@@ -1,6 +1,6 @@
 # Story 1.2: Code Quality Tooling
 
-Status: review
+Status: done
 
 ## Story
 

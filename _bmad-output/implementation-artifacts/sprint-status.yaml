@@ -40,8 +40,8 @@ story_location: _bmad-output/implementation-artifacts
 development_status:
   epic-1: in-progress
   1-1-project-initialization: done
-  1-2-code-quality-tooling: review
-  1-3-design-tokens-dark-mode: backlog
+  1-2-code-quality-tooling: done
+  1-3-design-tokens-dark-mode: review
   1-4-animation-system-foundation: backlog
   1-5-mainlayout-accessibility-foundation: backlog
   1-6-github-actions-deployment: backlog
