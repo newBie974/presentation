@@ -1,6 +1,6 @@
 # Story 1.1: Project Initialization
 
-Status: review
+Status: done
 
 ## Story
 
@@ -70,11 +70,13 @@ So that I have a working development environment matching the architecture.
 ### Critical Technical Details
 
 **Astro v5.x Changes:**
+
 - Strict TypeScript is now the DEFAULT for all new projects — no `--typescript strict` flag needed
 - The `--no` flag skips all interactive prompts during scaffolding
 - `tsconfig.json` should extend `astro/tsconfigs/strict`
 
 **Tailwind CSS v4 Changes:**
+
 - No `tailwind.config.js` file is needed for basic setup — config can be done in CSS with `@theme` directive
 - However, we WILL create `tailwind.config.mjs` in Story 1.3 for design tokens
 - The `@tailwindcss/vite` plugin handles automatic content detection — no content globs needed
@@ -82,14 +84,15 @@ So that I have a working development environment matching the architecture.
 - Minimum browser support: Safari 16.4+, Chrome 111+, Firefox 128+
 
 **Astro Config Pattern:**
+
 ```javascript
 // astro.config.mjs
 import { defineConfig } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
-  output: 'static',
-  site: 'https://newbie974.github.io',
+  output: "static",
+  site: "https://newbie974.github.io",
   vite: {
     plugins: [tailwindcss()],
   },
@@ -97,6 +100,7 @@ export default defineConfig({
 ```
 
 **Global CSS Pattern:**
+
 ```css
 /* src/styles/global.css */
 @import "tailwindcss";
@@ -166,4 +170,3 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `.vscode/` (created by scaffold)
 - `public/favicon.svg` (created by scaffold)
 - `README.md` (created by scaffold)
-
