@@ -4,6 +4,7 @@ import IconLinkedin from "../atoms/IconLinkedin.astro";
 import IconX from "../atoms/IconX.astro";
 import IconInstagram from "../atoms/IconInstagram.astro";
 import IconTiktok from "../atoms/IconTiktok.astro";
+import IconGithub from "../atoms/IconGithub.astro";
 
 interface Props {
   link: SocialLink;
@@ -16,6 +17,7 @@ const iconMap: Record<string, typeof IconLinkedin> = {
   x: IconX,
   instagram: IconInstagram,
   tiktok: IconTiktok,
+  github: IconGithub,
 };
 
 const IconComponent = iconMap[link.platform];
