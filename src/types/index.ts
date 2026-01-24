@@ -9,3 +9,11 @@ export interface SocialLink {
   url: string;
   label: string;
 }
+
+export interface Project {
+  title: string;
+  tagline: string;
+  url: string;
+  status: "live" | "building" | "coming-soon";
+  techStack: string[];
+}

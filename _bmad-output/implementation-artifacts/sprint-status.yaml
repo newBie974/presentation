@@ -54,15 +54,15 @@ development_status:
   2-4-herosection-organism-entrance-animation: done
   epic-2-retrospective: optional
 
-  epic-3: in-progress
+  epic-3: done
   3-1-social-links-data-layer: done
   3-2-svg-icon-atoms: done
   3-3-sociallink-molecule-hover-feedback: done
-  3-4-socialbar-organism-staggered-entrance: review
+  3-4-socialbar-organism-staggered-entrance: done
   epic-3-retrospective: optional
 
-  epic-4: backlog
-  4-1-projects-data-layer: backlog
+  epic-4: in-progress
+  4-1-projects-data-layer: review
   4-2-statusbadge-atom: backlog
   4-3-productcard-molecule: backlog
   4-4-productlist-organism-scroll-triggered-entrance: backlog
