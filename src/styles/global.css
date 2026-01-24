@@ -68,6 +68,8 @@
 
   --font-sans: system-ui, -apple-system, sans-serif;
 
+  --max-width-md: 480px;
+
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
