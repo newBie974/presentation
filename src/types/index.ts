@@ -16,4 +16,6 @@ export interface Project {
   url: string;
   status: "live" | "building" | "coming-soon";
   techStack: string[];
+  appStoreUrl?: string;
+  playStoreUrl?: string;
 }

@@ -2,24 +2,12 @@ import type { Project } from "../types/index";
 
 export const projects: Project[] = [
   {
-    title: "CalorieTracker AI",
-    tagline: "AI-powered nutrition tracking and meal planning",
-    url: "https://calorietracker.ai",
-    status: "building",
-    techStack: ["React", "TypeScript", "OpenAI"],
-  },
-  {
     title: "Tookta",
-    tagline: "Smart travel planning for Southeast Asia",
-    url: "https://tookta.app",
+    tagline: "Find the perfect activity for your kids, effortlessly",
+    url: "https://tookta.fr",
     status: "building",
-    techStack: ["Astro", "TypeScript", "Tailwind"],
-  },
-  {
-    title: "Cooking App",
-    tagline: "Recipe discovery and weekly meal prep",
-    url: "https://cooking.app",
-    status: "coming-soon",
-    techStack: ["React Native", "Firebase"],
+    techStack: ["Flutter", "TypeScript", "NestJs"],
+    appStoreUrl: "https://apps.apple.com/fr/app/tookta/id6474099484",
+    playStoreUrl: "https://play.google.com/store/apps/details?id=com.tookta.fr",
   },
 ];
