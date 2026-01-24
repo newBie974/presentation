@@ -47,15 +47,15 @@ development_status:
   1-6-github-actions-deployment: done
   epic-1-retrospective: optional
 
-  epic-2: in-progress
+  epic-2: done
   2-1-profile-data-layer-types: done
   2-2-avatar-atom-glow-effect: done
   2-3-heroidentity-molecule: done
   2-4-herosection-organism-entrance-animation: done
   epic-2-retrospective: optional
 
-  epic-3: backlog
-  3-1-social-links-data-layer: backlog
+  epic-3: in-progress
+  3-1-social-links-data-layer: review
   3-2-svg-icon-atoms: backlog
   3-3-sociallink-molecule-hover-feedback: backlog
   3-4-socialbar-organism-staggered-entrance: backlog

@@ -3,3 +3,9 @@ export interface Profile {
   tagline: string;
   avatarPath: string;
 }
+
+export interface SocialLink {
+  platform: string;
+  url: string;
+  label: string;
+}
