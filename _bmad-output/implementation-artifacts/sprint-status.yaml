@@ -42,8 +42,8 @@ development_status:
   1-1-project-initialization: done
   1-2-code-quality-tooling: done
   1-3-design-tokens-dark-mode: done
-  1-4-animation-system-foundation: review
-  1-5-mainlayout-accessibility-foundation: backlog
+  1-4-animation-system-foundation: done
+  1-5-mainlayout-accessibility-foundation: review
   1-6-github-actions-deployment: backlog
   epic-1-retrospective: optional
 

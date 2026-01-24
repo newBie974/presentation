@@ -115,6 +115,32 @@
   }
 }
 
+/* Skip link: hidden until focused, then appears at top center */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  padding: 8px 16px;
+  background: var(--accent-start);
+  color: #ffffff;
+  border-radius: 0 0 8px 8px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Focus-visible ring for all interactive elements (FR27) */
+:focus-visible {
+  outline: 3px solid var(--accent-start);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* Reduced motion: disable all animations globally (FR16, NFR9) */
 @media (prefers-reduced-motion: reduce) {
   *,
