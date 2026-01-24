@@ -1,18 +1,12 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
 import Avatar from "../components/atoms/Avatar.astro";
+import HeroIdentity from "../components/molecules/HeroIdentity.astro";
 import avatarImage from "../assets/avatar.png";
+import { profile } from "../data/profile";
 ---
 
 <MainLayout title="Aymeric - Builder & Creator">
   <Avatar src={avatarImage} alt="Aymeric's profile photo" />
-  <h1 class="mt-sm text-2xl font-bold motion-safe:animate-fade-in-up">
-    Aymeric
-  </h1>
-  <p
-    class="mt-sm text-text-secondary motion-safe:animate-fade-in-up"
-    style="animation-delay: var(--stagger-hero)"
-  >
-    Builder & Creator
-  </p>
+  <HeroIdentity name={profile.name} tagline={profile.tagline} />
 </MainLayout>

@@ -1,0 +1,29 @@
+---
+interface Props {
+  name: string;
+  tagline: string;
+}
+
+const { name, tagline } = Astro.props;
+---
+
+<div class="text-center">
+  <h1
+    class="hero-name text-[32px] font-extrabold"
+    style="letter-spacing: -0.02em"
+  >
+    {name}
+  </h1>
+  <p class="mt-xs text-[15px] font-normal text-text-secondary">
+    {tagline}
+  </p>
+</div>
+
+<style>
+  .hero-name {
+    background: linear-gradient(to right, #ffffff, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+</style>
