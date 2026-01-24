@@ -1,12 +1,15 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
-import Avatar from "../components/atoms/Avatar.astro";
-import HeroIdentity from "../components/molecules/HeroIdentity.astro";
+import HeroSection from "../components/organisms/HeroSection.astro";
 import avatarImage from "../assets/avatar.png";
 import { profile } from "../data/profile";
 ---
 
 <MainLayout title="Aymeric - Builder & Creator">
-  <Avatar src={avatarImage} alt="Aymeric's profile photo" />
-  <HeroIdentity name={profile.name} tagline={profile.tagline} />
+  <HeroSection
+    src={avatarImage}
+    alt="Aymeric's profile photo"
+    name={profile.name}
+    tagline={profile.tagline}
+  />
 </MainLayout>

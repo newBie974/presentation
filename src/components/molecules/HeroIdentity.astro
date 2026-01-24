@@ -9,12 +9,15 @@ const { name, tagline } = Astro.props;
 
 <div class="text-center">
   <h1
-    class="hero-name text-[32px] font-extrabold"
-    style="letter-spacing: -0.02em"
+    class="hero-name text-[32px] font-extrabold motion-safe:animate-fade-in-up"
+    style="letter-spacing: -0.02em; animation-delay: var(--stagger-hero)"
   >
     {name}
   </h1>
-  <p class="mt-xs text-[15px] font-normal text-text-secondary">
+  <p
+    class="mt-xs text-[15px] font-normal text-text-secondary motion-safe:animate-fade-in-up"
+    style="animation-delay: calc(var(--stagger-hero) * 2)"
+  >
     {tagline}
   </p>
 </div>

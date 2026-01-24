@@ -1,0 +1,31 @@
+---
+import Avatar from "../atoms/Avatar.astro";
+import HeroIdentity from "../molecules/HeroIdentity.astro";
+import type { ImageMetadata } from "astro";
+
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  name: string;
+  tagline: string;
+}
+
+const { src, alt, name, tagline } = Astro.props;
+---
+
+<section class="hero-section flex flex-col items-center text-center">
+  <div class="motion-safe:animate-fade-in-up">
+    <Avatar src={src} alt={alt} />
+  </div>
+  <HeroIdentity name={name} tagline={tagline} />
+</section>
+
+<style>
+  .hero-section {
+    background: linear-gradient(
+      to bottom,
+      rgba(99, 102, 241, 0.05),
+      transparent
+    );
+  }
+</style>
