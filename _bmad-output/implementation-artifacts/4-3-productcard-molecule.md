@@ -1,6 +1,6 @@
 # Story 4.3: ProductCard Molecule
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -34,17 +34,17 @@ So that I can learn about projects and click through to explore them.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `src/components/molecules/ProductCard.astro` (AC: #1-#5)
-  - [ ] 1.1: Create component with Props interface accepting `Project` type
-  - [ ] 1.2: Render as `<a>` element with href, target, rel, aria-label
-  - [ ] 1.3: Render title (18px/600), tagline (14px/400), StatusBadge, tech stack tags
-  - [ ] 1.4: Style container: 20px border-radius, gradient surface, 1px border, 20px padding
-  - [ ] 1.5: Add hover state: border brightens, translateY(-3px), shadow + glow
-  - [ ] 1.6: Add active state: scale(0.98)
-  - [ ] 1.7: Add transition timing
-- [ ] Task 2: Validate build and formatting (AC: all)
-  - [ ] 2.1: Run `npm run build` and verify no errors
-  - [ ] 2.2: Run `npm run lint` and `npm run format:check`
+- [x] Task 1: Create `src/components/molecules/ProductCard.astro` (AC: #1-#5)
+  - [x] 1.1: Create component with Props interface accepting `Project` type
+  - [x] 1.2: Render as `<a>` element with href, target, rel, aria-label
+  - [x] 1.3: Render title (18px/600), tagline (14px/400), StatusBadge, tech stack tags
+  - [x] 1.4: Style container: 20px border-radius, gradient surface, 1px border, 20px padding
+  - [x] 1.5: Add hover state: border brightens, translateY(-3px), shadow + glow
+  - [x] 1.6: Add active state: scale(0.98)
+  - [x] 1.7: Add transition timing
+- [x] Task 2: Validate build and formatting (AC: all)
+  - [x] 2.1: Run `npm run build` and verify no errors
+  - [x] 2.2: Run `npm run lint` and `npm run format:check`
 
 ## Dev Notes
 
@@ -207,10 +207,23 @@ const statusLabels: Record<Project["status"], string> = {
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+None — clean implementation with no issues.
+
 ### Completion Notes List
 
+- Created ProductCard molecule as `<a>` element (entire card is clickable link)
+- Renders title (text-lg/font-semibold), tagline (text-sm/font-normal), StatusBadge atom, tech stack tags
+- Gradient surface background with 20px border-radius, 1px indigo border at 15% opacity
+- Hover: border brightens to 0.4, translateY(-3px), dual-layer shadow + glow
+- Active: scale(0.98) press feedback
+- aria-label includes title and status label for accessibility
+- target="\_blank" with rel="noopener noreferrer" for external links
+- Build, lint, and format all pass cleanly
+
 ### File List
+
+- `src/components/molecules/ProductCard.astro` (created)

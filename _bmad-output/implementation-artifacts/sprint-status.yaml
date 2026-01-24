@@ -61,11 +61,11 @@ development_status:
   3-4-socialbar-organism-staggered-entrance: done
   epic-3-retrospective: optional
 
-  epic-4: in-progress
+  epic-4: done
   4-1-projects-data-layer: done
   4-2-statusbadge-atom: done
-  4-3-productcard-molecule: ready-for-dev
-  4-4-productlist-organism-scroll-triggered-entrance: backlog
+  4-3-productcard-molecule: done
+  4-4-productlist-organism-scroll-triggered-entrance: done
   epic-4-retrospective: optional
 
   epic-5: backlog
