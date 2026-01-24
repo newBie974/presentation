@@ -36,6 +36,19 @@ import "../styles/global.css";
     <meta property="og:url" content={Astro.url.href} />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Aymeric" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta
+      name="twitter:description"
+      content={description || "Builder & Creator — AI-powered SaaS products"}
+    />
+    <meta
+      name="twitter:image"
+      content={new URL("presentation/og-image.png", Astro.site).href}
+    />
+    <meta name="twitter:creator" content="@aymeric" />
   </head>
   <body class="min-h-screen bg-surface-base font-sans text-text-primary">
     <a href="#main-content" class="skip-link">Skip to main content</a>
