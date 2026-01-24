@@ -62,8 +62,8 @@ development_status:
   epic-3-retrospective: optional
 
   epic-4: in-progress
-  4-1-projects-data-layer: review
-  4-2-statusbadge-atom: backlog
+  4-1-projects-data-layer: done
+  4-2-statusbadge-atom: done
   4-3-productcard-molecule: backlog
   4-4-productlist-organism-scroll-triggered-entrance: backlog
   epic-4-retrospective: optional
