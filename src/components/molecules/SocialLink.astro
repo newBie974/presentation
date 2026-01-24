@@ -1,0 +1,63 @@
+---
+import type { SocialLink } from "../../types/index";
+import IconLinkedin from "../atoms/IconLinkedin.astro";
+import IconX from "../atoms/IconX.astro";
+import IconInstagram from "../atoms/IconInstagram.astro";
+import IconTiktok from "../atoms/IconTiktok.astro";
+
+interface Props {
+  link: SocialLink;
+}
+
+const { link } = Astro.props;
+
+const iconMap: Record<string, typeof IconLinkedin> = {
+  linkedin: IconLinkedin,
+  x: IconX,
+  instagram: IconInstagram,
+  tiktok: IconTiktok,
+};
+
+const IconComponent = iconMap[link.platform];
+---
+
+<a
+  href={link.url}
+  target="_blank"
+  rel="noopener noreferrer"
+  aria-label={link.label}
+  class="social-link inline-flex items-center justify-center"
+>
+  <IconComponent />
+</a>
+
+<style>
+  .social-link {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(
+      to bottom right,
+      rgba(99, 102, 241, 0.15),
+      rgba(139, 92, 246, 0.1)
+    );
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    color: var(--text-primary);
+    transition: all 200ms ease;
+  }
+
+  .social-link:hover {
+    background: linear-gradient(
+      to bottom right,
+      var(--accent-start),
+      var(--accent-end)
+    );
+    transform: scale(1.1) translateY(-2px);
+    box-shadow: 0 0 24px var(--glow);
+    color: #ffffff;
+  }
+
+  .social-link:active {
+    transform: scale(0.95);
+  }
+</style>
