@@ -1,8 +1,10 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
 import HeroSection from "../components/organisms/HeroSection.astro";
+import SocialBar from "../components/organisms/SocialBar.astro";
 import avatarImage from "../assets/avatar.png";
 import { profile } from "../data/profile";
+import { socialLinks } from "../data/socialLinks";
 ---
 
 <MainLayout title="Aymeric - Builder & Creator">
@@ -12,4 +14,5 @@ import { profile } from "../data/profile";
     name={profile.name}
     tagline={profile.tagline}
   />
+  <SocialBar links={socialLinks} />
 </MainLayout>

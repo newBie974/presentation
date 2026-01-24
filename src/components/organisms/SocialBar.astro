@@ -1,0 +1,25 @@
+---
+import type { SocialLink } from "../../types/index";
+import SocialLinkComponent from "../molecules/SocialLink.astro";
+
+interface Props {
+  links: SocialLink[];
+}
+
+const { links } = Astro.props;
+---
+
+<nav aria-label="Social media links" class="mt-xl">
+  <div class="flex items-center justify-center gap-md">
+    {
+      links.map((link, index) => (
+        <div
+          class="motion-safe:animate-fade-in-up"
+          style={`animation-delay: calc(${index} * var(--stagger-social))`}
+        >
+          <SocialLinkComponent link={link} />
+        </div>
+      ))
+    }
+  </div>
+</nav>
