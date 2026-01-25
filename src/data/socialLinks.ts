@@ -3,12 +3,12 @@ import type { SocialLink } from "../types/index";
 export const socialLinks: SocialLink[] = [
   {
     platform: "instagram",
-    url: "https://instagram.com/aymeric",
+    url: "https://www.instagram.com/aymeric.builder",
     label: "Follow on Instagram",
   },
   {
     platform: "tiktok",
-    url: "https://tiktok.com/@aymeric",
+    url: "https://www.tiktok.com/@aymeric.builder",
     label: "Follow on TikTok",
   },
   {
