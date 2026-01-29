@@ -33,7 +33,7 @@ const { label, dotClass, bgClass } = config[status];
 
 <span
   class:list={[
-    "badge inline-flex items-center gap-xs rounded-full px-sm py-xs text-xs font-medium",
+    "badge inline-flex items-center gap-xs rounded-sm px-sm py-xs text-xs font-medium",
     bgClass,
   ]}
   aria-label={`Status: ${label}`}
@@ -60,7 +60,7 @@ const { label, dotClass, bgClass } = config[status];
   }
 
   .badge-coming {
-    background: rgba(139, 92, 246, 0.1);
-    color: #8b5cf6;
+    background: var(--surface-hover);
+    color: var(--text-muted);
   }
 </style>

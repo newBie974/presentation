@@ -35,28 +35,20 @@ const IconComponent = iconMap[link.platform];
 
 <style>
   .social-link {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    background: linear-gradient(
-      to bottom right,
-      rgba(99, 102, 241, 0.15),
-      rgba(139, 92, 246, 0.1)
-    );
-    border: 1px solid rgba(99, 102, 241, 0.2);
-    color: var(--text-primary);
-    transition: all 200ms ease;
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    transition: all 150ms ease;
   }
 
   .social-link:hover {
-    background: linear-gradient(
-      to bottom right,
-      var(--accent-start),
-      var(--accent-end)
-    );
-    transform: scale(1.1) translateY(-2px);
-    box-shadow: 0 0 24px var(--glow);
+    background: var(--accent);
+    border-color: var(--accent);
     color: #ffffff;
+    transform: translateY(-2px);
   }
 
   .social-link:active {

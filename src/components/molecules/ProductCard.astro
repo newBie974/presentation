@@ -1,6 +1,7 @@
 ---
 import type { Project } from "../../types/index";
 import StatusBadge from "../atoms/StatusBadge.astro";
+import { Image } from "astro:assets";
 
 interface Props {
   project: Project;
@@ -17,19 +18,32 @@ const statusLabels: Record<Project["status"], string> = {
 const hasStoreLinks = project.appStoreUrl || project.playStoreUrl;
 ---
 
-<div class="product-card relative rounded-lg p-lg">
+<div class="product-card relative p-lg">
   <div class="flex items-center justify-between">
-    <h3 class="text-lg font-semibold text-text-primary">
-      <a
-        href={project.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={`${project.title} - ${statusLabels[project.status]}`}
-        class="card-link"
-      >
-        {project.title}
-      </a>
-    </h3>
+    <div class="flex items-center gap-sm">
+      {
+        project.logo && (
+          <Image
+            src={project.logo}
+            alt={`${project.title} logo`}
+            width={32}
+            height={32}
+            class="project-logo"
+          />
+        )
+      }
+      <h3 class="text-lg font-semibold text-text-primary">
+        <a
+          href={project.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${project.title} - ${statusLabels[project.status]}`}
+          class="card-link"
+        >
+          {project.title}
+        </a>
+      </h3>
+    </div>
     <StatusBadge status={project.status} />
   </div>
   <p class="mt-xs text-sm font-normal text-text-secondary">
@@ -96,26 +110,19 @@ const hasStoreLinks = project.appStoreUrl || project.playStoreUrl;
 
 <style>
   .product-card {
-    border-radius: 20px;
-    background: linear-gradient(
-      to bottom right,
-      var(--surface-elevated),
-      var(--surface-base)
-    );
-    border: 1px solid rgba(99, 102, 241, 0.15);
-    transition: all 200ms ease;
+    border-radius: 6px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    transition: all 150ms ease;
   }
 
   .product-card:hover {
-    border-color: rgba(99, 102, 241, 0.4);
-    transform: translateY(-3px);
-    box-shadow:
-      0 10px 30px rgba(0, 0, 0, 0.1),
-      0 0 20px var(--glow);
+    border-color: var(--accent);
+    transform: translateY(-2px);
   }
 
   .product-card:active {
-    transform: scale(0.98);
+    transform: scale(0.99);
   }
 
   .card-link {
@@ -123,11 +130,15 @@ const hasStoreLinks = project.appStoreUrl || project.playStoreUrl;
     color: inherit;
   }
 
+  .card-link:hover {
+    color: var(--accent);
+  }
+
   .card-link::after {
     content: "";
     position: absolute;
     inset: 0;
-    border-radius: 20px;
+    border-radius: 6px;
   }
 
   .store-links {
@@ -141,15 +152,22 @@ const hasStoreLinks = project.appStoreUrl || project.playStoreUrl;
     justify-content: center;
     width: 32px;
     height: 32px;
-    border-radius: 8px;
-    background: rgba(99, 102, 241, 0.1);
+    border-radius: 4px;
+    background: var(--surface-hover);
     color: var(--text-muted);
-    transition: all 200ms ease;
+    transition: all 150ms ease;
     text-decoration: none;
   }
 
   .store-link:hover {
-    background: rgba(99, 102, 241, 0.25);
-    color: var(--text-primary);
+    background: var(--accent);
+    color: #ffffff;
+  }
+
+  .project-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    object-fit: cover;
   }
 </style>

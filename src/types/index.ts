@@ -18,4 +18,7 @@ export interface Project {
   techStack: string[];
   appStoreUrl?: string;
   playStoreUrl?: string;
+  logo?: ImageMetadata;
 }
+
+import type { ImageMetadata } from "astro";
