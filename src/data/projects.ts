@@ -1,5 +1,6 @@
 import type { Project } from "../types/index";
 import tooktaLogo from "../assets/tookta.png";
+import carouboltLogo from "../assets/caroubolt-logo.png";
 
 export const projects: Project[] = [
   {
@@ -8,6 +9,7 @@ export const projects: Project[] = [
     url: "https://caroubolt.com",
     status: "live",
     techStack: ["Next.js", "TypeScript", "Supabase", "Stripe", "Gemini AI"],
+    logo: carouboltLogo,
   },
   {
     title: "Tookta",
