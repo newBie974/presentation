@@ -3,11 +3,11 @@ import tooktaLogo from "../assets/tookta.png";
 
 export const projects: Project[] = [
   {
-    title: "Carrousel.ai",
+    title: "Caroubolt",
     tagline: "Ai helps you to create the best carroussel for Tiktok, Instagram",
-    url: "#",
-    status: "building",
-    techStack: ["", "", ""],
+    url: "https://caroubolt.com",
+    status: "live",
+    techStack: ["Next.js", "TypeScript", "Supabase", "Stripe", "Gemini AI"],
   },
   {
     title: "Tookta",
