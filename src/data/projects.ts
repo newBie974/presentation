@@ -1,6 +1,7 @@
 import type { Project } from "../types/index";
 import tooktaLogo from "../assets/tookta.png";
 import carouboltLogo from "../assets/caroubolt-logo.png";
+import voicejournalLogo from "../assets/voicejournal-logo.png";
 
 export const projects: Project[] = [
   {
@@ -10,6 +11,15 @@ export const projects: Project[] = [
     status: "live",
     techStack: ["Next.js", "TypeScript", "Supabase", "Stripe", "Gemini AI"],
     logo: carouboltLogo,
+  },
+  {
+    title: "VoiceJournal",
+    tagline: "Turn your voice into a daily journal, powered by AI",
+    url: "https://aivoicejournal.app",
+    status: "live",
+    techStack: ["React Native", "Expo", "TypeScript", "Supabase", "RevenueCat", "Claude AI"],
+    appStoreUrl: "https://apps.apple.com/fr/app/voicejournal-journal-vocal-ia/id6762176421",
+    logo: voicejournalLogo,
   },
   {
     title: "Tookta",
