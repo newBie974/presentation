@@ -5,14 +5,6 @@ import voicejournalLogo from "../assets/voicejournal-logo.png";
 
 export const projects: Project[] = [
   {
-    title: "Caroubolt",
-    tagline: "Ai helps you to create the best carroussel for Tiktok, Instagram",
-    url: "https://caroubolt.com",
-    status: "live",
-    techStack: ["Next.js", "TypeScript", "Supabase", "Stripe", "Gemini AI"],
-    logo: carouboltLogo,
-  },
-  {
     title: "VoiceJournal",
     tagline: "Turn your voice into a daily journal, powered by AI",
     url: "https://aivoicejournal.app",
@@ -20,6 +12,14 @@ export const projects: Project[] = [
     techStack: ["React Native", "Expo", "TypeScript", "Supabase", "RevenueCat", "Claude AI"],
     appStoreUrl: "https://apps.apple.com/fr/app/voicejournal-journal-vocal-ia/id6762176421",
     logo: voicejournalLogo,
+  },
+  {
+    title: "Caroubolt",
+    tagline: "Ai helps you to create the best carroussel for Tiktok, Instagram",
+    url: "https://caroubolt.com",
+    status: "live",
+    techStack: ["Next.js", "TypeScript", "Supabase", "Stripe", "Gemini AI"],
+    logo: carouboltLogo,
   },
   {
     title: "Tookta",
