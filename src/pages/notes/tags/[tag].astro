@@ -1,0 +1,72 @@
+---
+import MainLayout from "@/layouts/MainLayout.astro";
+import Nav from "@/components/organisms/Nav.astro";
+import Footer from "@/components/organisms/Footer.astro";
+import NoteRow from "@/components/molecules/NoteRow.astro";
+import SectionLabel from "@/components/atoms/SectionLabel.astro";
+import { loadPublishedNotes, listAllTags } from "@/lib/notes";
+
+export async function getStaticPaths() {
+  const tags = await listAllTags("fr");
+  const allNotes = await loadPublishedNotes("fr");
+  return tags.map((tag) => ({
+    params: { tag },
+    props: {
+      tag,
+      notes: allNotes.filter((n) => n.data.tags.includes(tag)),
+    },
+  }));
+}
+
+const { tag, notes } = Astro.props;
+const locale = "fr" as const;
+const title = `Notes · #${tag} — Aymeric Dijoux`;
+const description = `Articles taggés #${tag} sur le site d'Aymeric Dijoux.`;
+---
+
+<MainLayout title={title} description={description} locale={locale}>
+  <Nav slot="nav" locale={locale} current="notes" />
+  <section class="hero">
+    <SectionLabel>— TAG</SectionLabel>
+    <h1>#{tag}</h1>
+    <a href="/notes" class="back">← Toutes les notes</a>
+  </section>
+  <div class="list">
+    {notes.map((note) => <NoteRow note={note} locale={locale} />)}
+  </div>
+  <Footer slot="footer" locale={locale} />
+</MainLayout>
+
+<style>
+  .hero {
+    padding: 56px 48px 24px;
+    border-bottom: var(--border-w) solid var(--color-border);
+    max-width: var(--container-narrow);
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    margin: 12px 0 8px;
+    font-family: var(--font-mono);
+  }
+  .back {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+  .list {
+    padding: 0 48px 48px;
+    max-width: var(--container-narrow);
+    margin: 0 auto;
+  }
+  @media (max-width: 720px) {
+    .hero,
+    .list {
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+  }
+</style>
