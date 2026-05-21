@@ -1,0 +1,39 @@
+---
+import { render } from "astro:content";
+import NoteLayout from "@/layouts/NoteLayout.astro";
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+import {
+  loadPublishedNotes,
+  findTranslation,
+  getNoteReadingTime,
+  buildNoteUrl,
+  getNoteSlug,
+} from "@/lib/notes";
+
+export async function getStaticPaths() {
+  const notes = await loadPublishedNotes("fr");
+  return notes.map((note) => ({
+    params: { slug: getNoteSlug(note) },
+    props: { note },
+  }));
+}
+
+const { note } = Astro.props;
+const { Content } = await render(note);
+const { minutes } = getNoteReadingTime(note);
+const translation = await findTranslation(note.data.translationKey, "en");
+const altUrl = translation ? buildNoteUrl(translation) : undefined;
+---
+
+<NoteLayout
+  title={note.data.title}
+  description={note.data.excerpt}
+  locale="fr"
+  date={note.data.date}
+  tags={note.data.tags}
+  readingMinutes={minutes}
+  altUrl={altUrl}
+>
+  <Content components={{ Callout, FileBlock }} />
+</NoteLayout>
