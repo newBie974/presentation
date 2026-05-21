@@ -1,0 +1,38 @@
+/* D1 Swiss Brutalist — design tokens via Tailwind 4 @theme */
+
+@theme {
+  /* Colors */
+  --color-bg: #f6f6f4;
+  --color-bg-soft: #ffffff;
+  --color-border: #0a0a0a;
+  --color-text: #0a0a0a;
+  --color-text-muted: #404040;
+  --color-accent: #ccff00;
+  --color-success: #65a30d;
+  --color-danger: #dc2626;
+
+  /* Typography */
+  --font-sans: "Inter Tight Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  /* Geometry */
+  --radius-base: 0;
+  --border-w: 2px;
+
+  /* Containers */
+  --container-prose: 65ch;
+  --container-content: 900px;
+  --container-narrow: 720px;
+}
+
+/* Dark mode override */
+[data-theme="dark"] {
+  --color-bg: #0a0a0a;
+  --color-bg-soft: #171717;
+  --color-border: #f6f6f4;
+  --color-text: #f6f6f4;
+  --color-text-muted: #a3a3a3;
+  --color-accent: #ccff00;
+  --color-success: #84cc16;
+  --color-danger: #ef4444;
+}
