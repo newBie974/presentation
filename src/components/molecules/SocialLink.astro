@@ -1,57 +1,49 @@
 ---
-import type { SocialLink } from "../../types/index";
-import IconLinkedin from "../atoms/IconLinkedin.astro";
-import IconX from "../atoms/IconX.astro";
-import IconInstagram from "../atoms/IconInstagram.astro";
-import IconTiktok from "../atoms/IconTiktok.astro";
-import IconGithub from "../atoms/IconGithub.astro";
+import Icon from "@/components/atoms/Icon.astro";
+import type { SocialLink } from "@/types";
 
 interface Props {
   link: SocialLink;
 }
-
 const { link } = Astro.props;
 
-const iconMap: Record<string, typeof IconLinkedin> = {
-  linkedin: IconLinkedin,
-  x: IconX,
-  instagram: IconInstagram,
-  tiktok: IconTiktok,
-  github: IconGithub,
+const iconMap: Record<SocialLink["platform"], string> = {
+  instagram: "simple-icons:instagram",
+  tiktok: "simple-icons:tiktok",
+  linkedin: "simple-icons:linkedin",
+  x: "simple-icons:x",
+  github: "simple-icons:github",
 };
-
-const IconComponent = iconMap[link.platform];
 ---
 
 <a
   href={link.url}
   target="_blank"
   rel="noopener noreferrer"
+  class="social-pill"
   aria-label={link.label}
-  class="social-link inline-flex items-center justify-center"
 >
-  <IconComponent />
+  <Icon name={iconMap[link.platform]} size={14} />
+  <span class="label">{link.platform}</span>
 </a>
 
 <style>
-  .social-link {
-    width: 44px;
-    height: 44px;
-    border-radius: 6px;
-    background: var(--surface-elevated);
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-    transition: all 150ms ease;
+  .social-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background 150ms ease-out;
   }
-
-  .social-link:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #ffffff;
-    transform: translateY(-2px);
-  }
-
-  .social-link:active {
-    transform: scale(0.95);
+  .social-pill:hover {
+    background: var(--color-accent);
   }
 </style>
