@@ -572,9 +572,17 @@ Chaque phase est livrée commitée et déployable indépendamment.
 
 ---
 
-## 11. References
+## 11. Related docs & references
+
+### Internal
+- **`CLAUDE.md`** (root) — règles de code non-négociables (clean code, conventions Astro, i18n, a11y, performance, git, pièges). Le spec décrit le *quoi* ; CLAUDE.md décrit le *comment*. Le repo étant public, ce fichier sert aussi de signal d'ingénierie visible. À respecter par toute session Claude et tout contributeur humain.
+- Mockups brainstorming : `.superpowers/brainstorm/<session>/content/` (gitignored).
+
+### External
 - Inspiration positionnement freelance : laforet.dev
-- Mood visuel : D1 Swiss brutalist (mockups dans `.superpowers/brainstorm/`)
 - Astro 5 i18n docs : https://docs.astro.build/en/guides/internationalization/
-- Tailwind 4 @theme docs : https://tailwindcss.com/docs/v4-beta#theme
+- Tailwind 4 `@theme` : https://tailwindcss.com/docs/v4-beta#theme
 - Astro Content Collections : https://docs.astro.build/en/guides/content-collections/
+- llms.txt standard : https://llmstxt.org
+- Schema.org Person : https://schema.org/Person
+- WCAG 2.2 contrast : https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
