@@ -1,0 +1,58 @@
+---
+import { socialLinks } from "@/data/socialLinks";
+import type { Locale } from "@/types";
+import { useTranslations } from "@/i18n/utils";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const rssHref = locale === "fr" ? "/rss.xml" : "/en/rss.xml";
+---
+
+<footer class="footer">
+  <span>{t("footer.copy").toUpperCase()}</span>
+  <ul class="links" role="list">
+    {
+      socialLinks.map((l) => (
+        <li>
+          <a href={l.url} target="_blank" rel="noopener noreferrer">
+            {l.platform.toUpperCase()}
+          </a>
+        </li>
+      ))
+    }
+    <li><a href={rssHref}>RSS</a></li>
+  </ul>
+</footer>
+
+<style>
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 48px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-text-muted);
+    background: var(--color-bg);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .links {
+    display: flex;
+    gap: 14px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .links a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .links a:hover {
+    color: var(--color-text);
+  }
+</style>
