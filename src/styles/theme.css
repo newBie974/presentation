@@ -1,13 +1,23 @@
 /* D1 Swiss Brutalist — design tokens via Tailwind 4 @theme */
 
 @theme {
-  /* Colors */
+  /* Surfaces / text (swap between modes) */
   --color-bg: #f6f6f4;
   --color-bg-soft: #ffffff;
   --color-border: #0a0a0a;
   --color-text: #0a0a0a;
   --color-text-muted: #404040;
+
+  /* Accent (fluo — same in both modes; text on it must always be ink) */
   --color-accent: #ccff00;
+  --color-on-accent: #0a0a0a;
+
+  /* "Strong" block (high-contrast pills / counts / collab band).
+     Light: ink bg + fluo text. Dark: inverts to fluo bg + ink text. */
+  --color-strong-bg: #0a0a0a;
+  --color-strong-fg: #ccff00;
+
+  /* States */
   --color-success: #65a30d;
   --color-danger: #dc2626;
 
@@ -32,7 +42,14 @@
   --color-border: #f6f6f4;
   --color-text: #f6f6f4;
   --color-text-muted: #a3a3a3;
-  --color-accent: #ccff00;
+
+  /* --color-accent stays #ccff00 */
+  /* --color-on-accent stays #0a0a0a */
+
+  /* Strong block inverts: fluo bg + ink text */
+  --color-strong-bg: #ccff00;
+  --color-strong-fg: #0a0a0a;
+
   --color-success: #84cc16;
   --color-danger: #ef4444;
 }

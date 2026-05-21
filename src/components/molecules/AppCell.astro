@@ -57,6 +57,15 @@ const platformLabel = project.platform.map((p) => p.toUpperCase()).join("+");
   }
   .cell:hover {
     background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+  .cell:hover .desc,
+  .cell:hover .status {
+    color: var(--color-on-accent);
+  }
+  .cell:hover .tech li {
+    background: var(--color-on-accent);
+    color: var(--color-accent);
   }
   .logo {
     width: 48px;
