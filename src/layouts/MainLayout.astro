@@ -1,89 +1,100 @@
 ---
-import "../styles/global.css";
-import { socialLinks } from "../data/socialLinks";
-import ThemeToggle from "../components/atoms/ThemeToggle.astro";
+import "@/styles/global.css";
+import { ClientRouter } from "astro:transitions";
+import { getLocaleFromUrl, alternateLocale } from "@/i18n/utils";
+import { SITE_NAME, SITE_URL } from "@/lib/constants";
+import type { Locale } from "@/types";
 
 interface Props {
   title: string;
-  description?: string;
+  description: string;
+  locale?: Locale;
+  ogImage?: string;
+  pageType?: "website" | "article";
 }
 
-const { title, description } = Astro.props;
-const metaDescription =
-  description || "Builder & Creator — AI-powered SaaS products";
+const url = Astro.url;
+const locale: Locale = Astro.props.locale ?? getLocaleFromUrl(url);
+const {
+  title,
+  description,
+  ogImage = "/og/default.png",
+  pageType = "website",
+} = Astro.props;
 
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "Person",
-  name: "Aymeric",
-  url: new URL("presentation/", Astro.site).href,
-  sameAs: socialLinks.map((link) => link.url),
-};
+const canonical = url.href;
+const altLocale = alternateLocale(locale);
+const altPath = url.pathname;
 ---
 
-<html lang="en">
+<!doctype html>
+<html lang={locale === "fr" ? "fr-FR" : "en-US"} data-theme="light">
   <head>
     <meta charset="utf-8" />
-    <link
-      rel="icon"
-      type="image/svg+xml"
-      href={`${import.meta.env.BASE_URL}favicon.svg`}
-    />
-    <link rel="icon" href={`${import.meta.env.BASE_URL}favicon.ico`} />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+
     <title>{title}</title>
-    <meta name="description" content={metaDescription} />
-    <link rel="canonical" href={Astro.url.href} />
-    <meta name="robots" content="index, follow" />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
 
-    <!-- Open Graph -->
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={metaDescription} />
-    <meta
-      property="og:image"
-      content={new URL("presentation/og-image.png", Astro.site).href}
+    <link
+      rel="alternate"
+      hreflang={locale === "fr" ? "fr" : "en"}
+      href={canonical}
     />
-    <meta property="og:url" content={Astro.url.href} />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Aymeric" />
+    <link
+      rel="alternate"
+      hreflang={altLocale === "fr" ? "fr" : "en"}
+      href={new URL(altPath, SITE_URL).href}
+    />
+    <link rel="alternate" hreflang="x-default" href={SITE_URL + "/"} />
 
-    <!-- Twitter Card -->
+    <meta property="og:type" content={pageType} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:image" content={new URL(ogImage, SITE_URL).href} />
+    <meta property="og:locale" content={locale === "fr" ? "fr_FR" : "en_US"} />
+
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={metaDescription} />
-    <meta
-      name="twitter:image"
-      content={new URL("presentation/og-image.png", Astro.site).href}
-    />
-    <meta name="twitter:creator" content="@aymeric" />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={new URL(ogImage, SITE_URL).href} />
 
-    <!-- Structured Data -->
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
-
-    <!-- Prevent flash of wrong theme -->
     <script is:inline>
       (function () {
-        const saved = localStorage.getItem("theme");
-        if (saved === "dark") {
-          document.documentElement.classList.add("dark");
-        } else if (saved === "light") {
-          document.documentElement.classList.add("light");
+        try {
+          const saved = localStorage.getItem("theme");
+          if (saved === "dark" || saved === "light") {
+            document.documentElement.dataset.theme = saved;
+          } else if (
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+          ) {
+            document.documentElement.dataset.theme = "dark";
+          }
+        } catch {
+          /* localStorage may be unavailable */
         }
       })();
     </script>
+
+    <slot name="head" />
+    <ClientRouter />
   </head>
-  <body class="min-h-screen bg-surface-base font-sans text-text-primary">
-    <a href="#main-content" class="skip-link">Skip to main content</a>
-    <ThemeToggle />
-    <header>
-      <!-- Header content added in later stories -->
-    </header>
-    <main id="main-content" class="mx-auto max-w-md px-lg py-xl">
+
+  <body class="min-h-screen bg-bg font-sans text-text antialiased">
+    <a href="#main" class="skip-link">
+      {locale === "fr" ? "Aller au contenu" : "Skip to content"}
+    </a>
+    <slot name="nav" />
+    <main id="main">
       <slot />
     </main>
-    <footer>
-      <!-- Footer content added in later stories -->
-    </footer>
+    <slot name="footer" />
   </body>
 </html>

@@ -1,21 +1,15 @@
 ---
-import MainLayout from "../layouts/MainLayout.astro";
-import HeroSection from "../components/organisms/HeroSection.astro";
-import SocialBar from "../components/organisms/SocialBar.astro";
-import ProductList from "../components/organisms/ProductList.astro";
-import avatarImage from "../assets/avatar.png";
-import { profile } from "../data/profile";
-import { socialLinks } from "../data/socialLinks";
-import { projects } from "../data/projects";
+import MainLayout from "@/layouts/MainLayout.astro";
+import { profile } from "@/data/profile";
+
+const locale = "fr" as const;
+const title = `${profile.name} — ${profile.tagline.fr}`;
+const description = profile.bio.fr;
 ---
 
-<MainLayout title="Aymeric - Builder & Creator">
-  <HeroSection
-    src={avatarImage}
-    alt="Aymeric's profile photo"
-    name={profile.name}
-    tagline={profile.tagline}
-  />
-  <SocialBar links={socialLinks} />
-  <ProductList projects={projects} />
+<MainLayout title={title} description={description} locale={locale}>
+  <section class="mx-auto max-w-[var(--container-content)] px-12 py-16">
+    <h1 class="text-5xl font-bold tracking-tight">{profile.name}</h1>
+    <p class="mt-4 text-text-muted">{profile.bio.fr}</p>
+  </section>
 </MainLayout>
