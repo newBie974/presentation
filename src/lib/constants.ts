@@ -1,0 +1,9 @@
+export const SITE_URL = "https://aymeric.dijoux.dev";
+export const SITE_NAME = "Aymeric Dijoux";
+export const NOTES_ON_HOME = 3;
+export const NOTES_PER_PAGE = 20;
+export const LONG_ARTICLE_WORD_THRESHOLD = 800;
+export const SCROLL_REVEAL_DELAY_MS = 250;
+export const READING_WORDS_PER_MIN = 200;
+export const PERSON_ID = `${SITE_URL}/#person`;
+export const WEBSITE_ID = `${SITE_URL}/#website`;
