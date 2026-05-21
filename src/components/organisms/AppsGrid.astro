@@ -1,0 +1,78 @@
+---
+import AppCell from "@/components/molecules/AppCell.astro";
+import Highlight from "@/components/atoms/Highlight.astro";
+import { projects } from "@/data/projects";
+import type { Locale } from "@/types";
+import { useTranslations } from "@/i18n/utils";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+const liveCount = projects.filter((p) => p.status === "live").length;
+
+const headingFR = { pre: "Ce que je ", hl: "construis" };
+const headingEN = { pre: "What I'm ", hl: "building" };
+const heading = locale === "fr" ? headingFR : headingEN;
+---
+
+<section id="apps" class="apps">
+  <header class="head">
+    <h2>{heading.pre}<Highlight>{heading.hl}</Highlight></h2>
+    <span class="count"
+      >{liveCount.toString().padStart(2, "0")}
+      {t("status.live").toUpperCase()}</span
+    >
+  </header>
+  <div class="grid">
+    {projects.map((project) => <AppCell project={project} locale={locale} />)}
+  </div>
+</section>
+
+<style>
+  .apps {
+    padding: 40px 48px;
+    border-bottom: var(--border-w) solid var(--color-border);
+  }
+  .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 24px;
+  }
+  h2 {
+    font-size: clamp(24px, 4vw, 32px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin: 0;
+    line-height: 1;
+  }
+  .count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    background: var(--color-text);
+    color: var(--color-accent);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border: var(--border-w) solid var(--color-border);
+  }
+  @media (max-width: 720px) {
+    .apps {
+      padding: 24px 20px;
+    }
+    .grid {
+      grid-template-columns: 1fr;
+    }
+    .grid :global(.cell) {
+      border-right: none;
+      border-bottom: var(--border-w) solid var(--color-border);
+    }
+    .grid :global(.cell:last-child) {
+      border-bottom: none;
+    }
+  }
+</style>
