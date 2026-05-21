@@ -262,7 +262,7 @@ Pas de framework JS additionnel (React/Vue/Svelte). Astro statique pur.
 src/
 ├─ assets/                         avatars, logos apps, portrait B&W
 ├─ components/
-│  ├─ atoms/                       Avatar, StatusBadge, ThemeToggle, Icon, Highlight
+│  ├─ atoms/                       Avatar, StatusBadge, ThemeToggle, Icon, Highlight, JsonLd
 │  ├─ molecules/                   SocialLink, AppCell, NoteRow, Chapter, FAQItem, ProcessStep, ServiceCard, StackGroup, LangToggle
 │  ├─ organisms/                   Nav, Hero, AppsGrid, SocialBar, Footer, CollabBand, AboutExcerpt, NotesSection
 │  └─ prose/                       Callout, FileBlock, CodeTabs, Stackblitz, Tweet (MDX components)
@@ -280,7 +280,9 @@ src/
 ├─ lib/
 │  ├─ readingTime.ts
 │  ├─ dates.ts
-│  └─ ogImage.ts                   génération Satori
+│  ├─ ogImage.ts                   génération Satori
+│  ├─ jsonLd.ts                    builders Person/WebSite/Article/FAQPage/SoftwareApplication
+│  └─ geo.ts                       génération llms.txt, ai.txt, robots.txt
 ├─ pages/
 │  ├─ index.astro                  home FR
 │  ├─ a-propos.astro
@@ -291,6 +293,10 @@ src/
 │  │  ├─ tags/[tag].astro
 │  │  └─ og/[slug].png.ts          OG dynamique par article
 │  ├─ rss.xml.ts                   RSS FR
+│  ├─ robots.txt.ts                AI crawlers allow + standard SEO
+│  ├─ llms.txt.ts                  GEO — résumé site pour LLM
+│  ├─ llms-full.txt.ts             GEO — version exhaustive
+│  ├─ ai.txt.ts                    GEO — policy AI commercial
 │  ├─ og/
 │  │  ├─ home.png.ts
 │  │  └─ default.png.ts
@@ -413,12 +419,53 @@ export const collections = { notes };
 - Meta tags complets : title, description, canonical par page.
 - Open Graph + Twitter Card complets.
 - **OG images dynamiques** via Satori : 1 par article, 1 par page principale.
-- Sitemap.xml multilingue avec hreflang.
+- Sitemap.xml multilingue avec hreflang et `lastmod` sur chaque article.
 - robots.txt généré au build.
-- Structured data JSON-LD : `Person` (sur home + about), `WebSite` (root), `BlogPosting` (par article), `BreadcrumbList` (sur articles et tags).
 - `<link rel="alternate" hreflang>` sur chaque page bilingue.
+- Structured data JSON-LD (couvert dans 7.4 ci-dessous — partagé entre SEO et GEO).
 
-### 7.4 Analytics
+### 7.4 GEO (Generative Engine Optimization)
+Optimisation pour être surfacé/cité par les moteurs génératifs (ChatGPT, Claude, Perplexity, Google AI Overviews, Bing Copilot, etc.). Distinct du SEO traditionnel.
+
+**A. Foundations**
+- **`/llms.txt`** au root (standard https://llmstxt.org) : fichier markdown structuré qui résume le site, liste les pages prioritaires (Home, About, Notes, Collaborer, Apps), donne un mini-bio entity et pointe vers les URLs canoniques. Généré à partir d'un template + données dans `src/data/`.
+- **`/llms-full.txt`** (variante exhaustive) : concatène les pages clés en plain text pour ingestion LLM.
+- **JSON-LD `Person`** complet, présent sur Home + /a-propos + /en/about :
+  - `name`, `givenName`, `familyName`, `jobTitle`, `description`, `url`, `image`, `email` (optionnel), `homeLocation` (Paris)
+  - `knowsAbout` : array de domaines (`React Native`, `AI products`, `Indie hacking`, etc.)
+  - `sameAs` : URLs de tous les comptes externes (GitHub, LinkedIn, X, Instagram, TikTok, App Store dev page si dispo)
+  - `worksFor` ou `affiliation` si applicable (entité indépendante sinon)
+- **JSON-LD `WebSite`** sur la racine (avec `inLanguage` multilingue).
+- **JSON-LD `BlogPosting`** + `Article` sur chaque note, avec `author` pointant vers l'entité Person canonique (`@id`).
+- **JSON-LD `BreadcrumbList`** sur articles et tags.
+- **JSON-LD `SoftwareApplication`** par app dans la home (VoiceJournal, Caroubolt, Tookta) avec `creator` pointant vers Person — construit le graphe d'entités Aymeric ↔ apps.
+
+**B. Content patterns**
+- **Lead direct dans les 100 premiers mots** de chaque page : les LLM extraient l'ouverture comme summary. Pas de teasing — la réponse à "qui est cette personne / que fait ce site" doit être dite tout de suite.
+- **Entity disambiguation** : premier paragraphe de /a-propos commence par une phrase canonique sans ambiguïté ("Aymeric Dijoux is an indie builder and software engineer based in Paris, building and shipping his own consumer apps including VoiceJournal, Caroubolt, and Tookta.").
+- **Q&A friendly** : dans les articles longs (>800 mots), les h2 sont rédigés en questions naturelles ("Pourquoi je code mes apps seul ?", "Combien de temps prend un MVP ?") et le premier paragraphe sous chaque h2 contient la réponse condensée.
+- **FAQ Schema** (`FAQPage` JSON-LD) injecté sur /collaborer et /en/work à partir des données `data/faq.ts` — Perplexity/Google AI Overviews surfacent ces réponses telles quelles.
+
+**C. Crawler policy**
+- **`/robots.txt`** explicite avec `Allow` pour les agents AI majeurs :
+  - `GPTBot`, `OAI-SearchBot`, `ChatGPT-User` (OpenAI)
+  - `ClaudeBot`, `anthropic-ai`, `Claude-User` (Anthropic)
+  - `PerplexityBot`, `Perplexity-User` (Perplexity)
+  - `Google-Extended` (Google AI training)
+  - `CCBot` (Common Crawl, dataset utilisé par presque tous)
+  - `Applebot-Extended` (Apple AI)
+  - `Bytespider` (TikTok/ByteDance — peut être bloqué si pas désiré)
+- **`/ai.txt`** (standard émergent) : déclaration d'autorisations pour usage commercial AI. Position par défaut V1 : autoriser indexation et citation (cohérent avec l'objectif portfolio).
+- **Sitemap** : déjà couvert SEO, mais s'assurer que TOUS les articles y sont avec `<lastmod>`.
+
+**Implémentation** :
+- `pages/llms.txt.ts` et `pages/llms-full.txt.ts` : routes Astro qui génèrent les fichiers au build à partir des content collections et data.
+- `pages/robots.txt.ts` : génération avec User-agents AI listés.
+- `pages/ai.txt.ts` : génération avec policy par défaut.
+- Composant `<JsonLd type="Person" />`, `<JsonLd type="BlogPosting" article={...} />`, `<JsonLd type="FAQPage" items={...} />`, `<JsonLd type="SoftwareApplication" app={...} />` — un par type, injecté dans le `<head>` via slot du layout.
+- Lint au build : un script Node vérifie qu'aucune page publique ne sort sans un Person/WebSite JSON-LD valide (parse + schema check).
+
+### 7.5 Analytics
 **Décision retenue** : à confirmer par Aymeric (option ouverte dans le plan). Options recommandées par ordre de préférence :
 1. **Plausible** (auto-hébergeable ou cloud, GDPR-friendly, ~1g de JS)
 2. **Umami** (open-source self-hosted)
@@ -426,7 +473,7 @@ export const collections = { notes };
 
 Pas de Google Analytics (cookies, perfs, RGPD).
 
-### 7.5 Tests & CI
+### 7.6 Tests & CI
 - ESLint (existant) + Astro plugin (existant).
 - Prettier + plugin Tailwind (existant).
 - Husky + lint-staged (existant).
@@ -462,6 +509,9 @@ Pour pouvoir lancer V1 :
 - [ ] **Email de contact** confirmé (placeholder spec : `aymeric@dijoux.dev`)
 - [ ] **Vérifier la config GitHub Pages** : CNAME, domaine `aymeric.dijoux.dev` pointe bien sur le repo.
 - [ ] **Décision analytics** (Plausible / Umami / none)
+- [ ] **Entity disambiguation** (GEO) : 1 phrase d'ouverture canonique pour /a-propos en FR + EN (forme "Aymeric Dijoux est ... basé à ... qui ...")
+- [ ] **knowsAbout** (GEO) : liste 6-10 domaines d'expertise pour le JSON-LD Person (ex: "React Native", "AI products", "Indie hacking", "Mobile app development", "Consumer apps")
+- [ ] **sameAs** (GEO) : confirmer la liste complète des URLs externes (GitHub, LinkedIn, X, Instagram, TikTok, App Store dev page si dispo)
 
 ---
 
@@ -495,11 +545,14 @@ Pour pouvoir lancer V1 :
 - RSS feeds (FR + EN)
 - OG images dynamiques par article (Satori)
 
-### Phase 04 — Collaborer + polish + ship
+### Phase 04 — Collaborer + GEO + polish + ship
 - Page `/collaborer` (5 sections + end CTA)
 - Cal.com embed
-- Sitemap.xml multilingue + hreflang
-- JSON-LD (Person, WebSite, BlogPosting, BreadcrumbList)
+- **JSON-LD complet** : Person (canonique avec `@id`), WebSite, BlogPosting/Article, BreadcrumbList, SoftwareApplication (par app), FAQPage (sur Collaborer)
+- **Sitemap.xml multilingue** + hreflang + `lastmod`
+- **GEO files** : `/llms.txt`, `/llms-full.txt`, `/robots.txt` (avec allow AI crawlers), `/ai.txt`
+- **Lint JSON-LD** : script CI qui vérifie présence Person/WebSite sur toutes les routes publiques
+- **Content patterns GEO** : lead direct dans les 100 premiers mots de chaque page + entity disambiguation /a-propos
 - View Transitions
 - Animations scroll-reveal + `prefers-reduced-motion`
 - Audit Lighthouse final
