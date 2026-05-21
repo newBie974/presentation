@@ -1,25 +1,67 @@
 ---
-import type { SocialLink } from "../../types/index";
-import SocialLinkComponent from "../molecules/SocialLink.astro";
+import SocialLink from "@/components/molecules/SocialLink.astro";
+import { socialLinks } from "@/data/socialLinks";
+import type { Locale } from "@/types";
+import { useTranslations } from "@/i18n/utils";
 
 interface Props {
-  links: SocialLink[];
+  locale: Locale;
 }
-
-const { links } = Astro.props;
+const { locale } = Astro.props;
+const t = useTranslations(locale);
 ---
 
-<nav aria-label="Social media links" class="mt-xl">
-  <div class="flex items-center justify-center gap-md">
+<aside class="social-bar" aria-label={t("social.follow")}>
+  <span class="label">{t("social.follow").toUpperCase()} /</span>
+  <ul role="list">
     {
-      links.map((link, index) => (
-        <div
-          class="motion-safe:animate-fade-in-up"
-          style={`animation-delay: calc(${index} * var(--stagger-social))`}
-        >
-          <SocialLinkComponent link={link} />
-        </div>
+      socialLinks.map((link) => (
+        <li>
+          <SocialLink link={link} />
+        </li>
       ))
     }
-  </div>
-</nav>
+  </ul>
+  <span class="handle">@aymeric.builder</span>
+</aside>
+
+<style>
+  .social-bar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 14px 48px;
+    border-bottom: var(--border-w) solid var(--color-border);
+    background: var(--color-bg-soft);
+  }
+  .label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+  }
+  ul {
+    display: flex;
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+  }
+  .handle {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-text-muted);
+  }
+  @media (max-width: 720px) {
+    .social-bar {
+      padding: 12px 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .handle {
+      margin-left: 0;
+      width: 100%;
+    }
+  }
+</style>
