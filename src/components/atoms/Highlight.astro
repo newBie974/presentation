@@ -1,0 +1,24 @@
+---
+interface Props {
+  as?: "span" | "em";
+}
+
+const { as: Tag = "span" } = Astro.props;
+---
+
+<Tag class="highlight">
+  <slot />
+</Tag>
+
+<style>
+  .highlight {
+    background: var(--color-accent);
+    color: var(--color-text);
+    padding: 0 0.2em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  :global([data-theme="dark"]) .highlight {
+    color: #0a0a0a;
+  }
+</style>
