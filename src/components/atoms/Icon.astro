@@ -1,0 +1,21 @@
+---
+import { Icon as AstroIcon } from "astro-icon/components";
+
+interface Props {
+  name: string;
+  size?: number;
+  class?: string;
+  ariaLabel?: string;
+}
+
+const { name, size = 18, class: className, ariaLabel } = Astro.props;
+---
+
+<AstroIcon
+  name={name}
+  width={size}
+  height={size}
+  class:list={["inline-block shrink-0", className]}
+  aria-label={ariaLabel}
+  aria-hidden={ariaLabel ? "false" : "true"}
+/>
