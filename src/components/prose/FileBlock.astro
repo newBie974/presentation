@@ -1,0 +1,69 @@
+---
+interface Props {
+  filename: string;
+}
+const { filename } = Astro.props;
+---
+
+<div class="file-block">
+  <header>
+    <span class="name">{filename}</span>
+    <button type="button" class="copy" data-copy-target>copy</button>
+  </header>
+  <slot />
+</div>
+
+<script>
+  function attachCopyHandlers() {
+    document
+      .querySelectorAll<HTMLButtonElement>(".file-block .copy")
+      .forEach((btn) => {
+        if (btn.dataset.bound === "1") return;
+        btn.dataset.bound = "1";
+        btn.addEventListener("click", async () => {
+          const code =
+            btn.closest(".file-block")?.querySelector("pre code")
+              ?.textContent ?? "";
+          try {
+            await navigator.clipboard.writeText(code);
+            btn.textContent = "copied";
+            setTimeout(() => (btn.textContent = "copy"), 1500);
+          } catch {
+            btn.textContent = "failed";
+          }
+        });
+      });
+  }
+  attachCopyHandlers();
+  document.addEventListener("astro:page-load", attachCopyHandlers);
+</script>
+
+<style>
+  .file-block {
+    margin: 18px 0;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #292524;
+    color: #d6d3d1;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 8px 14px;
+  }
+  .copy {
+    background: rgba(255, 255, 255, 0.1);
+    color: inherit;
+    border: none;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .file-block :global(pre) {
+    margin-top: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+</style>

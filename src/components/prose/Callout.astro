@@ -1,0 +1,46 @@
+---
+interface Props {
+  tone?: "info" | "warn" | "ok";
+}
+const { tone = "info" } = Astro.props;
+const labels = { info: "NOTE", warn: "ATTENTION", ok: "OK" };
+---
+
+<aside class:list={["callout", `tone-${tone}`]}>
+  <span class="label">{labels[tone]}</span>
+  <div class="content"><slot /></div>
+</aside>
+
+<style>
+  .callout {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 16px;
+    align-items: start;
+    padding: 16px;
+    border: var(--border-w) solid var(--color-border);
+    background: var(--color-bg-soft);
+    margin: 18px 0;
+  }
+  .label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 3px 6px;
+    background: var(--color-strong-bg);
+    color: var(--color-strong-fg);
+    align-self: start;
+  }
+  .tone-warn .label {
+    background: #b45309;
+    color: #fef3c7;
+  }
+  .tone-ok .label {
+    background: var(--color-success);
+    color: var(--color-on-accent);
+  }
+  .content :global(p:last-child) {
+    margin-bottom: 0;
+  }
+</style>
