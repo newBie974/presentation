@@ -1,0 +1,77 @@
+---
+import SectionLabel from "@/components/atoms/SectionLabel.astro";
+import type { Locale } from "@/types";
+import { useTranslations } from "@/i18n/utils";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const titleFR = "Le builder derrière les apps.";
+const titleEN = "The builder behind the apps.";
+const bodyFR = [
+  "10 ans de dev produit entre Paris et l'océan Indien. J'ai bossé en startup, en agence, et solo.",
+  "Aujourd'hui je build mes propres apps et prête main forte à quelques équipes triées sur le volet.",
+];
+const bodyEN = [
+  "10 years of product engineering between Paris and the Indian Ocean. Startups, agencies, and solo.",
+  "Today I build my own apps and help a few hand-picked teams along the way.",
+];
+const body = locale === "fr" ? bodyFR : bodyEN;
+const title = locale === "fr" ? titleFR : titleEN;
+---
+
+<section class="about">
+  <div class="left">
+    <SectionLabel>{t("section.about").toUpperCase()}</SectionLabel>
+    <h2>{title}</h2>
+  </div>
+  <div class="body">
+    {body.map((p) => <p>{p}</p>)}
+    <p>
+      <a href={t.path("about")} class="more">
+        {t("cta.readMore").toUpperCase()} →
+      </a>
+    </p>
+  </div>
+</section>
+
+<style>
+  .about {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 32px;
+    padding: 40px 48px;
+    border-bottom: var(--border-w) solid var(--color-border);
+  }
+  h2 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin: 8px 0 0;
+  }
+  .body p {
+    font-size: 15px;
+    line-height: 1.65;
+    margin: 0 0 10px;
+  }
+  .more {
+    display: inline-block;
+    margin-top: 8px;
+    background: var(--color-accent);
+    color: var(--color-text);
+    padding: 4px 8px;
+    font-weight: 600;
+    font-size: 12px;
+    text-decoration: none;
+  }
+  @media (max-width: 720px) {
+    .about {
+      grid-template-columns: 1fr;
+      padding: 24px 20px;
+    }
+  }
+</style>
