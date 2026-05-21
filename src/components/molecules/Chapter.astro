@@ -1,0 +1,60 @@
+---
+import type { Chapter, Locale } from "@/types";
+
+interface Props {
+  chapter: Chapter;
+  locale: Locale;
+}
+const { chapter, locale } = Astro.props;
+---
+
+<article class="chapter">
+  <div class="years">{chapter.yearsLabel}</div>
+  <div class="body">
+    <h3>{chapter.title[locale]}</h3>
+    <p class="role">{chapter.role[locale]}</p>
+    <p class="desc">{chapter.body[locale]}</p>
+  </div>
+</article>
+
+<style>
+  .chapter {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 24px;
+    padding: 18px 0;
+    border-top: 1px dashed var(--color-border);
+  }
+  .chapter:first-of-type {
+    border-top: none;
+    padding-top: 0;
+  }
+  .years {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--color-text-muted);
+    padding-top: 2px;
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 4px;
+  }
+  .role {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin: 0 0 6px;
+  }
+  .desc {
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0;
+  }
+  @media (max-width: 720px) {
+    .chapter {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+  }
+</style>
