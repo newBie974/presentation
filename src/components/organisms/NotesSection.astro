@@ -1,0 +1,77 @@
+---
+import NoteRow from "@/components/molecules/NoteRow.astro";
+import Highlight from "@/components/atoms/Highlight.astro";
+import { useTranslations } from "@/i18n/utils";
+import { loadLatestNotes } from "@/lib/notes";
+import { NOTES_ON_HOME } from "@/lib/constants";
+import type { Locale } from "@/types";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+const notes = await loadLatestNotes(locale, NOTES_ON_HOME);
+
+const headingFR = { pre: "Dernières ", hl: "notes" };
+const headingEN = { pre: "Latest ", hl: "writing" };
+const heading = locale === "fr" ? headingFR : headingEN;
+---
+
+{
+  notes.length > 0 && (
+    <section class="notes">
+      <header class="head">
+        <h2>
+          {heading.pre}
+          <Highlight>{heading.hl}</Highlight>
+        </h2>
+        <a href={t.path("notes")} class="all">
+          {t("section.allNotes").toUpperCase()} →
+        </a>
+      </header>
+      <div class="list">
+        {notes.map((note) => (
+          <NoteRow note={note} locale={locale} showExcerpt={false} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .notes {
+    padding: 40px 48px;
+    border-bottom: var(--border-w) solid var(--color-border);
+  }
+  .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 16px;
+  }
+  h2 {
+    font-size: clamp(24px, 4vw, 32px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin: 0;
+    line-height: 1;
+  }
+  .all {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+  .all:hover {
+    color: var(--color-text);
+  }
+  .list :global(.note-row:last-child) {
+    border-bottom: var(--border-w) solid var(--color-border);
+  }
+  @media (max-width: 720px) {
+    .notes {
+      padding: 24px 20px;
+    }
+  }
+</style>

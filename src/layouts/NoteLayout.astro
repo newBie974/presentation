@@ -1,0 +1,112 @@
+---
+import MainLayout from "./MainLayout.astro";
+import Nav from "@/components/organisms/Nav.astro";
+import Footer from "@/components/organisms/Footer.astro";
+import { useTranslations, alternateLocale } from "@/i18n/utils";
+import { formatDate } from "@/lib/dates";
+import type { Locale } from "@/types";
+
+interface Props {
+  title: string;
+  description: string;
+  locale: Locale;
+  date: Date;
+  tags: string[];
+  readingMinutes: number;
+  altUrl?: string;
+}
+
+const { title, description, locale, date, tags, readingMinutes, altUrl } =
+  Astro.props;
+const t = useTranslations(locale);
+const dateLabel = formatDate(date, locale);
+const altLocale = alternateLocale(locale);
+---
+
+<MainLayout
+  title={`${title} — Aymeric Dijoux`}
+  description={description}
+  locale={locale}
+  pageType="article"
+>
+  <Nav slot="nav" locale={locale} current="notes" />
+
+  <article class="note">
+    <a href={t.path("notes")} class="back"
+      >← {locale === "fr" ? "Notes" : "Writing"}</a
+    >
+    <h1>{title}</h1>
+    <div class="meta">
+      <time datetime={date.toISOString()}>{dateLabel}</time>
+      {tags.length > 0 && <span class="sep">·</span>}
+      {tags.length > 0 && <span>{tags.join(" · ")}</span>}
+      <span class="sep">·</span>
+      <span>{readingMinutes} min</span>
+      {
+        altUrl && (
+          <>
+            <span class="sep">·</span>
+            <a href={altUrl} class="alt" hreflang={altLocale}>
+              {altLocale.toUpperCase()}
+            </a>
+          </>
+        )
+      }
+    </div>
+    <div class="prose">
+      <slot />
+    </div>
+  </article>
+
+  <Footer slot="footer" locale={locale} />
+</MainLayout>
+
+<style>
+  .note {
+    padding: 56px 48px 48px;
+    max-width: var(--container-content);
+    margin: 0 auto;
+  }
+  .back {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .back:hover {
+    color: var(--color-text);
+  }
+  h1 {
+    font-size: clamp(28px, 5vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    margin: 16px 0;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin: 0 0 36px;
+  }
+  .sep {
+    opacity: 0.6;
+  }
+  .alt {
+    padding: 2px 6px;
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    text-decoration: none;
+  }
+  @media (max-width: 720px) {
+    .note {
+      padding: 32px 20px;
+    }
+  }
+</style>

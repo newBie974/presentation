@@ -5,6 +5,7 @@ import Hero from "@/components/organisms/Hero.astro";
 import SocialBar from "@/components/organisms/SocialBar.astro";
 import AppsGrid from "@/components/organisms/AppsGrid.astro";
 import AboutExcerpt from "@/components/organisms/AboutExcerpt.astro";
+import NotesSection from "@/components/organisms/NotesSection.astro";
 import CollabBand from "@/components/organisms/CollabBand.astro";
 import Footer from "@/components/organisms/Footer.astro";
 import { profile } from "@/data/profile";
@@ -20,6 +21,7 @@ const description = profile.bio.fr;
   <SocialBar locale={locale} />
   <AppsGrid locale={locale} />
   <AboutExcerpt locale={locale} />
+  <NotesSection locale={locale} />
   <CollabBand locale={locale} />
   <Footer slot="footer" locale={locale} />
 </MainLayout>
