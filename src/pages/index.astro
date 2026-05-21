@@ -1,15 +1,25 @@
 ---
 import MainLayout from "@/layouts/MainLayout.astro";
+import Nav from "@/components/organisms/Nav.astro";
+import Hero from "@/components/organisms/Hero.astro";
+import SocialBar from "@/components/organisms/SocialBar.astro";
+import AppsGrid from "@/components/organisms/AppsGrid.astro";
+import AboutExcerpt from "@/components/organisms/AboutExcerpt.astro";
+import CollabBand from "@/components/organisms/CollabBand.astro";
+import Footer from "@/components/organisms/Footer.astro";
 import { profile } from "@/data/profile";
 
 const locale = "fr" as const;
-const title = `${profile.name} — ${profile.tagline.fr}`;
+const title = `${profile.name} — Indie builder & engineer`;
 const description = profile.bio.fr;
 ---
 
 <MainLayout title={title} description={description} locale={locale}>
-  <section class="mx-auto max-w-[var(--container-content)] px-12 py-16">
-    <h1 class="text-5xl font-bold tracking-tight">{profile.name}</h1>
-    <p class="mt-4 text-text-muted">{profile.bio.fr}</p>
-  </section>
+  <Nav slot="nav" locale={locale} current="home" />
+  <Hero locale={locale} />
+  <SocialBar locale={locale} />
+  <AppsGrid locale={locale} />
+  <AboutExcerpt locale={locale} />
+  <CollabBand locale={locale} />
+  <Footer slot="footer" locale={locale} />
 </MainLayout>
