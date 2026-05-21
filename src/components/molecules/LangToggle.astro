@@ -1,0 +1,40 @@
+---
+import type { Locale } from "@/types";
+import { alternateLocale } from "@/i18n/utils";
+
+interface Props {
+  current: Locale;
+  altPath: string;
+}
+
+const { current, altPath } = Astro.props;
+const alt = alternateLocale(current);
+---
+
+<div class="lang-toggle" role="group" aria-label="Language">
+  <span class="current">{current.toUpperCase()}</span>
+  <span class="sep">·</span>
+  <a href={altPath} hreflang={alt}>{alt.toUpperCase()}</a>
+</div>
+
+<style>
+  .lang-toggle {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+  .current {
+    font-weight: 700;
+  }
+  .sep {
+    color: var(--color-text-muted);
+    margin: 0 4px;
+  }
+  a {
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+  a:hover {
+    color: var(--color-text);
+  }
+</style>
