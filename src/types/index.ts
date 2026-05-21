@@ -1,24 +1,60 @@
+import type { ImageMetadata } from "astro";
+
+export type Locale = "fr" | "en";
+
 export interface Profile {
   name: string;
-  tagline: string;
-  avatarPath: string;
+  givenName: string;
+  familyName: string;
+  tagline: { fr: string; en: string };
+  bio: { fr: string; en: string };
+  location: string;
+  email?: string;
 }
 
-export interface SocialLink {
-  platform: string;
-  url: string;
-  label: string;
-}
+export type AppStatus = "live" | "building" | "coming-soon";
 
 export interface Project {
+  slug: string;
   title: string;
-  tagline: string;
+  tagline: { fr: string; en: string };
   url: string;
-  status: "live" | "building" | "coming-soon";
+  status: AppStatus;
   techStack: string[];
+  platform: ("ios" | "android" | "web")[];
   appStoreUrl?: string;
   playStoreUrl?: string;
   logo?: ImageMetadata;
 }
 
-import type { ImageMetadata } from "astro";
+export interface SocialLink {
+  platform: "instagram" | "tiktok" | "linkedin" | "x" | "github";
+  url: string;
+  label: string;
+}
+
+export interface Chapter {
+  yearsLabel: string;
+  startYear: number;
+  endYear: number | "now";
+  title: { fr: string; en: string };
+  role: { fr: string; en: string };
+  body: { fr: string; en: string };
+}
+
+export interface StackEntry {
+  category: { fr: string; en: string };
+  items: string[];
+}
+
+export interface Service {
+  id: string;
+  icon: string;
+  title: { fr: string; en: string };
+  description: { fr: string; en: string };
+}
+
+export interface FaqEntry {
+  q: { fr: string; en: string };
+  a: { fr: string; en: string };
+}
