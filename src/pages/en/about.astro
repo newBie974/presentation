@@ -1,0 +1,122 @@
+---
+import MainLayout from "@/layouts/MainLayout.astro";
+import Nav from "@/components/organisms/Nav.astro";
+import Footer from "@/components/organisms/Footer.astro";
+import SectionLabel from "@/components/atoms/SectionLabel.astro";
+import Highlight from "@/components/atoms/Highlight.astro";
+import Chapter from "@/components/molecules/Chapter.astro";
+import StackGroup from "@/components/molecules/StackGroup.astro";
+import CollabBand from "@/components/organisms/CollabBand.astro";
+import { chapters } from "@/data/chapters";
+import { stack } from "@/data/stack";
+
+const locale = "en" as const;
+const title = "About — Aymeric Dijoux, indie builder in Paris";
+const description =
+  "Aymeric Dijoux is an indie builder and software engineer based in Paris. He builds and ships his own consumer apps (VoiceJournal, Caroubolt, Tookta) and helps select teams as a freelancer.";
+---
+
+<MainLayout title={title} description={description} locale={locale}>
+  <Nav slot="nav" locale={locale} current="about" />
+
+  <section class="page-hero">
+    <SectionLabel>— ABOUT</SectionLabel>
+    <h1>Builder, engineer, <Highlight>founder</Highlight>.</h1>
+    <p class="deck">
+      Aymeric Dijoux is an indie builder and software engineer based in Paris.
+      He codes, ships, and writes what he learns along the way.
+    </p>
+  </section>
+
+  <section class="section">
+    <SectionLabel number="01">NOW</SectionLabel>
+    <h2>What I'm <Highlight>working on</Highlight></h2>
+    <p>
+      I spend most days iterating on <strong>VoiceJournal</strong>, exploring
+      applied AI ideas, and writing here from time to time.
+    </p>
+    <p>
+      I also take 1-2 freelance missions per half-year when the project
+      resonates.
+    </p>
+  </section>
+
+  <section class="section">
+    <SectionLabel number="02">PATH</SectionLabel>
+    <h2>A few <Highlight>chapters</Highlight></h2>
+    {chapters.map((c) => <Chapter chapter={c} locale={locale} />)}
+  </section>
+
+  <section class="section">
+    <SectionLabel number="03">PHILOSOPHY</SectionLabel>
+    <h2>How I <Highlight>work</Highlight></h2>
+    <p>
+      I ship fast and often. The best spec is a production version getting
+      yelled at by 100 real users.
+    </p>
+    <p>
+      I favor stacks I know well over trendy ones. AI is a tool, not a religion
+      — useful wherever it replaces a boring form.
+    </p>
+    <p>
+      I code alone but think as a team — each app is built to grow beyond me.
+    </p>
+  </section>
+
+  <section class="section">
+    <SectionLabel number="04">STACK 2026</SectionLabel>
+    <h2>What I <Highlight>use</Highlight></h2>
+    {stack.map((s) => <StackGroup entry={s} locale={locale} />)}
+  </section>
+
+  <CollabBand locale={locale} />
+  <Footer slot="footer" locale={locale} />
+</MainLayout>
+
+<style>
+  .page-hero {
+    padding: 64px 48px 32px;
+    border-bottom: var(--border-w) solid var(--color-border);
+    max-width: var(--container-content);
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: clamp(36px, 6vw, 48px);
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    margin: 14px 0;
+  }
+  .deck {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+    max-width: 560px;
+    margin: 0;
+  }
+  .section {
+    padding: 40px 48px;
+    border-bottom: var(--border-w) solid var(--color-border);
+    max-width: var(--container-content);
+    margin: 0 auto;
+  }
+  .section h2 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 12px 0 16px;
+    line-height: 1;
+  }
+  .section p {
+    font-size: 15px;
+    line-height: 1.75;
+    margin: 0 0 14px;
+  }
+  @media (max-width: 720px) {
+    .page-hero,
+    .section {
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+  }
+</style>
