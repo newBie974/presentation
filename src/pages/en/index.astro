@@ -1,0 +1,25 @@
+---
+import MainLayout from "@/layouts/MainLayout.astro";
+import Nav from "@/components/organisms/Nav.astro";
+import Hero from "@/components/organisms/Hero.astro";
+import SocialBar from "@/components/organisms/SocialBar.astro";
+import AppsGrid from "@/components/organisms/AppsGrid.astro";
+import AboutExcerpt from "@/components/organisms/AboutExcerpt.astro";
+import CollabBand from "@/components/organisms/CollabBand.astro";
+import Footer from "@/components/organisms/Footer.astro";
+import { profile } from "@/data/profile";
+
+const locale = "en" as const;
+const title = `${profile.name} — Indie builder & engineer`;
+const description = profile.bio.en;
+---
+
+<MainLayout title={title} description={description} locale={locale}>
+  <Nav slot="nav" locale={locale} current="home" />
+  <Hero locale={locale} />
+  <SocialBar locale={locale} />
+  <AppsGrid locale={locale} />
+  <AboutExcerpt locale={locale} />
+  <CollabBand locale={locale} />
+  <Footer slot="footer" locale={locale} />
+</MainLayout>
