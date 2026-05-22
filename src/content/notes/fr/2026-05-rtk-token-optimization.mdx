@@ -1,0 +1,107 @@
+---
+title: "RTK : comment j'ai vidé 80% du bruit qui mangeait mon contexte Claude"
+date: 2026-05-12
+locale: fr
+translationKey: "2026-05-rtk"
+tags: ["ai", "claude", "tools", "process"]
+excerpt: "Un proxy CLI en Rust qui s'insère entre Claude Code et tes commandes shell. Il compresse les sorties verbeuses (git status, ls, jest...) avant qu'elles atteignent le contexte. Installé en une commande, gain immédiat."
+draft: false
+---
+
+Quand Claude Code lance `git status` chez toi, il ne voit pas un résumé. Il voit la sortie complète : plusieurs centaines de lignes potentielles entre les fichiers modifiés, les untracked, les branches, les remotes. Ça part directement dans son contexte. Multiplie par 10 `git status` dans une session, ajoute les `ls`, les `cat`, les `jest`, et tu as déjà brûlé une bonne partie de ta fenêtre.
+
+[RTK](https://github.com/rtk-ai/rtk) règle ça. Je l'ai installé il y a quelques semaines et je ne reviendrai pas en arrière.
+
+## Le problème, concrètement
+
+Une session de coding avec un agent LLM, c'est :
+- L'agent qui lance des commandes shell pour explorer ton repo.
+- La sortie brute qui revient dans son contexte.
+- Le contexte qui se sature, l'agent qui devient confus, tu rouvres une session.
+
+Sur les commandes les plus communes — `ls`, `tree`, `git status`, `git diff`, `cat`, `grep`, les test runners — la sortie est **pleine de bruit** : whitespace, lignes répétées, commentaires sans intérêt, banniers de version. L'agent n'a pas besoin de tout ça. Il a besoin du signal.
+
+## Ce que fait RTK
+
+RTK est un binaire Rust qui s'installe globalement. Tu lances :
+
+```bash
+brew install rtk
+rtk init -g     # pour Claude Code
+```
+
+Et c'est fini. Aucune modification de tes scripts, de ton `.zshrc`, ni de la config Claude Code. RTK installe un hook qui intercepte les commandes Bash que Claude exécute, les réécrit (`git status` devient `rtk git status`), exécute la vraie commande, **filtre/compresse la sortie**, puis renvoie le résultat à Claude.
+
+Le diagramme officiel résume bien :
+
+```
+Sans RTK :                              Avec RTK :
+
+Claude --git status--> shell --> git     Claude --git status--> RTK --> git
+   ^                              |         ^                    |        |
+   |    ~2000 tokens (raw)        |         |   ~200 tokens      | filter |
+   +------------------------------+         +-----(filtré)-------+--------+
+```
+
+Quatre stratégies appliquées selon la commande :
+- **Smart filtering** — virer le bruit (commentaires, whitespace, boilerplate)
+- **Grouping** — agréger les items similaires (fichiers par dossier, erreurs par type)
+- **Truncation** — garder le contexte pertinent, couper la redondance
+- **Deduplication** — collapser les lignes répétées avec un compteur
+
+Le tout en Rust, overhead annoncé sous les 10ms.
+
+## Ce que ça donne sur les commandes que je lance le plus
+
+D'après leur table de benchmarks (à prendre comme un ordre de grandeur, ça dépend de la taille du projet) :
+
+| Commande | Sortie brute | Avec RTK | Gain |
+|---|---|---|---|
+| `ls` / `tree` | ~2 000 tokens | ~400 | -80% |
+| `cat` / lecture fichier | ~40 000 | ~12 000 | -70% |
+| `grep` / `rg` | ~16 000 | ~3 200 | -80% |
+| `git status` | ~3 000 | ~600 | -80% |
+| `git diff` | ~10 000 | ~2 500 | -75% |
+| `git add` / `commit` / `push` | ~1 600 | ~120 | -92% |
+| `npm test` / `jest` | ~25 000 | ~2 500 | -90% |
+| `pytest` / `cargo test` | ~8 000 | ~800 | -90% |
+| `tsc` | détaillé | groupé par fichier | -80% |
+
+Sur une session de 30 min où Claude touche ~10x `ls`, ~20x `cat`, ~8x `grep`, ~10x `git status` et quelques runs de tests, on parle d'environ **80% de réduction sur tout ce qui sort des hooks Bash**. Pour un usage Claude avec budget de contexte limité, c'est colossal.
+
+## Concrètement, ce que ça change
+
+Avant RTK, mon contexte se remplissait vite quand je laissais Claude explorer un repo un peu touffu. Maintenant, je vois `git status` revenir en quelques lignes au lieu d'une page entière, les sorties `jest` ne contenant que les échecs, et `tree` qui groupe les dossiers similaires.
+
+Le gain n'est pas juste financier (même si oui, moins de tokens facturés). C'est surtout :
+- **Plus de contexte pour le code et la conversation**, moins gaspillé en bruit shell.
+- **L'agent reste cohérent plus longtemps** dans une même session.
+- **Moins de "Compact conversation"** intempestifs.
+
+## La limite à connaître
+
+Le hook se déclenche uniquement sur les **outils Bash** de l'agent. Les outils natifs comme `Read`, `Grep`, `Glob` de Claude Code (qui n'utilisent pas Bash en interne) ne passent pas par RTK.
+
+Si tu veux que ces workflows profitent aussi de la compression, tu remplaces explicitement par des commandes shell : `cat`/`head`/`tail` à la place de `Read`, `rg`/`grep` à la place de `Grep`, `find` à la place de `Glob`. Ou tu appelles directement `rtk read`, `rtk grep`, `rtk find`.
+
+J'ai fait le choix de garder les outils natifs pour la majorité des lectures (parce qu'ils sont mieux intégrés au flow Claude) et de laisser RTK gérer tout ce qui passe vraiment par Bash. Bon compromis.
+
+## Le détail qui me convainc
+
+RTK est :
+- **Open-source** sous Apache 2.0, code lisible sur le repo.
+- **Rust single binary**, zéro dépendance, installable via `brew` ou `cargo install`.
+- **Compatible avec à peu près tous les agents** : Claude Code, Copilot, Gemini CLI, Codex, Cursor, Windsurf, Cline, etc.
+- **Multilingue** dans la doc (FR, EN, ES, ZH, JA, KO).
+
+C'est exactement le type d'outil que je veux dans ma toolbox : un binaire qui fait un truc précis, qui s'oublie une fois installé, et qui me coûte rien en maintenance.
+
+## Verdict
+
+Installer RTK m'a pris 90 secondes : `brew install rtk` + `rtk init -g` + redémarrer Claude Code. À aucun moment je n'ai eu à modifier ma config existante, ni à apprendre une nouvelle CLI à utiliser au quotidien.
+
+Le ROI est immédiat : moins de tokens consommés sur les commandes shell, plus de marge dans le contexte pour la vraie discussion technique, plus de cohérence dans les longues sessions.
+
+Si tu utilises Claude Code, Cursor, Gemini CLI ou n'importe quel agent qui passe ses commandes par Bash, c'est probablement l'outil au meilleur ratio gain/effort que tu installeras cette année.
+
+→ Le repo : [github.com/rtk-ai/rtk](https://github.com/rtk-ai/rtk)
