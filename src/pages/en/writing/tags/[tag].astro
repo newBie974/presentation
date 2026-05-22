@@ -4,7 +4,9 @@ import Nav from "@/components/organisms/Nav.astro";
 import Footer from "@/components/organisms/Footer.astro";
 import NoteRow from "@/components/molecules/NoteRow.astro";
 import SectionLabel from "@/components/atoms/SectionLabel.astro";
+import JsonLd from "@/components/atoms/JsonLd.astro";
 import { loadPublishedNotes, listAllTags } from "@/lib/notes";
+import { buildPersonJsonLd } from "@/lib/jsonLd";
 
 export async function getStaticPaths() {
   const tags = await listAllTags("en");
@@ -25,6 +27,7 @@ const description = `Articles tagged #${tag} on Aymeric Dijoux's site.`;
 ---
 
 <MainLayout title={title} description={description} locale={locale}>
+  <Fragment slot="head"><JsonLd data={buildPersonJsonLd()} /></Fragment>
   <Nav slot="nav" locale={locale} current="notes" />
   <section class="hero">
     <SectionLabel>— TAG</SectionLabel>
