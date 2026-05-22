@@ -1,0 +1,140 @@
+---
+title: "VoiceJournal : 30 secondes de voix, l'IA écrit ton journal"
+date: 2026-05-08
+locale: fr
+translationKey: "2026-05-voicejournal-intro"
+tags: ["build", "ia", "mobile"]
+excerpt: "Tu parles 30 secondes. Whisper transcrit, Claude écrit ton journal, te donne un score mental et tague tes émotions. Voici comment c'est conçu et pourquoi je l'ai fait."
+draft: false
+---
+
+[VoiceJournal](https://aivoicejournal.app) est l'app que je voulais utiliser et qui n'existait pas. Elle est dispo sur l'App Store depuis quelques mois. Voici ce qu'elle fait, pourquoi je l'ai construite comme ça, et comment marche la pipeline IA derrière.
+
+## Le problème
+
+90% des gens veulent journaler. 90% des gens ne le font pas. La raison est simple : après une journée passée à écrire des messages, mails et docs, on n'a aucune envie de taper encore du texte le soir.
+
+Les apps de journaling traditionnelles te demandent d'écrire. C'est exactement le mauvais format au mauvais moment.
+
+## L'insight
+
+Tu débriefes déjà ta journée à voix haute. Dans la voiture en rentrant. Sous la douche. À table avec ton/ta partenaire. Avant de dormir.
+
+**Et si ce monologue naturel devenait le journal ?**
+
+C'est ça VoiceJournal. Tu ouvres l'app, tu tapotes l'orbe, tu parles 30 secondes à 3 minutes, l'IA fait le reste.
+
+## Le flow
+
+```
+1. Tu appuies sur l'orbe et tu parles.
+2. Whisper transcrit ta voix en texte.
+3. Claude lit la transcription et produit :
+   → un journal rédigé à la première personne (3-4 phrases)
+   → un Mind Score de 0 à 100 (état émotionnel global)
+   → 1 à 5 émotions taggées (positive / neutre / négative)
+   → un insight psychologique personnalisé
+4. Tu as un journal complet, partageable, archivé.
+```
+
+Le temps total entre la fin de l'enregistrement et le résultat affiché : quelques secondes. Pas une page blanche, pas un prompt, pas de réflexion à fournir — un journal déjà écrit qui te ressemble.
+
+## Le Mind Score, la feature signature
+
+C'est le truc dont je suis le plus fier. Un seul chiffre, de 0 à 100, qui résume ton état mental pour cette entrée.
+
+- 50 = neutre
+- 70+ = bonne journée
+- 40- = journée difficile
+
+Le score est calculé par Claude à partir du contenu de ta transcription. Au fil des semaines, tu vois une courbe se dessiner. Tu remarques que tes lundis sont systématiquement en dessous de 45, que ton humeur remonte au printemps, que tu mentionnes le travail avec stress chaque jeudi.
+
+**C'est l'archive émotionnelle la plus honnête que tu auras jamais.** Pas un truc que tu remplis quand tu vas bien — un truc qui capture ta vraie semaine, parce que le coût de friction est inférieur à 1 minute.
+
+## Le design : "Nocturne Scribble"
+
+Une app de journaling ne ressemble pas à Notion. Elle ne ressemble pas à Todoist. Elle doit ressembler à un moment de calme.
+
+J'ai défini un design system entier que j'appelle **Nocturne Scribble** :
+
+- Fond sombre profond. Pas un dark mode standard — un noir d'encre qui rappelle une chambre faiblement éclairée.
+- Accents ambre. La couleur d'une bougie ou d'une lampe à huile.
+- Typo serif pour les titres. Le journaling est un acte d'écriture, pas un acte de productivité.
+- L'orbe d'enregistrement respire (animation lente, échelle 1.0 → 1.05). Quand tu parles, elle danse sur ta voix via une waveform live.
+- Splash avec étoiles scintillantes.
+
+L'objectif est unique : que tu aies envie de l'ouvrir le soir, comme tu ouvrirais un carnet. Pas comme tu ouvrirais Slack.
+
+## L'architecture technique
+
+Côté mobile : React Native + Expo, TypeScript strict, Zustand pour le state, expo-av pour l'enregistrement audio, RevenueCat pour les abonnements.
+
+Côté backend : Supabase. Postgres pour les entrées, RLS pour la sécurité, et surtout les **Edge Functions** en Deno pour toute la logique IA.
+
+L'endpoint clé, c'est `analyze-entry`. Voici sa structure :
+
+```typescript
+// supabase/functions/analyze-entry/index.ts
+Deno.serve(async (req) => {
+  // 1. Vérifier le JWT Supabase
+  const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+  const { data: { user } } = await supabase.auth.getUser(token);
+  if (!user) return new Response("Unauthorized", { status: 401 });
+
+  // 2. Récupérer l'audio
+  const formData = await req.formData();
+  const audioFile = formData.get("audio") as File;
+
+  // 3. Transcrire avec Whisper (français)
+  const transcript = await openai.audio.transcriptions.create({
+    file: audioFile,
+    model: "whisper-1",
+    language: "fr",
+  });
+
+  // 4. Analyser avec Claude — sortie JSON structurée
+  const analysis = await anthropic.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: buildPrompt(transcript.text) }],
+  });
+
+  // 5. Parser, valider (Zod), sauvegarder
+  const parsed = AnalysisSchema.parse(JSON.parse(extractJSON(analysis)));
+  const entry = await saveEntry(user.id, transcript.text, parsed);
+
+  return Response.json({ entry });
+});
+```
+
+Le prompt envoyé à Claude est strict : il doit retourner uniquement du JSON valide, sans markdown. Avec un schéma Zod côté serveur qui rejette toute réponse mal formée. Si Claude hallucine une émotion en dehors du set autorisé, l'entrée est rejetée et on re-tente.
+
+C'est cette **garantie de format** qui rend l'IA utilisable en production : pas de retour libre, pas de markdown surprise, pas de "Sure! Here's your analysis...".
+
+## Le modèle business
+
+Freemium classique :
+
+- **3 entrées gratuites.** Largement assez pour comprendre la valeur et créer une habitude.
+- **Pro à 4,99 €/mois** ou 2,91 €/mois en annuel. Illimité, analyse complète, sync cloud.
+
+Le paywall se déclenche naturellement après la 3e entrée. Si tu en es là, tu as déjà :
+- 3 jours de journal archivés,
+- ton premier Mind Score chart qui se dessine,
+- tu vois où ça va.
+
+C'est le moment où l'unlock se vend tout seul.
+
+## Au-delà du journal : la vision
+
+VoiceJournal démarre comme une app de journaling. Le but à terme c'est une **archive émotionnelle personnelle** — des mois, puis des années de ta vie intérieure, cherchable, analysable, privée.
+
+Avec assez de données, l'IA connaît tes patterns mieux que toi. Elle remarque que tu parles de stress au boulot chaque jeudi. Elle voit ton humeur s'améliorer au printemps. Elle te renvoie des recaps hebdomadaires.
+
+C'est le miroir le plus honnête que tu auras — parce que tu lui parles quand tu es seul, en 30 secondes, sans filtre.
+
+---
+
+[Télécharger VoiceJournal sur l'App Store →](https://apps.apple.com/fr/app/voicejournal-journal-vocal-ia/id6762176421)
+
+Dans les prochaines notes : comment j'ai géré la review App Store pour une app IA (article suivant), et le pattern Whisper+Claude pour des sorties JSON fiables en production.
