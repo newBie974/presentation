@@ -84,11 +84,63 @@ Un bouton "Sign in with Apple" générique fait main avec une SVG de pomme = rej
 - **Liens cliquables** vers Terms of Use et Privacy Policy.
 - **Bouton "Restaurer les achats"**. Obligatoire. Même si tu trouves ça moche.
 
-### 5. Privacy Policy + Terms accessibles dans l'app
+### 5. Privacy Policy + Terms — hébergement, contenu, liens partout
 
-Cliquables depuis Settings **et** depuis le paywall. Utiliser `WebBrowser.openBrowserAsync()` plutôt que `Linking.openURL()` (qui peut crasher sur certains devices).
+C'est le sujet le plus sous-estimé. Apple veut trois choses, simultanément :
 
-### 6. Disclaimer santé / bien-être
+**a) Une page web Privacy Policy + Terms hébergée.** GitHub Pages est gratuit et suffisant. Le contenu de la Privacy Policy doit explicitement couvrir :
+
+- Quelles données sont collectées et pourquoi
+- **Tous les services tiers nommés** par leur nom (OpenAI Whisper, Anthropic Claude, Supabase, RevenueCat, etc.). C'est non négociable et c'est la première chose checkée.
+- Où les données sont stockées (UE, US) et combien de temps
+- Transfert international (si serveurs hors UE)
+- Droits utilisateurs (accès, suppression, portabilité — RGPD)
+- Cookies et tracking, même si "aucun"
+- Vente de données : explicitement dire "non"
+- Protection des mineurs (< 13 ans)
+- Procédure de contact
+
+**b) Liens cliquables dans l'app.** Depuis Settings **et** depuis le paywall. Toujours via `WebBrowser.openBrowserAsync()` plutôt que `Linking.openURL()` — ce dernier peut crasher sur certains devices.
+
+```tsx
+import * as WebBrowser from "expo-web-browser";
+
+<Pressable onPress={() => WebBrowser.openBrowserAsync("https://aivoicejournal.app/privacy")}>
+  <Text>Privacy Policy</Text>
+</Pressable>
+```
+
+**c) Liens dans la description App Store Connect.** Apple veut voir ces deux lignes à la fin du texte de description, dans **chaque langue** soumise :
+
+```
+Terms of Use: https://aivoicejournal.app/terms
+Privacy Policy: https://aivoicejournal.app/privacy
+```
+
+Manquer **un seul** des trois (page hébergée, liens in-app, liens dans la description ASC) = rejet 3.1.2(c).
+
+### 6. Privacy Nutrition Labels dans App Store Connect
+
+Section "Confidentialité de l'app". Tu dois déclarer **chaque type de donnée** que ton app collecte, et préciser l'usage. Le reviewer compare ce que tu déclares avec ce qu'il observe en testant. Discordance = rejet.
+
+Pour VoiceJournal, voilà ce qui est coché :
+
+| Catégorie | Donnée | Usage |
+|---|---|---|
+| Contact Info | Email Address | App Functionality |
+| Contact Info | Name | App Functionality |
+| User Content | Audio Data | App Functionality |
+| User Content | Health & Fitness (mood) | App Functionality |
+| User Content | Journal & transcript | App Functionality |
+| Identifiers | User ID | App Functionality |
+| Purchases | — | App Functionality |
+| Tracking | — | **Non** |
+
+Règle simple : si tu envoies de l'audio à un serveur, tu coches "Audio". Si tu envoies du texte, "Text". Si tu calcules un score d'humeur, "Health & Fitness". Si tu loues les données à des tiers, "Tracking" — sinon non.
+
+Une nutrition label incomplète, c'est le rejet le plus stupide à se prendre. Vingt minutes de boulot, 24-48h de review perdues si tu oublies.
+
+### 7. Disclaimer santé / bien-être
 
 Si ton app produit un score, un conseil, ou une analyse liée à la santé mentale, à l'humeur, à la nutrition, au sommeil : afficher un disclaimer visible.
 
@@ -96,7 +148,7 @@ Si ton app produit un score, un conseil, ou une analyse liée à la santé menta
 
 VoiceJournal donne un Mind Score : disclaimer présent dans l'app et dans la description App Store.
 
-### 7. `NSMicrophoneUsageDescription` en anglais
+### 8. `NSMicrophoneUsageDescription` en anglais
 
 Le reviewer est anglophone par défaut. Si ton `Info.plist` dit "L'app a besoin du micro pour t'enregistrer", il rejette pour metadata incomplète. Écris en anglais (ou bilingue), et **sois spécifique** :
 
