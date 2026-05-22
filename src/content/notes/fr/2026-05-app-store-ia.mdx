@@ -1,88 +1,181 @@
 ---
-title: "Lancer une app IA sur l'App Store en 2026 : ce à quoi tu dois t'attendre"
+title: "Soumettre une app IA sur l'App Store en 2026 : les vrais rejets que je me suis pris"
 date: 2026-05-16
 locale: fr
 translationKey: "2026-05-app-store-ia"
 tags: ["launch", "mobile", "app-store"]
-excerpt: "Soumettre une app IA chez Apple en 2026 a ses spécificités. Privacy nutrition labels, déclaration des modèles, mots-clés interdits dans le titre, et les motifs de rejet à anticiper. Voici ce que j'aurais aimé savoir avant ma première soumission."
+excerpt: "VoiceJournal a fini sur l'App Store, mais pas du premier coup. Les rejets concrets que j'ai eus, les fixes précis, et les pièges process (DSA, ITMS-90186, RevenueCat, App Groups) qui ne sont nulle part dans la doc Apple."
 draft: false
 ---
 
-Apple a durci ses règles sur les apps qui utilisent de l'IA générative. Pas dramatique — c'est tenable — mais si tu soumets sans anticiper, tu vas te faire rejeter deux ou trois fois pour des trucs administratifs avant que la review touche au produit.
+J'ai shippé [VoiceJournal](https://aivoicejournal.app) sur l'App Store. Pas du premier coup. Voici les rejets concrets que j'ai eus de l'App Review, les fixes exacts, et les pièges process qui m'ont coûté du temps et que je n'aurais trouvés dans aucune doc officielle.
 
-Voici ce qu'il faut préparer avant de cliquer "Submit for Review" sur une app IA en 2026.
+Si tu shippes une app iOS — surtout une app IA avec abonnements — ce qui suit te fera gagner plusieurs jours.
 
-## L'app doit déclarer son usage d'IA
+## Avant même la première soumission
 
-Depuis 2025, App Store Connect te demande **explicitement** si ton app utilise du machine learning, de l'IA générative, ou des modèles tiers. Cette section est dans la fiche de soumission, sous "App Review Information" et dans la **Privacy nutrition label**.
+Trois trucs à activer **dès le jour 1**, pas plus tard :
 
-Tu dois indiquer :
-- Si l'IA tourne **on-device** ou via un **service tiers** (OpenAI, Anthropic, Google, etc.).
-- Quels **types de données** sont envoyés au service IA (audio, texte, images, données personnelles).
-- Si les données sont **stockées** chez le tiers, et combien de temps.
+**1. Apple Small Business Program** ([le formulaire](https://developer.apple.com/app-store/small-business-program/)). Réduit la commission Apple de 30% à 15% sur tous les achats in-app si tu fais moins d'1M$/an (= toi). Gratuit, applicable le trimestre suivant. Sur un abo à 4,99 €, tu gardes 4,24 € au lieu de 3,49 €. Aucune raison d'attendre.
 
-Pour [VoiceJournal](https://aivoicejournal.app), c'est : audio envoyé à Whisper (OpenAI) pour transcription, texte envoyé à Claude (Anthropic) pour analyse. Pas de stockage côté provider au-delà du temps de traitement (vérifiable dans les politiques des deux). Cette transparence est attendue par Apple **et** par tes futurs users.
+**2. Conformité DSA (Digital Services Act)** si tu vises l'UE. App Store Connect → Business → "Conformité à la législation sur les services numériques" → cocher **"J'ai le statut de commerçant"**. Sans ça, tes abonnements peuvent être bloqués en statut `DEVELOPER_ACTION_NEEDED` et ne seront pas disponibles, même en Sandbox.
 
-## Le wording "AI" est sensible dans le titre
+**3. Sandbox Tester dédié**. Ne tente pas de tester un IAP avec ton compte Apple personnel. Apple bloque pour empêcher les devs de tricher. Crée un tester dans App Store Connect → **Users & Access → onglet Sandbox** (pas "People"), utilise un alias `tonmail+sandbox@gmail.com`, et connecte-toi sur l'iPhone via **Réglages → App Store → tout en bas → Compte Sandbox**.
 
-Apple n'aime pas voir "AI" claqué dans le nom de l'app si la valeur ajoutée n'est pas évidente. Trop d'apps ont essayé de surfer la vague avec un wrapper ChatGPT déguisé en produit. Les reviewers sont méfiants.
+## Le rejet UX qui m'a le plus surpris : 4.0 — UI cassée sur iPad
 
-Ce qui marche :
-- Le mot "AI" dans le **sous-titre** ou la **description**, jamais en mot principal du titre.
-- Une **valeur produit claire** avant la mention IA : "Journal vocal IA" est bien, "AI Journal" tout court risque le rejet.
-- Pas de mention de modèle spécifique dans le titre ("Powered by GPT-4" ou "Claude-powered") — souvent refusé pour usage non-autorisé de marque.
+Mon app cible iPhone. Je l'ai testée sur iPhone. Apple, eux, testent **toujours sur iPad** même si tu mets `supportsTablet: false`.
 
-Mon app s'appelle "VoiceJournal — Journal vocal IA". L'ordre est important : le nom du produit d'abord, le bénéfice ensuite, l'IA en qualificatif.
+Sur iPad, la tab bar fait ~83px + safe area inset différent. Mes boutons "I accept and continue" (consent IA) et "Analyze my entry" (record) étaient complètement masqués derrière la tab bar.
 
-## Les motifs de rejet typiques pour les apps IA
+**Fix qui a marché du premier coup :**
+- Tout écran avec un bouton en bas doit être scrollable (`ScrollView` ou équivalent).
+- Ne pas utiliser `flex: 1 + justifyContent: space-between` sur ces écrans.
+- Ajouter `paddingBottom: 140px` minimum (j'avais 48px, c'était insuffisant).
+- Appliquer ce padding globalement dans le `ScreenContainer` pour tous les écrans scrollables.
 
-Quelques rejets que tu peux anticiper :
+Écrans concernés : paywall, consent, login, record, settings — tout ce qui a un CTA bas.
 
-**Guideline 5.4 (Apple Privacy) — médical/santé**
-Si ton IA touche au bien-être, à l'humeur, à la santé mentale (ce qui est le cas de tout ce qui touche au journaling, à la méditation, au coaching), tu vas être scruté. Pas de promesse thérapeutique. Pas de wording "diagnose", "treat", "cure". Le coaching et le journaling sont OK ; affirmer qu'on traite l'anxiété ne l'est pas.
+## Rejet 2.1(a) — "No action when tapping Analyze my entry"
 
-**Guideline 4.1 (Spam / Mimicry)**
-Si ton app ressemble trop à un wrapper LLM générique, rejet immédiat. Il te faut une **expérience produit distincte** : design custom, valeur métier au-delà du chat, intégration native (audio, photos, etc.). Une simple UI de chat sur OpenAI, ils refusent.
+Le reviewer a enregistré **1 seconde**. Mon `handleAnalyze` vérifiait `isValidDuration()` et retournait silencieusement `false` sans alerte, sans toast, sans rien. Bouton "mort" → rejet automatique.
 
-**Guideline 2.5.2 (Code download)**
-Si tu télécharges des modèles ML au runtime, surtout sur iOS, attention. Charger un .gguf depuis ton serveur peut être interprété comme du code executable downloaded. Solution : embed le modèle dans le binaire (Core ML, ONNX intégré) ou utiliser strictement des API en cloud.
+**Règle générale qui en sort :**
 
-**Privacy nutrition label incomplète**
-Le plus fréquent, et le plus stupide à se prendre. Si tu envoies de l'audio à un serveur, tu dois cocher "Audio" dans la collecte de données. Si tu envoies du texte, "Text". Sinon : rejet, et tu repars pour 24-48h de review.
+> Apple teste avec le minimum d'effort. Si un bouton peut être cliqué et que rien ne se passe visiblement, c'est un rejet.
 
-## Les screenshots et l'ASO
+**Fix :**
+- Toujours produire un retour visible : alerte, toast, animation, message d'erreur.
+- "Recording too short. Speak for at least 15 seconds." est mille fois mieux qu'un retour silencieux.
+- J'ai mis 15 secondes en durée minimum réaliste (sinon l'IA n'a rien à analyser de toute façon).
+- Bonus : noter dans les remarques review "Recording must be at least 15 seconds long" pour aider le reviewer.
 
-Pour les screenshots :
-- Mets l'**output IA** en avant. Les gens cherchent à voir ce que la magie produit, pas ton onboarding.
-- **Évite le mockup générique** "as seen in The New York Times" qui sent le placeholder. Apple scrute aussi le marketing visuel.
-- **Pas de prompts visibles** type ChatGPT sur les screenshots. Ça pue le wrapper.
+## Rejet 5.1.2(i) — Consentement IA explicite
 
-Pour l'ASO :
-- Le **sous-titre** porte les mots-clés AI/IA + ton verticale (journaling, coaching, analyse, etc.).
-- Les **keywords** (séparés par virgules dans App Store Connect) : tu as 100 caractères, optimise. Mots-clés sur les use cases concrets, pas sur "AI" générique.
-- La **description** doit ouvrir sur le **bénéfice utilisateur**, pas sur la tech.
+Depuis 2025, Apple exige un écran de consentement dédié si ton app envoie des données à des services IA tiers. Pas juste une mention dans la privacy policy — un **écran dans le flow** avec :
+- Nom explicite des services ("ElevenLabs reçoit ton audio", "Google Gemini reçoit le texte")
+- Boutons "J'accepte" et "Non merci"
+- Lien direct vers la privacy policy
 
-## La review en pratique
+S'affiche **avant** la première transmission de données vers un service IA. Pas après, pas pendant. Avant.
 
-Comptez généralement 24 à 72 heures pour la première review. Si rejet, tu corriges, re-soumets, et la deuxième review est souvent plus rapide (le reviewer voit l'historique).
+## Rejet 3.1.2(c) — Le prix annuel mis en avant comme un prix mensuel
 
-Conseils pour minimiser les allers-retours :
-- **TestFlight d'abord** avec au moins 5-10 testeurs externes pour vérifier le flow complet et les edge cases.
-- **Onboarding qui ne casse pas** sans connexion réseau (un crash en mode avion = rejet quasi automatique).
-- **Reviewer notes** dans App Store Connect : tu écris au reviewer une note expliquant comment tester ton app IA. Type de prompt à donner, contenu attendu, etc. Ne sous-estime pas l'impact.
-- **Demo account** si ton app demande un login. Sans ça, le reviewer ne peut pas tester, rejet automatique sous 2h.
+Mon paywall annuel affichait "2,91 €/mois" en gros et "34,99 €/an" en petit en dessous. Apple rejette : le **montant facturé** doit dominer visuellement (font size, color, position).
 
-## Les changements 2025-2026 à noter
+```
+✅ ANNUEL
+   34,99 €            ← gros, prix facturé
+   par an
+   soit 2,91 €/mois   ← petit, gris
 
-- **Privacy nutrition labels** plus stricts sur les transferts à des tiers IA.
-- **Mentions de modèles tiers** scrutées pour usage de marques (impossible de dire "GPT-4" dans le marketing sans accord OpenAI).
-- **Apple Intelligence framework** : si ton app peut utiliser les modèles on-device d'Apple, ça simplifie la privacy nutrition label (zéro transfert).
-- **Génération de contenu** : si ton app génère du texte / des images, tu dois fournir des outils de signalement de contenu inapproprié dans l'app.
+❌ ANNUEL
+   2,91 €             ← gros, prix mensuel calculé
+   par mois
+   34,99 €/an         ← petit
+```
 
-## La règle générale
+Les deux infos sont OK à afficher. C'est l'**ordre visuel** qui compte.
 
-Apple ne déteste pas l'IA. Apple déteste les apps **paresseuses** qui se contentent d'être un proxy vers un LLM. Plus ton produit a une **valeur native, une UI custom, une expérience qui justifie d'être sur mobile** (audio, caméra, capteurs, push), plus la review se passe bien.
+## Rejet 3.1.2(c) — Free trial pricing pas clair
 
-Si ton app est un chat avec un système prompt légèrement modifié, sors un PDF à la place. Si c'est un vrai produit qui utilise l'IA comme outil, l'App Store est ouvert.
+J'avais écrit "7 jours gratuits, puis 4,99 €/mois". Rejeté.
 
-→ Le repo VoiceJournal (côté soumission) : tout est public sur [github.com/aymeric/voicejournal-ai](https://github.com).
+**Fix exact :**
+
+> Essai gratuit de 7 jours. Ensuite **4,99 €/mois sera automatiquement débité**.
+
+Le mot "automatiquement" est obligatoire. Apple veut que l'utilisateur comprenne que c'est lui qui doit annuler s'il ne veut pas être débité.
+
+## Rejet 5.1.1 — Suppression de compte incomplète
+
+Un simple bouton "Supprimer mon compte" qui efface les entries ne suffit pas. Apple veut que **toutes** les données disparaissent, **y compris** le compte d'auth lui-même.
+
+Côté Supabase, le client ne peut pas supprimer dans `auth.users`. Solution : une **Edge Function** avec la service role key.
+
+```typescript
+Deno.serve(async (req) => {
+  const { user } = await authenticate(req);
+  await supabase.from("entries").delete().eq("user_id", user.id);
+  await supabase.from("profiles").delete().eq("id", user.id);
+  await supabaseAdmin.auth.admin.deleteUser(user.id);
+  return new Response("ok");
+});
+```
+
+Apple teste : ils créent un compte, cliquent supprimer, vérifient que le re-login échoue.
+
+## Le piège DSA : 175 pays "Non disponible" après approbation
+
+Mon app est approuvée. Je vais voir les disponibilités → **174 "Non disponible" + 1 "Vente impossible"**. Soit 175/175. Message :
+
+> Le statut de commerçant est requis pour distribuer du contenu dans l'App Store au sein de l'Union européenne.
+
+Le DSA ne bloque que les 27 pays UE, mais ASC décoche **tous les pays par défaut** tant que ton trader status est en attente. Comportement surprenant et mal documenté.
+
+**Workaround pour ne pas attendre la validation DSA :**
+1. Sidebar → **Tarifs et disponibilité** → "Modifier les pays ou régions"
+2. Cocher tous les pays **sauf l'UE** (US, UK, CA, AU, JP, Asie, Amérique Latine, etc.) → enregistrer
+3. App live sur ~170 pays en 30 min à 4 h
+4. Une fois DSA validé (1-7 jours ouvrés), recocher l'UE
+
+Tu rates pas un marché, tu le décales de quelques jours.
+
+## Le piège ITMS-90186 — version pas bumpée
+
+Tu pushes un nouveau build avec la même `version` dans `app.json` qu'une version déjà approuvée :
+
+```
+ITMS-90186: Invalid Pre-Release Train
+The train version '1.0.0' is closed for new build submissions
+```
+
+Apple ferme le "train" d'une version dès qu'elle est approuvée. Plus aucun build ne peut y entrer. **À chaque resoumission après approbation, tu bumps `version`** :
+
+```jsonc
+// app.json
+{
+  "expo": {
+    "version": "1.1.0"
+  }
+}
+```
+
+Le build perdu consomme un crédit EAS. Le rebuild avec la bonne version en consomme un autre. Vérifie deux fois avant de lancer.
+
+## Le piège RevenueCat — Product IDs cassés en silence
+
+Mes logs RevenueCat disaient :
+
+```
+Starting store products request for: ["rc_one_year", "rc_one_month"]
+```
+
+Mais dans App Store Connect, les Product IDs étaient `rc_yearly_abo` et `rc_monthly_Abo`. Sensible à la casse en plus.
+
+Résultat : RevenueCat ne charge aucun produit, le paywall affiche un bouton désactivé, le reviewer ne peut pas acheter → rejet 2.1(b) "Purchase buttons were not shown".
+
+**Règle dérivée importante :** ne désactive **jamais** le bouton d'achat. Garde-le toujours cliquable, et au moment du clic, retry `Purchases.getOfferings()`. Affiche une erreur claire seulement si le retry échoue aussi.
+
+## Le piège App Groups si tu ajoutes un widget
+
+Au moment où j'ai ajouté un widget iOS (`expo-widgets`), le build EAS a planté :
+
+```
+Provisioning profile "...ExpoWidgetsTarget AdHoc" doesn't support
+the group.com.sowdev.voicejournal App Group.
+```
+
+Le widget a besoin d'un App Group pour partager des données avec l'app principale, mais cette capability n'est pas activée par défaut sur le nouveau bundle ID du target.
+
+**Fix le plus rapide :** `eas credentials` → iOS → Build Credentials → profil concerné → target `ExpoWidgetsTarget` → **delete provisioning profile**. EAS le régénère au prochain build en incluant la capability.
+
+Si la même erreur revient, va manuellement sur **developer.apple.com → Identifiers**, coche App Groups sur les 2 bundle IDs (app + widget target), régénère les profiles.
+
+## La règle générale qui résume tout
+
+Apple ne déteste pas l'IA. Apple ne déteste pas les abonnements. Apple ne déteste pas les indie devs.
+
+Apple déteste **les apps qui ne marchent pas quand un reviewer fatigué teste à 17h** : un bouton qui ne réagit pas, un texte qui dit "7 jours gratuits" sans expliquer ce qui suit, un paywall où le prix annuel ressemble à un prix mensuel, une UI cassée sur iPad qu'ils testeront même si tu as dit "iPhone only".
+
+Chaque rejet sur cette liste est, en réalité, **une UX cassée qui mérite d'être corrigée même indépendamment de l'App Review**. La review Apple, c'est juste le moment où tu reçois l'addition des UX que tu as laissées passer.
