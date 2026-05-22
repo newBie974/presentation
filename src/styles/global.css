@@ -48,6 +48,19 @@ body {
     0 0 0 4px var(--color-accent);
 }
 
+/* Scroll-reveal */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 400ms ease-out,
+    transform 400ms ease-out;
+}
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -57,5 +70,10 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
