@@ -1,0 +1,121 @@
+---
+title: "La stack 2026 pour créer une app, sans s'arracher les cheveux"
+date: 2026-04-20
+locale: fr
+translationKey: "2026-04-stack"
+tags: ["stack", "indie", "mobile"]
+excerpt: "J'ai shippé trois apps en deux ans (VoiceJournal, Caroubolt, Tookta). Voici la stack que je choisirais si je devais redémarrer demain — et celle que je laisserais de côté."
+draft: false
+---
+
+J'ai shippé trois apps consumer en deux ans : [VoiceJournal](https://aivoicejournal.app) (mobile iOS), [Caroubolt](https://caroubolt.com) (web), [Tookta](https://tookta.fr) (mobile iOS + Android). Stack légèrement différente à chaque fois, parce que j'ai testé des trucs. Aujourd'hui je convergerais sans hésiter sur ce qui suit.
+
+Cet article est opinionated. Le but : que tu puisses recopier cette stack pour ton prochain projet et avoir une app en prod en 6-8 semaines au lieu de t'éparpiller pendant 6 mois sur "quel framework choisir".
+
+## Les contraintes que je m'impose
+
+- **Une seule personne qui code** (moi).
+- **Du JS/TS partout** : pas de Swift, pas de Kotlin, pas de Go côté backend.
+- **Une infra qui dort** quand personne n'utilise l'app (pas de serveur 24/7 à payer).
+- **Du paiement natif** dès le premier user (App Store IAP + Stripe sur web).
+- **De l'IA propre** quand le produit en a besoin (la moitié du temps).
+
+Voilà la stack qui coche tout :
+
+## Mobile : React Native + Expo
+
+```bash
+npx create-expo-app my-app --template blank-typescript
+```
+
+Pas de RN bare. Expo gère pour toi : build (EAS), updates OTA, push notifs, deep linking, splash screen, App Store submissions. La seule limite réelle est si tu as besoin d'un module natif custom qui n'existe pas dans Expo SDK — auquel cas tu sors un dev build avec `eas build --profile development` et tu continues.
+
+**Ce qui devient trivial** : enregistrer de l'audio (`expo-av`), prendre des photos (`expo-image-picker`), stocker la session de manière sécurisée (`expo-secure-store`), router en file-based (`expo-router`).
+
+**Flutter ?** Je l'ai utilisé sur Tookta. Très bon framework, mais l'écosystème JS me permet de partager des trucs avec le web (types, validators Zod, prompts IA). Plus single-source-of-truth.
+
+## Auth + DB + Edge Functions : Supabase
+
+Postgres managé, auth gratuit jusqu'à 50k MAU, RLS qui te force à écrire des règles de sécurité dès le premier jour, et surtout les **Edge Functions** en Deno. C'est là que je mets toute la logique métier qui ne peut pas vivre côté client (appels IA, validation de webhooks, etc.).
+
+Un exemple typique : la fonction qui analyse une entrée vocale dans VoiceJournal.
+
+```typescript
+// supabase/functions/analyze-entry/index.ts
+Deno.serve(async (req) => {
+  const { data: { user } } = await supabase.auth.getUser(token);
+  if (!user) return new Response("Unauthorized", { status: 401 });
+
+  const transcript = await openai.audio.transcriptions.create({
+    file: audioFile, model: "whisper-1", language: "fr",
+  });
+
+  const analysis = await anthropic.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: buildPrompt(transcript.text) }],
+  });
+
+  return Response.json({ entry: parseAnalysis(analysis) });
+});
+```
+
+**Firebase ?** Trop verrouillé, NoSQL difficile à requêter, pricing imprévisible passé un certain volume. Postgres + RLS > Firestore + security rules à chaque fois.
+
+## IA : Claude + Whisper, et tu choisis le modèle au cas par cas
+
+Pour les transcriptions audio : **Whisper** (OpenAI). $0.006/min, c'est presque rien.
+Pour le raisonnement et le texte structuré : **Claude Sonnet 4.6** ou **Claude Haiku 4.5** selon la latence acceptable. Sonnet pour les analyses fines (VoiceJournal), Haiku quand il faut répondre en moins d'une seconde.
+Pour le bulk (résumés, classifications massives) : **Gemini Flash**. Pas cher du tout.
+
+Le secret : tu n'as PAS besoin d'un seul modèle. Chaque endpoint de ta backend peut choisir le bon. Et tu changes de modèle dans une seule constante quand un meilleur sort.
+
+## Subscriptions : RevenueCat, pas optionnel
+
+Tenter de gérer toi-même StoreKit (iOS) + Billing API (Android) avec une seule personne qui code, c'est la garantie de perdre 3 semaines.
+
+RevenueCat fait :
+- L'unification iOS/Android avec une seule API.
+- La vérification temps réel du statut d'abonnement.
+- Les webhooks vers Supabase quand un user achète/résilie.
+- Le paywall component qui s'affiche en 3 lignes de code.
+- Le dashboard analytics : MRR, churn, LTV.
+
+Coût : gratuit jusqu'à $2.5k MRR. Au-delà, 1% du chiffre.
+
+**Sur le web** : Stripe Checkout direct, pas besoin d'intermédiaire.
+
+## Web (landing + portfolio + blog) : Astro
+
+Statique, rapide, Tailwind 4 intégré, MDX pour les articles, content collections type-safe avec Zod, i18n natif. Le site sur lequel tu lis cet article tourne là-dessus.
+
+Pas de Next.js pour les landings : trop lourd pour ce qu'il faut faire, et le SSR ne sert à rien si tout est statique.
+
+## State (mobile) : Zustand
+
+```typescript
+import { create } from "zustand";
+
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  setUser: (user) => set({ user }),
+}));
+```
+
+C'est tout. Pas de Redux, pas de Recoil, pas de Jotai. Zustand fait 1 KB, expose un hook propre, et 100% de mes besoins de state global passent dedans.
+
+## Ce que je n'utilise pas (et pourquoi)
+
+- **Firebase** : voir plus haut.
+- **Nest.js sur Node** : trop de boilerplate pour ce que les Edge Functions font en 30 lignes.
+- **GraphQL** : zéro intérêt pour une app solo.
+- **MongoDB / DynamoDB** : Postgres + JSON columns > NoSQL pour 99% des cas.
+- **OpenAI GPT-4** par défaut : trop cher pour la majorité des use cases. Claude ou Gemini quasi systématiquement gagnent en ratio qualité/prix.
+
+## La règle d'or
+
+**Tu ne valides pas une techno parce qu'elle est tendance. Tu la valides parce qu'elle te fait gagner du temps sur ce que tu sais déjà faire.**
+
+Si tu prends cette stack et que tu shippes en 6-8 semaines, c'est gagné. Si tu changes 3 fois de framework avant le MVP, tu as déjà perdu.
+
+Plus de détails sur chaque brique dans les prochaines notes.
