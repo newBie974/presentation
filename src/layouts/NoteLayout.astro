@@ -20,11 +20,14 @@ interface Props {
   date: Date;
   tags: string[];
   readingMinutes: number;
+  slug: string;
   altUrl?: string;
 }
 
-const { title, description, locale, date, tags, readingMinutes, altUrl } =
+const { title, description, locale, date, tags, readingMinutes, slug, altUrl } =
   Astro.props;
+const ogImage =
+  locale === "fr" ? `/notes/og/${slug}.png` : `/en/writing/og/${slug}.png`;
 const t = useTranslations(locale);
 const dateLabel = formatDate(date, locale);
 const altLocale = alternateLocale(locale);
@@ -58,6 +61,7 @@ const jsonLd = [
   description={description}
   locale={locale}
   pageType="article"
+  ogImage={ogImage}
 >
   <Fragment slot="head"><JsonLd data={jsonLd} /></Fragment>
   <Nav slot="nav" locale={locale} current="notes" />

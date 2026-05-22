@@ -34,6 +34,7 @@ const altUrl = translation ? buildNoteUrl(translation) : undefined;
   tags={note.data.tags}
   readingMinutes={minutes}
   altUrl={altUrl}
+  slug={getNoteSlug(note)}
 >
   <Content components={{ Callout, FileBlock }} />
 </NoteLayout>

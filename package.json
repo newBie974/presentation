@@ -20,6 +20,8 @@
     "@astrojs/sitemap": "^3.7.2",
     "@fontsource-variable/inter-tight": "^5.2.7",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@fontsource/inter-tight": "^5.2.7",
+    "@fontsource/jetbrains-mono": "^5.2.8",
     "@iconify-json/lucide": "^1.2.109",
     "@iconify-json/simple-icons": "^1.2.83",
     "@resvg/resvg-js": "^2.6.2",
