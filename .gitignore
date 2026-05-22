@@ -29,3 +29,6 @@ pnpm-debug.log*
 # playwright
 test-results/
 playwright-report/
+
+# lighthouse ci local artifacts
+.lighthouseci/
