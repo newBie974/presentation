@@ -2,6 +2,49 @@ import type { Chapter } from "@/types";
 
 export const chapters: Chapter[] = [
   {
+    yearsLabel: "2025 — now",
+    startYear: 2025,
+    endYear: "now",
+    title: {
+      fr: "Backend Engineer chez Decider.ai",
+      en: "Backend Engineer at Decider.ai",
+    },
+    role: {
+      fr: "Agents IA · RAG · anonymisation local-first",
+      en: "AI agents · RAG · local-first anonymisation",
+    },
+    body: {
+      fr: "Je rejoins Decider.ai pour construire la couche backend d'une plateforme d'aide à la décision. Trois axes parallèles : développement d'agents IA, outils d'anonymisation qui tournent en local pour traiter la donnée sensible sans transfert externe, et systèmes RAG branchés sur les bases de connaissances internes.",
+      en: "I joined Decider.ai to build the backend layer of a decision-support platform. Three parallel tracks: developing AI agents, local-first anonymisation tools to process sensitive data without external transfer, and RAG systems plugged into internal knowledge bases.",
+    },
+    highlights: [
+      {
+        fr: "Développement d'agents IA orchestrant plusieurs modèles pour automatiser des workflows décisionnels.",
+        en: "Building AI agents that orchestrate multiple models to automate decision workflows.",
+      },
+      {
+        fr: "Conception d'outils d'anonymisation local-first : les données sensibles ne quittent jamais l'environnement client.",
+        en: "Designing local-first anonymisation tooling: sensitive data never leaves the client environment.",
+      },
+      {
+        fr: "Mise en place de pipelines RAG pour exploiter les bases de connaissances internes des clients.",
+        en: "Setting up RAG pipelines to leverage clients' internal knowledge bases.",
+      },
+      {
+        fr: "Plus de détails à venir dès que je peux en partager publiquement.",
+        en: "More details to come as soon as I can share them publicly.",
+      },
+    ],
+    technologies: [
+      "NestJS",
+      "PostgreSQL",
+      "Claude",
+      "Gemini",
+      "RAG",
+      "LLM agents",
+    ],
+  },
+  {
     yearsLabel: "2024 — now",
     startYear: 2024,
     endYear: "now",
