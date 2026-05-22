@@ -22,6 +22,100 @@ Trois trucs à activer **dès le jour 1**, pas plus tard :
 
 **3. Sandbox Tester dédié**. Ne tente pas de tester un IAP avec ton compte Apple personnel. Apple bloque pour empêcher les devs de tricher. Crée un tester dans App Store Connect → **Users & Access → onglet Sandbox** (pas "People"), utilise un alias `tonmail+sandbox@gmail.com`, et connecte-toi sur l'iPhone via **Réglages → App Store → tout en bas → Compte Sandbox**.
 
+## Ce que ton app DOIT contenir avant de soumettre
+
+Avant de raconter les rejets, voici les **règles connues** qu'il ne sert à rien de contourner. Apple les check sur quasiment chaque app, et c'est plus efficace de les implémenter d'entrée que de te les prendre en review.
+
+### 1. Suppression de compte (Guideline 5.1.1)
+
+Bouton "Supprimer mon compte" dans les paramètres. Doit effacer **toutes** les données : entries, profil, abonnement local **et le compte d'auth lui-même**.
+
+Côté Supabase, le client ne peut pas supprimer dans `auth.users`. Il faut une Edge Function avec la service role key :
+
+```typescript
+Deno.serve(async (req) => {
+  const { user } = await authenticate(req);
+  await supabase.from("entries").delete().eq("user_id", user.id);
+  await supabase.from("profiles").delete().eq("id", user.id);
+  await supabaseAdmin.auth.admin.deleteUser(user.id);
+  return new Response("ok");
+});
+```
+
+Apple teste : ils créent un compte, suppriment, re-tentent le login, vérifient que c'est mort.
+
+### 2. Écran de consentement IA (Guideline 5.1.2(i))
+
+Obligatoire depuis 2025 si l'app envoie des données à des services IA tiers. Pas une mention enfouie dans la privacy — un **écran dédié** dans le flow, **avant** la première transmission.
+
+Trois éléments à présent dessus :
+- Nom explicite des services ("Whisper d'OpenAI reçoit ton audio", "Claude d'Anthropic reçoit le texte transcrit").
+- Deux boutons : "J'accepte et continue" et "Non merci".
+- Lien cliquable vers la privacy policy.
+
+### 3. Sign in with Apple (Guideline 4.8)
+
+Obligatoire **si tu proposes Google Sign-In, Facebook, ou n'importe quel login tiers**. Pas optionnel.
+
+Et pas un bouton custom — utiliser le composant officiel :
+
+```tsx
+import { AppleAuthenticationButton } from "expo-apple-authentication";
+
+<AppleAuthenticationButton
+  buttonType={AppleAuthenticationButtonType.SIGN_IN}
+  buttonStyle={AppleAuthenticationButtonStyle.BLACK}
+  cornerRadius={5}
+  style={{ width: 200, height: 44 }}
+  onPress={handleAppleSignIn}
+/>
+```
+
+Un bouton "Sign in with Apple" générique fait main avec une SVG de pomme = rejet immédiat.
+
+### 4. Paywall — toutes les infos à côté du bouton d'achat (Guideline 3.1.2(c))
+
+À proximité visuelle directe du bouton :
+- **Titre** de l'abonnement
+- **Durée** (1 mois, 1 an)
+- **Prix** facturé
+- **Texte trial** explicite : "Essai gratuit de 7 jours. Ensuite 4,99 €/mois sera automatiquement débité."
+- **Texte légal** : "Se renouvelle automatiquement. Annulable dans Réglages > Abonnements au moins 24h avant la fin de la période."
+- **Liens cliquables** vers Terms of Use et Privacy Policy.
+- **Bouton "Restaurer les achats"**. Obligatoire. Même si tu trouves ça moche.
+
+### 5. Privacy Policy + Terms accessibles dans l'app
+
+Cliquables depuis Settings **et** depuis le paywall. Utiliser `WebBrowser.openBrowserAsync()` plutôt que `Linking.openURL()` (qui peut crasher sur certains devices).
+
+### 6. Disclaimer santé / bien-être
+
+Si ton app produit un score, un conseil, ou une analyse liée à la santé mentale, à l'humeur, à la nutrition, au sommeil : afficher un disclaimer visible.
+
+> Ne constitue pas un avis médical ou psychologique.
+
+VoiceJournal donne un Mind Score : disclaimer présent dans l'app et dans la description App Store.
+
+### 7. `NSMicrophoneUsageDescription` en anglais
+
+Le reviewer est anglophone par défaut. Si ton `Info.plist` dit "L'app a besoin du micro pour t'enregistrer", il rejette pour metadata incomplète. Écris en anglais (ou bilingue), et **sois spécifique** :
+
+```xml
+<key>NSMicrophoneUsageDescription</key>
+<string>VoiceJournal needs microphone access to record your voice journal.</string>
+```
+
+Pareil pour `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, etc.
+
+### Ce qui est INTERDIT et déclenche un rejet quasi automatique
+
+- **"Coming Soon"** sur des features non implémentées. Cache le bouton, ne le grise pas.
+- **Mock data** visible par l'utilisateur. Si tu n'as pas de données, montre un empty state explicite.
+- **Boutons morts** qui ne font rien quand on les clique (voir rejet 2.1(a) plus bas).
+- **`console.log` en prod**. Apple ne regarde pas, mais les compétiteurs peuvent inspecter les logs en debug.
+- Claimer **"end-to-end encryption"** si c'est juste du HTTPS. C'est un terme légal, l'utiliser sans le faire vraiment est trompeur.
+- **API keys** d'OpenAI/Anthropic/Stripe **côté client**. Pas un rejet direct mais une faille de sécu qui peut te coûter cher.
+
 ## Le rejet UX qui m'a le plus surpris : 4.0 — UI cassée sur iPad
 
 Mon app cible iPhone. Je l'ai testée sur iPhone. Apple, eux, testent **toujours sur iPad** même si tu mets `supportsTablet: false`.
