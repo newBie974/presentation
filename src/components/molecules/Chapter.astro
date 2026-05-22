@@ -9,52 +9,162 @@ const { chapter, locale } = Astro.props;
 ---
 
 <article class="chapter">
-  <div class="years">{chapter.yearsLabel}</div>
-  <div class="body">
+  <div class="rail">
+    <span class="dot" aria-hidden="true"></span>
+    <span class="line" aria-hidden="true"></span>
+  </div>
+  <header class="head">
+    <span class="years">{chapter.yearsLabel}</span>
     <h3>{chapter.title[locale]}</h3>
     <p class="role">{chapter.role[locale]}</p>
-    <p class="desc">{chapter.body[locale]}</p>
-  </div>
+  </header>
+  <p class="body">{chapter.body[locale]}</p>
+  {
+    chapter.highlights && chapter.highlights.length > 0 && (
+      <ul class="highlights">
+        {chapter.highlights.map((h) => (
+          <li>
+            <span class="bullet" aria-hidden="true">
+              →
+            </span>
+            <span>{h[locale]}</span>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  {
+    chapter.technologies && chapter.technologies.length > 0 && (
+      <ul class="tech" aria-label="Technologies">
+        {chapter.technologies.map((t) => (
+          <li>{t}</li>
+        ))}
+      </ul>
+    )
+  }
 </article>
 
 <style>
   .chapter {
     display: grid;
-    grid-template-columns: 100px 1fr;
-    gap: 24px;
-    padding: 18px 0;
-    border-top: 1px dashed var(--color-border);
+    grid-template-columns: 40px 1fr;
+    column-gap: 0;
+    row-gap: 0;
+    padding: 24px 0 28px;
+    position: relative;
   }
-  .chapter:first-of-type {
-    border-top: none;
-    padding-top: 0;
+  .chapter:last-of-type .line {
+    display: none;
+  }
+
+  .rail {
+    grid-row: 1 / span 4;
+    grid-column: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .dot {
+    width: 12px;
+    height: 12px;
+    background: var(--color-strong-bg);
+    border: var(--border-w) solid var(--color-border);
+    margin-top: 8px;
+    flex-shrink: 0;
+  }
+  .line {
+    flex: 1;
+    width: 2px;
+    background: var(--color-border);
+    margin-top: 4px;
+    min-height: 24px;
+  }
+
+  .head {
+    grid-column: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
   }
   .years {
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
     color: var(--color-text-muted);
-    padding-top: 2px;
   }
   h3 {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     letter-spacing: -0.02em;
-    margin: 0 0 4px;
+    margin: 0;
+    line-height: 1.2;
   }
   .role {
-    font-size: 12px;
-    color: var(--color-text-muted);
-    margin: 0 0 6px;
-  }
-  .desc {
     font-size: 13px;
-    line-height: 1.6;
+    color: var(--color-text-muted);
     margin: 0;
   }
+
+  .body {
+    grid-column: 2;
+    font-size: 14px;
+    line-height: 1.65;
+    margin: 0 0 12px;
+  }
+
+  .highlights {
+    grid-column: 2;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .highlights li {
+    display: grid;
+    grid-template-columns: 16px 1fr;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .bullet {
+    font-family: var(--font-mono);
+    color: var(--color-accent);
+    font-weight: 700;
+  }
+  :global([data-theme="dark"]) .bullet {
+    color: var(--color-accent);
+  }
+
+  .tech {
+    grid-column: 2;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .tech li {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--color-text-muted);
+    padding: 3px 7px;
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+  }
+
   @media (max-width: 720px) {
     .chapter {
-      grid-template-columns: 1fr;
-      gap: 6px;
+      grid-template-columns: 24px 1fr;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
     }
   }
 </style>

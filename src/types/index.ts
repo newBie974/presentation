@@ -40,6 +40,8 @@ export interface Chapter {
   title: { fr: string; en: string };
   role: { fr: string; en: string };
   body: { fr: string; en: string };
+  highlights?: { fr: string; en: string }[];
+  technologies?: string[];
 }
 
 export interface StackEntry {
