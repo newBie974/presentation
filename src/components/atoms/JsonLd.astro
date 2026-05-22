@@ -1,0 +1,9 @@
+---
+interface Props {
+  data: object | object[];
+}
+const { data } = Astro.props;
+const serialized = JSON.stringify(data);
+---
+
+<script type="application/ld+json" is:inline set:html={serialized} />
