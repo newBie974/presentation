@@ -32,7 +32,7 @@ export async function GET() {
     "",
     "## Contact",
     `- Email: ${profile.email ?? "aymeric@dijoux.dev"}`,
-    "- Book a call: https://cal.com/aymeric-dijoux/intro",
+    "- Book a call: https://cal.eu/aymeric-dijoux/intro",
     "",
   ];
 

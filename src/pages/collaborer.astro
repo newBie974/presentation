@@ -12,6 +12,7 @@ import { services } from "@/data/services";
 import { faq } from "@/data/faq";
 import { testimonials } from "@/data/testimonials";
 import Testimonial from "@/components/molecules/Testimonial.astro";
+import CalEmbed from "@/components/molecules/CalEmbed.astro";
 import JsonLd from "@/components/atoms/JsonLd.astro";
 import { buildPersonJsonLd, buildFAQJsonLd } from "@/lib/jsonLd";
 
@@ -20,7 +21,8 @@ const title = "Collaborer — Aymeric Dijoux, freelance builder à Paris";
 const description =
   "Aymeric Dijoux prend 1 à 2 missions freelance par semestre — mobile, web, prototype IA. Process clair, prix fixes ou TJM, call intro gratuit de 30 min.";
 const calcomUrl =
-  import.meta.env.PUBLIC_CALCOM_URL ?? "https://cal.com/aymeric-dijoux/intro";
+  import.meta.env.PUBLIC_CALCOM_URL ?? "https://cal.eu/aymeric-dijoux/intro";
+const calLink = "aymeric-dijoux/intro";
 
 const processSteps = [
   {
@@ -105,17 +107,27 @@ const processSteps = [
     }
   </section>
 
-  <section class="end-cta">
-    <h2>On en <Highlight>parle</Highlight> ?</h2>
-    <p>
+  <section class="section booking">
+    <SectionLabel number="05">RÉSERVER UN CALL</SectionLabel>
+    <h2>Choisis ton <Highlight>créneau</Highlight></h2>
+    <p class="lead">
       30 minutes, gratuit, sans engagement. Si je suis pas le bon profil, je te
       le dirai et je te recommanderai quelqu'un.
     </p>
-    <a href={calcomUrl} target="_blank" rel="noopener noreferrer" class="cta">
-      RÉSERVER UN CALL →
-    </a>
-    <p class="email">
-      Ou par email : <a href="mailto:aymeric@dijoux.dev">aymeric@dijoux.dev</a>
+    <CalEmbed calLink={calLink} />
+  </section>
+
+  <section class="end-cta">
+    <h2>Pas dispo sur ces créneaux ?</h2>
+    <p>
+      Écris-moi directement :
+      <a href="mailto:aymeric@dijoux.dev">aymeric@dijoux.dev</a>
+    </p>
+    <p class="alt">
+      Ou ouvre le calendrier en plein écran :
+      <a href={calcomUrl} target="_blank" rel="noopener noreferrer"
+        >cal.eu/aymeric-dijoux/intro</a
+      >
     </p>
   </section>
 
@@ -171,6 +183,13 @@ const processSteps = [
       grid-template-columns: 1fr;
     }
   }
+  .booking .lead {
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--color-text-muted);
+    margin: 0 0 20px;
+    max-width: 580px;
+  }
   .end-cta {
     background: #0a0a0a;
     color: #f6f6f4;
@@ -195,15 +214,17 @@ const processSteps = [
     margin: 0 auto 20px;
     line-height: 1.6;
   }
-  .end-cta .cta {
-    display: inline-block;
-    padding: 12px 22px;
-    background: var(--color-accent);
-    color: var(--color-on-accent);
-    font-weight: 700;
-    font-size: 13px;
-    border: var(--border-w) solid var(--color-accent);
-    text-decoration: none;
+  .end-cta a {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+  .end-cta .alt {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: #a3a3a3;
+    margin-top: 12px;
   }
   .end-cta .email {
     margin-top: 16px;

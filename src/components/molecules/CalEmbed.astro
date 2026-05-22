@@ -1,0 +1,117 @@
+---
+interface Props {
+  calLink: string;
+  origin?: string;
+  namespace?: string;
+  brandColor?: string;
+  minHeight?: number;
+}
+
+const {
+  calLink,
+  origin = "https://cal.eu",
+  namespace = "intro",
+  brandColor = "#ccff00",
+  minHeight = 720,
+} = Astro.props;
+---
+
+<div
+  class="cal-embed"
+  id="cal-inline-embed"
+  data-cal-link={calLink}
+  data-cal-origin={origin}
+  data-cal-namespace={namespace}
+  data-cal-brand={brandColor}
+  style={`min-height:${minHeight}px`}
+>
+</div>
+
+<script>
+  type CalFn = ((...args: unknown[]) => void) & {
+    loaded?: boolean;
+    ns?: Record<string, CalFn>;
+    q?: unknown[];
+  };
+  type CalWindow = Window & { Cal?: CalFn };
+
+  function initCalEmbed() {
+    const el = document.getElementById("cal-inline-embed");
+    if (!el || el.dataset.bound === "1") return;
+    el.dataset.bound = "1";
+
+    const calLink = el.dataset.calLink!;
+    const origin = el.dataset.calOrigin!;
+    const namespace = el.dataset.calNamespace!;
+    const brand = el.dataset.calBrand!;
+    const scriptUrl = origin.includes("cal.eu")
+      ? "https://app.cal.eu/embed/embed.js"
+      : "https://app.cal.com/embed/embed.js";
+
+    (function (C: CalWindow, A: string, L: string) {
+      const p = function (a: CalFn, ar: unknown) {
+        (a.q ??= []).push(ar);
+      };
+      const d = C.document;
+      C.Cal =
+        C.Cal ||
+        function (...ar: unknown[]) {
+          const cal = C.Cal!;
+          if (!cal.loaded) {
+            cal.ns = {};
+            cal.q = cal.q || [];
+            d.head.appendChild(d.createElement("script")).src = A;
+            cal.loaded = true;
+          }
+          if (ar[0] === L) {
+            const api: CalFn = function (...rest: unknown[]) {
+              p(api, rest);
+            };
+            const ns = ar[1];
+            api.q = api.q || [];
+            if (typeof ns === "string") {
+              cal.ns![ns] = cal.ns![ns] || api;
+              p(cal.ns![ns], ar);
+              p(cal, ["initNamespace", ns]);
+            } else p(cal, ar);
+            return;
+          }
+          p(cal, ar);
+        };
+    })(window as CalWindow, scriptUrl, "init");
+
+    const w = window as CalWindow;
+    w.Cal!(...["init", namespace, { origin }]);
+    w.Cal!(
+      ...[
+        "inline",
+        {
+          elementOrSelector: "#cal-inline-embed",
+          calLink,
+          config: { layout: "month_view" },
+        },
+      ],
+    );
+    w.Cal!.ns![namespace](
+      ...[
+        "ui",
+        {
+          theme: "auto",
+          hideEventTypeDetails: false,
+          styles: { branding: { brandColor: brand } },
+        },
+      ],
+    );
+  }
+
+  initCalEmbed();
+  document.addEventListener("astro:page-load", initCalEmbed);
+</script>
+
+<style>
+  .cal-embed {
+    width: 100%;
+    background: var(--color-bg-soft);
+    border: var(--border-w) solid var(--color-border);
+  }
+</style>
