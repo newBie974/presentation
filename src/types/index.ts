@@ -60,3 +60,11 @@ export interface FaqEntry {
   q: { fr: string; en: string };
   a: { fr: string; en: string };
 }
+
+export interface Testimonial {
+  quote: string;
+  author: string;
+  role: { fr: string; en: string };
+  company?: string;
+  date?: string;
+}

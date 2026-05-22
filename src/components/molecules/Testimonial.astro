@@ -1,0 +1,57 @@
+---
+import type { Testimonial, Locale } from "@/types";
+
+interface Props {
+  testimonial: Testimonial;
+  locale: Locale;
+}
+const { testimonial, locale } = Astro.props;
+const meta = [testimonial.role[locale], testimonial.company, testimonial.date]
+  .filter(Boolean)
+  .join(" · ");
+---
+
+<figure class="testimonial">
+  <blockquote>"{testimonial.quote}"</blockquote>
+  <figcaption>
+    <span class="author">{testimonial.author}</span>
+    <span class="role">{meta}</span>
+  </figcaption>
+</figure>
+
+<style>
+  .testimonial {
+    margin: 0;
+    padding: 20px;
+    border: var(--border-w) solid var(--color-border);
+    background: var(--color-bg-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  blockquote {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-text);
+    position: relative;
+  }
+  figcaption {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--color-border);
+  }
+  .author {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--color-text);
+  }
+  .role {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-text-muted);
+  }
+</style>

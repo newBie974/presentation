@@ -1,0 +1,246 @@
+---
+import MainLayout from "@/layouts/MainLayout.astro";
+import Nav from "@/components/organisms/Nav.astro";
+import Footer from "@/components/organisms/Footer.astro";
+import SectionLabel from "@/components/atoms/SectionLabel.astro";
+import Highlight from "@/components/atoms/Highlight.astro";
+import JsonLd from "@/components/atoms/JsonLd.astro";
+import { buildPersonJsonLd } from "@/lib/jsonLd";
+
+const locale = "fr" as const;
+const title = "Now — Aymeric Dijoux, ce sur quoi je bosse en ce moment";
+const description =
+  "Une page courte, mise à jour régulièrement : ce sur quoi je bosse maintenant. Decider.ai côté boulot, VoiceJournal côté apps, et l'acquisition qui s'organise.";
+const lastUpdated = "22 mai 2026";
+---
+
+<MainLayout title={title} description={description} locale={locale}>
+  <Fragment slot="head"><JsonLd data={buildPersonJsonLd()} /></Fragment>
+  <Nav slot="nav" locale={locale} />
+
+  <section class="page-hero">
+    <SectionLabel>— NOW</SectionLabel>
+    <h1>Ce sur quoi je <Highlight>bosse</Highlight> en ce moment.</h1>
+    <p class="deck">
+      Inspiré du <a
+        href="https://nownownow.com/about"
+        target="_blank"
+        rel="noopener noreferrer">/now movement de Derek Sivers</a
+      >. Mis à jour quand ça change vraiment, pas pour faire joli.
+    </p>
+    <p class="meta">Dernière mise à jour : {lastUpdated}</p>
+  </section>
+
+  <section class="section">
+    <SectionLabel number="01">CÔTÉ BOULOT</SectionLabel>
+    <h2><Highlight>Decider.ai</Highlight></h2>
+    <p>
+      Backend Engineer depuis 2025. Je construis la couche backend d'une
+      plateforme d'aide à la décision : agents IA orchestrant plusieurs modèles,
+      outils d'anonymisation qui tournent en local pour traiter de la donnée
+      sensible sans transfert externe, et pipelines RAG branchés sur les bases
+      de connaissances internes des clients.
+    </p>
+    <p>
+      Stack : NestJS, PostgreSQL, Claude, Gemini. C'est là que je passe le plus
+      clair de mes journées.
+    </p>
+  </section>
+
+  <section class="section">
+    <SectionLabel number="02">CÔTÉ APPS</SectionLabel>
+    <h2>
+      <Highlight>VoiceJournal</Highlight> — phase acquisition
+    </h2>
+    <p>
+      L'app est en prod sur l'App Store depuis avril. Le produit fait ce qu'il
+      doit faire (transcription + analyse IA + Mind Score). Le focus a basculé
+      du build vers l'<strong>acquisition</strong>.
+    </p>
+    <p>Concrètement, ce sur quoi je travaille :</p>
+    <ul class="bullets">
+      <li>
+        <span class="b" aria-hidden="true">→</span>
+        <span>
+          <strong>ASO</strong> sur l'App Store français et anglais : itération sur
+          le titre, le sous-titre, les keywords, les screenshots. La conversion store-page-vers-install
+          est la première bataille.
+        </span>
+      </li>
+      <li>
+        <span class="b" aria-hidden="true">→</span>
+        <span>
+          <strong>Content social</strong> sur Instagram et TikTok via le compte @aymeric.builder.
+          Format build-in-public et démos courtes du Mind Score. L'objectif : générer
+          de l'awareness organique sans budget marketing.
+        </span>
+      </li>
+      <li>
+        <span class="b" aria-hidden="true">→</span>
+        <span>
+          <strong>Posts LinkedIn</strong> sur les apprentissages techniques et produit.
+          La cible : peers indie builders + recruteurs tech qui téléchargent.
+        </span>
+      </li>
+      <li>
+        <span class="b" aria-hidden="true">→</span>
+        <span>
+          <strong>Recap hebdo audio</strong> en cours d'intégration côté app — si
+          tu enregistres tous les jours, l'IA te génère un résumé vocal de ta semaine.
+          Pari de rétention.
+        </span>
+      </li>
+    </ul>
+    <p>
+      <a
+        href="https://aivoicejournal.app"
+        target="_blank"
+        rel="noopener noreferrer">Tester VoiceJournal sur l'App Store →</a
+      >
+    </p>
+  </section>
+
+  <section class="section">
+    <SectionLabel number="03">EN ARRIÈRE-PLAN</SectionLabel>
+    <h2>
+      <Highlight>Caroubolt</Highlight> & <Highlight>Tookta</Highlight>
+    </h2>
+    <p>
+      <strong>Caroubolt</strong> tourne en autonomie depuis le lancement. Maintenance
+      minimale. Quelques itérations sur le générateur de carrousels quand un user
+      signale un bug ou demande une feature.
+    </p>
+    <p>
+      <strong>Tookta</strong> continue avec l'équipe (4 personnes). Je reste Engineering
+      Manager hands-on, mais avec un rôle plus stratégique maintenant qu'on a atteint
+      le scope national.
+    </p>
+  </section>
+
+  <section class="section">
+    <SectionLabel number="04">CÔTÉ ÉCRITURE</SectionLabel>
+    <h2>Ce que je <Highlight>publie</Highlight></h2>
+    <p>
+      J'ai démarré un cycle d'articles sur ce site. Sept publiés à date — sur la
+      stack 2026, le workflow Spec-Driven avec Claude, la soumission App Store
+      IA, et d'autres. Rythme cible : un article toutes les deux semaines, pas
+      plus, pas moins.
+    </p>
+    <p><a href="/notes">Voir toutes les notes →</a></p>
+  </section>
+
+  <section class="section last">
+    <SectionLabel number="05">SUR QUOI JE DIS NON</SectionLabel>
+    <h2>Ce que je ne fais <Highlight>pas</Highlight></h2>
+    <p>Pour rester focus, j'ai dit non récemment à :</p>
+    <ul class="bullets">
+      <li>
+        <span class="b" aria-hidden="true">→</span><span
+          >Deux missions freelance à temps plein.</span>
+      </li>
+      <li>
+        <span class="b" aria-hidden="true">→</span><span
+          >Une nouvelle app que j'avais imaginée — pas le moment.</span>
+      </li>
+      <li>
+        <span class="b" aria-hidden="true">→</span><span
+          >Toute conférence ou meetup en présentiel ce semestre.</span>
+      </li>
+      <li>
+        <span class="b" aria-hidden="true">→</span><span
+          >Reprendre Twitter/X de manière active.</span>
+      </li>
+    </ul>
+  </section>
+
+  <Footer slot="footer" locale={locale} />
+</MainLayout>
+
+<style>
+  .page-hero {
+    padding: 64px 48px 32px;
+    border-bottom: var(--border-w) solid var(--color-border);
+    max-width: var(--container-content);
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: clamp(32px, 6vw, 44px);
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    margin: 14px 0 14px;
+  }
+  .deck {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+    max-width: 580px;
+    margin: 0 0 8px;
+  }
+  .meta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 12px 0 0;
+  }
+  .section {
+    padding: 40px 48px;
+    border-bottom: var(--border-w) solid var(--color-border);
+    max-width: var(--container-content);
+    margin: 0 auto;
+  }
+  .section.last {
+    border-bottom: none;
+  }
+  .section h2 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 12px 0 16px;
+    line-height: 1.1;
+  }
+  .section p {
+    font-size: 15px;
+    line-height: 1.75;
+    margin: 0 0 14px;
+  }
+  .section a {
+    color: var(--color-text);
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+  .bullets {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .bullets li {
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 10px;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  .b {
+    font-family: var(--font-mono);
+    color: var(--color-accent);
+    font-weight: 700;
+  }
+  :global([data-theme="dark"]) .b {
+    color: var(--color-accent);
+  }
+  @media (max-width: 720px) {
+    .page-hero,
+    .section {
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+  }
+</style>

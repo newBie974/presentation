@@ -1,0 +1,236 @@
+---
+import MainLayout from "@/layouts/MainLayout.astro";
+import Nav from "@/components/organisms/Nav.astro";
+import Footer from "@/components/organisms/Footer.astro";
+import SectionLabel from "@/components/atoms/SectionLabel.astro";
+import Highlight from "@/components/atoms/Highlight.astro";
+
+// Detect locale from URL on the rendered page (client side)
+// Server-side fallback: use FR strings, client script swaps to EN if pathname starts with /en/
+const calcomUrl =
+  import.meta.env.PUBLIC_CALCOM_URL ?? "https://cal.com/aymeric-dijoux/intro";
+
+const title = "404 — Page introuvable · Aymeric Dijoux";
+const description =
+  "Cette page n'existe pas (ou plus). Voici quelques bonnes adresses pour rebondir.";
+---
+
+<MainLayout title={title} description={description} locale="fr">
+  <Nav slot="nav" locale="fr" />
+
+  <section class="four-oh-four">
+    <SectionLabel>— 404</SectionLabel>
+    <h1 data-fr="Cette page n'existe pas." data-en="This page doesn't exist.">
+      Cette page <Highlight>n'existe pas</Highlight>.
+    </h1>
+    <p
+      class="deck"
+      data-fr="Lien cassé, typo dans l'URL, ou contenu qui a déménagé. Voici quelques bons endroits où atterrir."
+      data-en="Broken link, typo in the URL, or content that moved. Here are a few good places to land instead."
+    >
+      Lien cassé, typo dans l'URL, ou contenu qui a déménagé. Voici quelques
+      bons endroits où atterrir.
+    </p>
+
+    <ul class="suggestions" role="list">
+      <li>
+        <a href="/" data-fr-path="/" data-en-path="/en/">
+          <span class="num">01</span>
+          <span class="text">
+            <span
+              class="title"
+              data-fr="Retour à l'accueil"
+              data-en="Back home"
+            >
+              Retour à l'accueil
+            </span>
+            <span
+              class="hint"
+              data-fr="Le portfolio et les apps."
+              data-en="Portfolio and apps."
+            >
+              Le portfolio et les apps.
+            </span>
+          </span>
+          <span class="arrow">→</span>
+        </a>
+      </li>
+      <li>
+        <a href="/notes" data-fr-path="/notes" data-en-path="/en/writing">
+          <span class="num">02</span>
+          <span class="text">
+            <span
+              class="title"
+              data-fr="Voir toutes les notes"
+              data-en="See all writing"
+            >
+              Voir toutes les notes
+            </span>
+            <span
+              class="hint"
+              data-fr="Articles sur la stack, l'IA, le build solo."
+              data-en="Articles on stack, AI, solo building."
+            >
+              Articles sur la stack, l'IA, le build solo.
+            </span>
+          </span>
+          <span class="arrow">→</span>
+        </a>
+      </li>
+      <li>
+        <a href="/a-propos" data-fr-path="/a-propos" data-en-path="/en/about">
+          <span class="num">03</span>
+          <span class="text">
+            <span class="title" data-fr="À propos" data-en="About"
+              >À propos</span
+            >
+            <span
+              class="hint"
+              data-fr="Mon parcours, ma stack, comment je travaille."
+              data-en="My path, my stack, how I work."
+            >
+              Mon parcours, ma stack, comment je travaille.
+            </span>
+          </span>
+          <span class="arrow">→</span>
+        </a>
+      </li>
+      <li>
+        <a href={calcomUrl} target="_blank" rel="noopener noreferrer">
+          <span class="num">04</span>
+          <span class="text">
+            <span
+              class="title"
+              data-fr="Réserver un call"
+              data-en="Book a call"
+            >
+              Réserver un call
+            </span>
+            <span
+              class="hint"
+              data-fr="30 minutes, gratuit, pour parler d'un projet."
+              data-en="30 minutes, free, to talk about a project."
+            >
+              30 minutes, gratuit, pour parler d'un projet.
+            </span>
+          </span>
+          <span class="arrow">→</span>
+        </a>
+      </li>
+    </ul>
+  </section>
+
+  <Footer slot="footer" locale="fr" />
+</MainLayout>
+
+<script>
+  // Localize the 404 page based on URL pathname at runtime,
+  // since the same 404.html is served for both /foo and /en/foo.
+  function localize404() {
+    const isEn = window.location.pathname.startsWith("/en/");
+    const lang = isEn ? "en" : "fr";
+    document.documentElement.lang = isEn ? "en-US" : "fr-FR";
+
+    document.querySelectorAll<HTMLElement>("[data-fr]").forEach((el) => {
+      const txt = el.dataset[lang];
+      if (txt) el.textContent = txt;
+    });
+
+    document
+      .querySelectorAll<HTMLAnchorElement>(`a[data-${lang}-path]`)
+      .forEach((a) => {
+        const path = a.dataset[`${lang}Path` as "frPath" | "enPath"];
+        if (path) a.href = path;
+      });
+  }
+  localize404();
+  document.addEventListener("astro:page-load", localize404);
+</script>
+
+<style>
+  .four-oh-four {
+    padding: 80px 48px 64px;
+    max-width: var(--container-content);
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: clamp(36px, 8vw, 64px);
+    line-height: 0.95;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    margin: 18px 0 16px;
+  }
+  .deck {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+    max-width: 540px;
+    margin: 0 0 40px;
+  }
+
+  .suggestions {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-top: var(--border-w) solid var(--color-border);
+  }
+  .suggestions li {
+    border-bottom: var(--border-w) solid var(--color-border);
+  }
+  .suggestions a {
+    display: grid;
+    grid-template-columns: 48px 1fr 32px;
+    gap: 16px;
+    align-items: center;
+    padding: 18px 0;
+    text-decoration: none;
+    color: var(--color-text);
+  }
+  .suggestions a:hover {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .num {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--color-text-muted);
+    letter-spacing: 0.1em;
+  }
+  .text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .title {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .hint {
+    font-size: 13px;
+    color: var(--color-text-muted);
+  }
+  .suggestions a:hover .hint,
+  .suggestions a:hover .num {
+    color: var(--color-on-accent);
+  }
+  .arrow {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    text-align: right;
+  }
+  @media (max-width: 720px) {
+    .four-oh-four {
+      padding: 48px 20px;
+    }
+    .suggestions a {
+      grid-template-columns: 36px 1fr 24px;
+      gap: 12px;
+    }
+    .title {
+      font-size: 15px;
+    }
+  }
+</style>
