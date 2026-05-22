@@ -49,16 +49,16 @@ export const chapters: Chapter[] = [
     startYear: 2024,
     endYear: "now",
     title: {
-      fr: "Indie builder & Engineering Manager",
-      en: "Indie builder & Engineering Manager",
+      fr: "Indie builder & co-founder",
+      en: "Indie builder & co-founder",
     },
     role: {
-      fr: "Lead Backend @ Bloom · Engineering Manager @ Tookta · mes propres apps",
-      en: "Lead Backend @ Bloom · Engineering Manager @ Tookta · my own apps",
+      fr: "Engineering Manager @ Tookta · mes propres apps",
+      en: "Engineering Manager @ Tookta · my own apps",
     },
     body: {
-      fr: "Je porte plusieurs casquettes en parallèle. Je code, je manage, je lance mes propres produits — un cycle que je n'avais jamais réussi à équilibrer avant.",
-      en: "I wear multiple hats in parallel. I code, I manage, I ship my own products — a balance I'd never managed to strike before.",
+      fr: "En parallèle de mes missions salariées, je code et lance mes propres produits. C'est l'année où j'ai commencé à équilibrer rôle salarié, consulting et création solo — sans sacrifier aucun des trois.",
+      en: "Alongside my employed roles, I code and ship my own products. This is the year I finally found a balance between an employed role, consulting and solo creation — without sacrificing any of the three.",
     },
     highlights: [
       {
@@ -66,24 +66,55 @@ export const chapters: Chapter[] = [
         en: "Three consumer apps shipped solo: VoiceJournal (iOS), Caroubolt (web), Tookta (iOS + Android).",
       },
       {
-        fr: "Lead Backend chez BLOOM SOCIAL ANALYTICS sur du Node.js et Apache Kafka, plateforme d'analyse de menaces informationnelles.",
-        en: "Lead Backend at BLOOM SOCIAL ANALYTICS on Node.js and Apache Kafka, threat intelligence analytics platform.",
+        fr: "Engineering Manager hands-on chez Tookta (co-fondateur indépendant) : du MVP au scale national, équipe de 4 personnes.",
+        en: "Hands-on Engineering Manager at Tookta (independent co-founder): from MVP to national rollout, team of four.",
       },
       {
-        fr: "Engineering Manager hands-on chez Tookta (co-fondateur indépendant), du MVP au scale national.",
-        en: "Hands-on Engineering Manager at Tookta (independent co-founder), from MVP to national rollout.",
+        fr: "Cadre méthodologique solo : Spec-Driven Development avec Claude, exécution par sub-agents, CLAUDE.md par repo pour scaler la qualité sans équipe.",
+        en: "Solo methodology: Spec-Driven Development with Claude, sub-agent execution, per-repo CLAUDE.md to scale quality without a team.",
       },
     ],
     technologies: [
       "React Native",
       "Expo",
-      "Node.js",
-      "Kafka",
       "Supabase",
       "Claude",
       "Flutter",
       "Nest",
+      "Astro",
     ],
+  },
+  {
+    yearsLabel: "2024 — 2025",
+    startYear: 2024,
+    endYear: 2025,
+    title: {
+      fr: "Lead Backend Engineer chez Bloom Social Analytics",
+      en: "Lead Backend Engineer at Bloom Social Analytics",
+    },
+    role: {
+      fr: "Pipelines de collecte multi-réseaux · classification · normalisation",
+      en: "Multi-network ingestion pipelines · classification · normalisation",
+    },
+    body: {
+      fr: "Bloom Social Analytics opère une plateforme d'IA d'anticipation stratégique pour l'analyse profonde des réseaux sociaux. J'y ai dirigé les fondations data : conception et opération des pipelines de collecte qui alimentent les modèles d'analyse en aval, à l'échelle de plusieurs réseaux et de gros volumes.",
+      en: "Bloom Social Analytics runs a strategic anticipation AI platform for deep social network analysis. I led the data foundations: designing and operating the ingestion pipelines that feed the downstream analytical models, across multiple networks at high volume.",
+    },
+    highlights: [
+      {
+        fr: "Conception et maintenance d'une pipeline end-to-end de collecte de données sur Facebook, X (Twitter), LinkedIn et Instagram.",
+        en: "Designed and maintained an end-to-end data ingestion pipeline across Facebook, X (Twitter), LinkedIn and Instagram.",
+      },
+      {
+        fr: "Mise en place des étages critiques — extraction, classification et normalisation — pour rendre la donnée analysable à grande échelle.",
+        en: "Built the critical stages — extraction, classification and normalisation — to make the data analyzable at scale.",
+      },
+      {
+        fr: "Intégration des flux dans la plateforme d'analyse de Bloom, utilisée par des clients allant des grandes entreprises aux organisations internationales, ONG et agences nationales.",
+        en: "Plugged the streams into Bloom's analytics platform, used by clients ranging from large enterprises to international organisations, NGOs and national agencies.",
+      },
+    ],
+    technologies: ["Node.js", "Apache Kafka", "PostgreSQL", "Data pipelines"],
   },
   {
     yearsLabel: "2022 — 2024",
