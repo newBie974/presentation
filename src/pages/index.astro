@@ -8,14 +8,26 @@ import AboutExcerpt from "@/components/organisms/AboutExcerpt.astro";
 import NotesSection from "@/components/organisms/NotesSection.astro";
 import CollabBand from "@/components/organisms/CollabBand.astro";
 import Footer from "@/components/organisms/Footer.astro";
+import JsonLd from "@/components/atoms/JsonLd.astro";
+import {
+  buildPersonJsonLd,
+  buildWebSiteJsonLd,
+  buildSoftwareAppJsonLd,
+} from "@/lib/jsonLd";
 import { profile } from "@/data/profile";
 
 const locale = "fr" as const;
 const title = `${profile.name} — Indie builder & engineer`;
 const description = profile.bio.fr;
+const jsonLd = [
+  buildPersonJsonLd(),
+  buildWebSiteJsonLd(),
+  ...buildSoftwareAppJsonLd(),
+];
 ---
 
 <MainLayout title={title} description={description} locale={locale}>
+  <Fragment slot="head"><JsonLd data={jsonLd} /></Fragment>
   <Nav slot="nav" locale={locale} current="home" />
   <Hero locale={locale} />
   <SocialBar locale={locale} />

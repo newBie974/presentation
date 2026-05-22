@@ -10,6 +10,8 @@ import FAQItem from "@/components/molecules/FAQItem.astro";
 import StatusBadge from "@/components/atoms/StatusBadge.astro";
 import { services } from "@/data/services";
 import { faq } from "@/data/faq";
+import JsonLd from "@/components/atoms/JsonLd.astro";
+import { buildPersonJsonLd, buildFAQJsonLd } from "@/lib/jsonLd";
 
 const locale = "fr" as const;
 const title = "Collaborer — Aymeric Dijoux, freelance builder à Paris";
@@ -43,6 +45,14 @@ const processSteps = [
 ---
 
 <MainLayout title={title} description={description} locale={locale}>
+  <Fragment slot="head">
+    <JsonLd
+      data={[
+        buildPersonJsonLd(),
+        buildFAQJsonLd(faq.map((f) => ({ q: f.q[locale], a: f.a[locale] }))),
+      ]}
+    />
+  </Fragment>
   <Nav slot="nav" locale={locale} current="work" />
 
   <section class="page-hero">

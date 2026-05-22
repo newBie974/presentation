@@ -2,8 +2,15 @@
 import MainLayout from "./MainLayout.astro";
 import Nav from "@/components/organisms/Nav.astro";
 import Footer from "@/components/organisms/Footer.astro";
+import JsonLd from "@/components/atoms/JsonLd.astro";
 import { useTranslations, alternateLocale } from "@/i18n/utils";
 import { formatDate } from "@/lib/dates";
+import {
+  buildPersonJsonLd,
+  buildBlogPostingJsonLd,
+  buildBreadcrumbJsonLd,
+} from "@/lib/jsonLd";
+import { SITE_URL } from "@/lib/constants";
 import type { Locale } from "@/types";
 
 interface Props {
@@ -21,6 +28,29 @@ const { title, description, locale, date, tags, readingMinutes, altUrl } =
 const t = useTranslations(locale);
 const dateLabel = formatDate(date, locale);
 const altLocale = alternateLocale(locale);
+
+const notesRoot =
+  locale === "fr" ? `${SITE_URL}/notes` : `${SITE_URL}/en/writing`;
+const homeUrl = locale === "fr" ? `${SITE_URL}/` : `${SITE_URL}/en/`;
+const homeLabel = locale === "fr" ? "Accueil" : "Home";
+const notesLabel = locale === "fr" ? "Notes" : "Writing";
+
+const jsonLd = [
+  buildPersonJsonLd(),
+  buildBlogPostingJsonLd({
+    title,
+    description,
+    url: Astro.url.href,
+    datePublished: date,
+    locale,
+    tags,
+  }),
+  buildBreadcrumbJsonLd([
+    { name: homeLabel, url: homeUrl },
+    { name: notesLabel, url: notesRoot },
+    { name: title, url: Astro.url.href },
+  ]),
+];
 ---
 
 <MainLayout
@@ -29,6 +59,7 @@ const altLocale = alternateLocale(locale);
   locale={locale}
   pageType="article"
 >
+  <Fragment slot="head"><JsonLd data={jsonLd} /></Fragment>
   <Nav slot="nav" locale={locale} current="notes" />
 
   <article class="note">

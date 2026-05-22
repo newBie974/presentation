@@ -9,14 +9,25 @@ import StackGroup from "@/components/molecules/StackGroup.astro";
 import CollabBand from "@/components/organisms/CollabBand.astro";
 import { chapters } from "@/data/chapters";
 import { stack } from "@/data/stack";
+import JsonLd from "@/components/atoms/JsonLd.astro";
+import { buildPersonJsonLd, buildBreadcrumbJsonLd } from "@/lib/jsonLd";
+import { SITE_URL } from "@/lib/constants";
 
 const locale = "en" as const;
 const title = "About — Aymeric Dijoux, indie builder in Paris";
 const description =
   "Aymeric Dijoux is an indie builder and software engineer based in Paris. He builds and ships his own consumer apps (VoiceJournal, Caroubolt, Tookta) and helps select teams as a freelancer.";
+const jsonLd = [
+  buildPersonJsonLd(),
+  buildBreadcrumbJsonLd([
+    { name: "Home", url: `${SITE_URL}/en/` },
+    { name: "About", url: `${SITE_URL}/en/about` },
+  ]),
+];
 ---
 
 <MainLayout title={title} description={description} locale={locale}>
+  <Fragment slot="head"><JsonLd data={jsonLd} /></Fragment>
   <Nav slot="nav" locale={locale} current="about" />
 
   <section class="page-hero">
