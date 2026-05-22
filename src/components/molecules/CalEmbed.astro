@@ -104,8 +104,27 @@ const {
     );
   }
 
-  initCalEmbed();
-  document.addEventListener("astro:page-load", initCalEmbed);
+  function watchCalEmbed() {
+    const el = document.getElementById("cal-inline-embed");
+    if (!el) return;
+    // Lazy-load: only init when scrolled into view.
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            initCalEmbed();
+            io.disconnect();
+            break;
+          }
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    io.observe(el);
+  }
+
+  watchCalEmbed();
+  document.addEventListener("astro:page-load", watchCalEmbed);
 </script>
 
 <style>
