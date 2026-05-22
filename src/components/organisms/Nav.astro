@@ -92,11 +92,30 @@ const altPath = current
   }
   @media (max-width: 720px) {
     .nav {
+      flex-wrap: wrap;
+      gap: 12px;
       padding: 12px 20px;
     }
+    .brand {
+      flex: 1 1 auto;
+    }
+    .end {
+      flex: 0 0 auto;
+      gap: 10px;
+      order: 2;
+    }
     .menu {
-      gap: 14px;
+      flex: 1 1 100%;
+      order: 3;
+      gap: 16px;
       font-size: 12px;
+      justify-content: flex-start;
+    }
+  }
+  @media (max-width: 420px) {
+    .menu {
+      gap: 12px;
+      font-size: 11px;
     }
   }
 </style>
