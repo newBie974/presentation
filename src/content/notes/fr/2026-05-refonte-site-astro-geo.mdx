@@ -1,0 +1,123 @@
+---
+title: "J'ai refait mon site avec Astro 6 et préparé l'arrivée des LLM dans le search"
+date: 2026-05-22
+locale: fr
+translationKey: "2026-05-site-refacto"
+tags: ["web", "astro", "geo"]
+excerpt: "Astro 6, Tailwind 4 avec @theme, content collections + MDX, bilingue FR/EN, et un setup GEO complet (llms.txt, JSON-LD entity graph, robots avec allow pour les bots IA). Comment et pourquoi j'ai tout refait."
+draft: false
+---
+
+Mon ancien site était un link-in-bio Astro tout simple : ma photo, ma bio, mes apps, mes liens sociaux. Une page. Ça faisait le boulot pour pointer vers les apps, mais ça ne disait rien de qui je suis, ni de ce que je sais faire, ni de comment je travaille.
+
+J'ai tout repris depuis zéro. Voici les décisions techniques et la stack visuelle qui en sort.
+
+## Le positionnement d'abord, la tech ensuite
+
+J'ai démarré par un brainstorming structuré (voir [l'article sur le Spec-Driven Development](/notes/2026-05-spec-driven-development)). Pas de code avant d'avoir tranché :
+- **Quelle audience ?** Indie builders, freelance prospects, recruteurs tech, futurs users des apps.
+- **Quel positionnement ?** Indie builder d'abord, freelance ensuite. Les apps sont la preuve, la mission freelance vient après.
+- **Quel mood visuel ?** Après 3 directions explorées en mockups, j'ai retenu un **D1 Swiss Brutalist** : 100% sans-serif Inter Tight, accent fluo `#ccff00` en surligneur, bordures noires 2px partout, pas de border-radius.
+
+Pour la première fois, mes décisions visuelles étaient toutes documentées dans un spec markdown avant la première ligne de CSS. Pas de "on verra à l'usage".
+
+## Astro 6, et la migration depuis 5
+
+Le site précédent tournait sur Astro 5. J'ai migré vers Astro 6 pour le rebuild.
+
+**Breaking changes notables :**
+- `src/content/config.ts` → `src/content.config.ts` (plus dans `content/`, à la racine de `src/`).
+- Les content collections demandent maintenant un **loader explicite** (`glob`, `file`) — fini le `type: "content"` court.
+- `z` n'est plus ré-exporté depuis `astro:content` (déprécié). Tu installes zod directement.
+- View Transitions devient stable, plus de flag `experimental`. Le composant s'appelle `<ClientRouter />`.
+
+Rien de dramatique. La migration m'a pris une après-midi.
+
+## Tailwind 4 avec @theme : un changement de paradigme
+
+Tailwind 4 n'utilise plus `tailwind.config.js`. Toute la configuration vit dans un fichier CSS, via la directive `@theme`. Mon `theme.css` ressemble à :
+
+```css
+@theme {
+  --color-bg: #f6f6f4;
+  --color-text: #0a0a0a;
+  --color-accent: #ccff00;
+  --color-strong-bg: #0a0a0a;
+  --color-strong-fg: #ccff00;
+
+  --font-sans: "Inter Tight Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --border-w: 2px;
+  --radius-base: 0;
+}
+
+[data-theme="dark"] {
+  --color-bg: #0a0a0a;
+  --color-text: #f6f6f4;
+  --color-strong-bg: #ccff00;
+  --color-strong-fg: #0a0a0a;
+}
+```
+
+Chaque variable devient automatiquement une utility class (`bg-bg`, `text-text`, `text-accent`, etc.). Le dark mode se déclenche en swappant `data-theme="dark"` sur `<html>`, et les utility classes suivent les CSS vars sans config supplémentaire.
+
+**Le piège que j'ai pris dans la gueule** : `@tailwindcss/vite@4.3.0` (sorti récemment) bundle Vite 8, qui clash avec Vite 7 que ship Astro 6. Solution : pinner exactement `@tailwindcss/vite@4.1.18`. Quelques heures pour comprendre.
+
+## Bilingue FR/EN avec slugs localisés
+
+L'i18n Astro est correcte mais les slugs ne sont pas traduits automatiquement. J'ai un mapping explicite :
+
+```typescript
+export const routes = {
+  fr: { home: "/", about: "/a-propos", notes: "/notes", work: "/collaborer" },
+  en: { home: "/en/", about: "/en/about", notes: "/en/writing", work: "/en/work" },
+};
+```
+
+Le toggle FR↔EN sur chaque page utilise ces routes. Sur les articles, je matche par `translationKey` (clé partagée dans le frontmatter des deux MDX) — si la trad existe, le toggle apparaît, sinon il est masqué.
+
+Les notes vivent dans `content/notes/fr/` et `content/notes/en/`. Chaque fichier MDX a son `translationKey` unique par paire. Astro construit toutes les routes au build.
+
+## Le GEO : préparer le search des LLM
+
+C'est la partie qui change tout dans le SEO de 2026. Quand un utilisateur demande à Claude ou Perplexity "qui est un bon indie builder en France ?", l'LLM va chercher du signal sur le web. Si ton site n'est pas optimisé pour être lu par un LLM, tu n'existes pas dans cette réponse.
+
+Trois choses concrètes que j'ai ajoutées :
+
+**1. JSON-LD entity graph riche.** Chaque page publique a un bloc `<script type="application/ld+json">` avec :
+- Un node `Person` avec mon nom, jobTitle, sameAs (tous mes profils sociaux), knowsAbout (mes domaines d'expertise).
+- Un node `WebSite` qui pointe vers le Person comme publisher.
+- Des nodes `SoftwareApplication` pour chacune de mes apps, avec `creator` qui pointe vers le Person.
+- Sur les articles : `BlogPosting` + `BreadcrumbList`.
+- Sur la page Collaborer : `FAQPage`.
+
+Tout est lié par `@id`. Le résultat : un LLM qui lit mon site comprend qui je suis, ce que j'ai construit, et qui est l'auteur de quoi.
+
+**2. `/llms.txt` au root.** Un standard émergent (voir [llmstxt.org](https://llmstxt.org)). C'est un fichier markdown qui résume mon site pour les LLM : bio, liste des apps, pages clés, derniers articles, contact. Lu en priorité par les crawlers IA. Quelques dizaines de lignes, généré au build.
+
+**3. `robots.txt` avec allow explicite pour les bots IA.** GPTBot, ClaudeBot, PerplexityBot, Google-Extended, CCBot, Applebot-Extended. Plein opt-in. Je veux que les LLM indexent et citent mon site. Si tu vis du freelance ou des apps publiques, c'est le bon réglage par défaut.
+
+Bonus : un script Node `validate-jsonld.mjs` qui passe au build sur le `dist/` et vérifie qu'aucune page n'oublie son JSON-LD `Person`. Si une page sort sans, la CI échoue.
+
+## Le ship final
+
+12 pages générées, ~30 KB de JS au total sur la homepage (essentiellement Astro runtime + view transitions), zéro framework JS additionnel. Lighthouse cible 95+ partout, axe-core sur 8 routes au CI.
+
+Le tout déployé sur GitHub Pages avec un domaine custom, un CNAME au root, une CI complète qui passe lighthouse + axe + jsonld-validate avant chaque déploiement.
+
+## Ce que j'ai laissé pour V1.1
+
+- Newsletter (capture email)
+- Métriques live des apps (MRR, downloads)
+- Témoignages
+- Search interne sur les notes
+- Theme switcher (j'ai défini D1 puis D2 en exploration, j'ai gardé seulement D1)
+
+Le YAGNI a sauvé deux semaines de scope creep.
+
+## Ce que j'ai appris
+
+**Un site personnel n'est plus un placeholder.** En 2026, c'est ton premier signal d'identité dans un monde où les LLM décident à ta place de qui citer. Tu peux avoir 10k followers sur Twitter — si ton site n'est pas crawlable et structuré pour les bots IA, tu disparais des réponses Perplexity.
+
+Le code de ce site est public et lisible sur GitHub. Recopie ce que tu veux.

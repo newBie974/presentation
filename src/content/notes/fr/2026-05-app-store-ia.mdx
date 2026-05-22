@@ -1,0 +1,88 @@
+---
+title: "Lancer une app IA sur l'App Store en 2026 : ce à quoi tu dois t'attendre"
+date: 2026-05-16
+locale: fr
+translationKey: "2026-05-app-store-ia"
+tags: ["launch", "mobile", "app-store"]
+excerpt: "Soumettre une app IA chez Apple en 2026 a ses spécificités. Privacy nutrition labels, déclaration des modèles, mots-clés interdits dans le titre, et les motifs de rejet à anticiper. Voici ce que j'aurais aimé savoir avant ma première soumission."
+draft: false
+---
+
+Apple a durci ses règles sur les apps qui utilisent de l'IA générative. Pas dramatique — c'est tenable — mais si tu soumets sans anticiper, tu vas te faire rejeter deux ou trois fois pour des trucs administratifs avant que la review touche au produit.
+
+Voici ce qu'il faut préparer avant de cliquer "Submit for Review" sur une app IA en 2026.
+
+## L'app doit déclarer son usage d'IA
+
+Depuis 2025, App Store Connect te demande **explicitement** si ton app utilise du machine learning, de l'IA générative, ou des modèles tiers. Cette section est dans la fiche de soumission, sous "App Review Information" et dans la **Privacy nutrition label**.
+
+Tu dois indiquer :
+- Si l'IA tourne **on-device** ou via un **service tiers** (OpenAI, Anthropic, Google, etc.).
+- Quels **types de données** sont envoyés au service IA (audio, texte, images, données personnelles).
+- Si les données sont **stockées** chez le tiers, et combien de temps.
+
+Pour [VoiceJournal](https://aivoicejournal.app), c'est : audio envoyé à Whisper (OpenAI) pour transcription, texte envoyé à Claude (Anthropic) pour analyse. Pas de stockage côté provider au-delà du temps de traitement (vérifiable dans les politiques des deux). Cette transparence est attendue par Apple **et** par tes futurs users.
+
+## Le wording "AI" est sensible dans le titre
+
+Apple n'aime pas voir "AI" claqué dans le nom de l'app si la valeur ajoutée n'est pas évidente. Trop d'apps ont essayé de surfer la vague avec un wrapper ChatGPT déguisé en produit. Les reviewers sont méfiants.
+
+Ce qui marche :
+- Le mot "AI" dans le **sous-titre** ou la **description**, jamais en mot principal du titre.
+- Une **valeur produit claire** avant la mention IA : "Journal vocal IA" est bien, "AI Journal" tout court risque le rejet.
+- Pas de mention de modèle spécifique dans le titre ("Powered by GPT-4" ou "Claude-powered") — souvent refusé pour usage non-autorisé de marque.
+
+Mon app s'appelle "VoiceJournal — Journal vocal IA". L'ordre est important : le nom du produit d'abord, le bénéfice ensuite, l'IA en qualificatif.
+
+## Les motifs de rejet typiques pour les apps IA
+
+Quelques rejets que tu peux anticiper :
+
+**Guideline 5.4 (Apple Privacy) — médical/santé**
+Si ton IA touche au bien-être, à l'humeur, à la santé mentale (ce qui est le cas de tout ce qui touche au journaling, à la méditation, au coaching), tu vas être scruté. Pas de promesse thérapeutique. Pas de wording "diagnose", "treat", "cure". Le coaching et le journaling sont OK ; affirmer qu'on traite l'anxiété ne l'est pas.
+
+**Guideline 4.1 (Spam / Mimicry)**
+Si ton app ressemble trop à un wrapper LLM générique, rejet immédiat. Il te faut une **expérience produit distincte** : design custom, valeur métier au-delà du chat, intégration native (audio, photos, etc.). Une simple UI de chat sur OpenAI, ils refusent.
+
+**Guideline 2.5.2 (Code download)**
+Si tu télécharges des modèles ML au runtime, surtout sur iOS, attention. Charger un .gguf depuis ton serveur peut être interprété comme du code executable downloaded. Solution : embed le modèle dans le binaire (Core ML, ONNX intégré) ou utiliser strictement des API en cloud.
+
+**Privacy nutrition label incomplète**
+Le plus fréquent, et le plus stupide à se prendre. Si tu envoies de l'audio à un serveur, tu dois cocher "Audio" dans la collecte de données. Si tu envoies du texte, "Text". Sinon : rejet, et tu repars pour 24-48h de review.
+
+## Les screenshots et l'ASO
+
+Pour les screenshots :
+- Mets l'**output IA** en avant. Les gens cherchent à voir ce que la magie produit, pas ton onboarding.
+- **Évite le mockup générique** "as seen in The New York Times" qui sent le placeholder. Apple scrute aussi le marketing visuel.
+- **Pas de prompts visibles** type ChatGPT sur les screenshots. Ça pue le wrapper.
+
+Pour l'ASO :
+- Le **sous-titre** porte les mots-clés AI/IA + ton verticale (journaling, coaching, analyse, etc.).
+- Les **keywords** (séparés par virgules dans App Store Connect) : tu as 100 caractères, optimise. Mots-clés sur les use cases concrets, pas sur "AI" générique.
+- La **description** doit ouvrir sur le **bénéfice utilisateur**, pas sur la tech.
+
+## La review en pratique
+
+Comptez généralement 24 à 72 heures pour la première review. Si rejet, tu corriges, re-soumets, et la deuxième review est souvent plus rapide (le reviewer voit l'historique).
+
+Conseils pour minimiser les allers-retours :
+- **TestFlight d'abord** avec au moins 5-10 testeurs externes pour vérifier le flow complet et les edge cases.
+- **Onboarding qui ne casse pas** sans connexion réseau (un crash en mode avion = rejet quasi automatique).
+- **Reviewer notes** dans App Store Connect : tu écris au reviewer une note expliquant comment tester ton app IA. Type de prompt à donner, contenu attendu, etc. Ne sous-estime pas l'impact.
+- **Demo account** si ton app demande un login. Sans ça, le reviewer ne peut pas tester, rejet automatique sous 2h.
+
+## Les changements 2025-2026 à noter
+
+- **Privacy nutrition labels** plus stricts sur les transferts à des tiers IA.
+- **Mentions de modèles tiers** scrutées pour usage de marques (impossible de dire "GPT-4" dans le marketing sans accord OpenAI).
+- **Apple Intelligence framework** : si ton app peut utiliser les modèles on-device d'Apple, ça simplifie la privacy nutrition label (zéro transfert).
+- **Génération de contenu** : si ton app génère du texte / des images, tu dois fournir des outils de signalement de contenu inapproprié dans l'app.
+
+## La règle générale
+
+Apple ne déteste pas l'IA. Apple déteste les apps **paresseuses** qui se contentent d'être un proxy vers un LLM. Plus ton produit a une **valeur native, une UI custom, une expérience qui justifie d'être sur mobile** (audio, caméra, capteurs, push), plus la review se passe bien.
+
+Si ton app est un chat avec un système prompt légèrement modifié, sors un PDF à la place. Si c'est un vrai produit qui utilise l'IA comme outil, l'App Store est ouvert.
+
+→ Le repo VoiceJournal (côté soumission) : tout est public sur [github.com/aymeric/voicejournal-ai](https://github.com).

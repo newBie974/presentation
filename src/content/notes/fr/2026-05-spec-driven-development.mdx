@@ -1,0 +1,130 @@
+---
+title: "Spec-Driven Development avec Claude : le workflow qui m'a fait gagner un mois"
+date: 2026-05-19
+locale: fr
+translationKey: "2026-05-spec-driven"
+tags: ["ai", "claude", "process"]
+excerpt: "Brainstorming → spec → plan détaillé → exécution par sub-agents avec review. Le workflow que j'utilise depuis quelques mois et qui rend l'IA enfin utilisable sur des projets multi-jours, pas juste sur du snippet."
+draft: false
+---
+
+Il y a deux façons de coder avec un agent IA.
+
+La première, c'est de balancer "fais-moi ça" et de corriger au fur et à mesure. Ça marche pour un script de 50 lignes. Au-delà, tu passes plus de temps à corriger l'agent qu'à coder.
+
+La deuxième, c'est le **Spec-Driven Development**. Tu poses la spec, tu poses le plan, tu lances l'exécution, tu reviewses entre les étapes. C'est le workflow qui m'a fait passer de "Claude qui m'aide" à "Claude qui ship". Voici comment.
+
+## Le pipeline en 4 étapes
+
+```
+1. Brainstorming   → on définit le quoi et le pourquoi
+2. Spec            → on écrit le quoi et le pourquoi en markdown
+3. Plan            → on transforme le quoi en plan d'exécution par tâches
+4. Subagents       → on exécute le plan, une tâche à la fois, avec review
+```
+
+Chaque étape produit un **artefact persisté en markdown** dans le repo. Pas un chat éphémère qui s'évapore au prochain `/clear` — un fichier qui vit avec le projet.
+
+## Étape 1 : Brainstorming
+
+L'erreur classique avec un LLM, c'est de sauter direct au code. Le brainstorming, c'est 20-40 minutes de questions/réponses pour cadrer.
+
+J'utilise la skill `brainstorming` des [superpowers](https://github.com/anthropics/superpowers) :
+
+```
+/superpowers:brainstorming
+```
+
+Claude pose des questions structurées une par une :
+- Quel est l'objectif principal ?
+- Quelle audience ?
+- Quel mood visuel ?
+- Quelles sections ?
+- Quelles contraintes techniques ?
+
+Tu n'as **pas le droit d'écrire de code** pendant cette phase. Le but c'est de cristalliser la décision produit en réponses claires. À la fin, Claude propose 2-3 approches, tu valides une.
+
+## Étape 2 : Spec
+
+À partir du brainstorming validé, Claude génère un fichier spec dans `docs/superpowers/specs/YYYY-MM-DD-feature-name.md`.
+
+Le spec décrit :
+- Le **quoi** (les pages, les composants, les sections)
+- Le **pourquoi** (les décisions produit motivées)
+- Les **non-goals** (ce qu'on ne fait PAS en V1)
+- Les **success criteria** (mesurables)
+- L'**architecture technique** (deps, folders, configs)
+- Les **qualités** (perf, a11y, SEO, GEO)
+
+Cette spec, c'est ton **contrat avec l'agent**. Tu la commits dans le repo. Toute discussion future sur "est-ce qu'on doit ajouter X ?" se résout en pointant la spec.
+
+Pour ce site sur lequel tu lis cet article, la spec fait 590 lignes. Elle a été écrite en une session de 30 minutes après un brainstorming d'une heure. Sans cette spec, on aurait dérivé pendant deux semaines.
+
+## Étape 3 : Plan d'exécution
+
+À partir de la spec, on génère un plan détaillé tâche par tâche dans `docs/superpowers/plans/`.
+
+```
+/superpowers:writing-plans
+```
+
+Le plan, c'est la spec **décomposée en tâches exécutables de 2-5 minutes chacune**. Chaque tâche contient :
+- Les **fichiers à créer ou modifier**, exactement
+- Le **code complet** (pas de "TODO: implement")
+- Les **commandes à lancer** avec sortie attendue
+- Le **message de commit**
+
+Mon plan pour ce site fait ~5000 lignes, 4 phases, 73 tâches. Imprimable. Suivable par n'importe qui.
+
+Le détail qui change tout : **chaque phase finit par un review checkpoint**. Tu valides la phase complète avant la suivante. Pas de big bang.
+
+## Étape 4 : Exécution par sub-agents
+
+C'est là que la magie opère. Au lieu de coder toi-même ou de laisser Claude tout faire d'une traite, tu **dispatches une tâche à la fois à un sub-agent frais**.
+
+```
+/superpowers:subagent-driven-development
+```
+
+Pour chaque tâche :
+1. Tu **dispatche un implementer** avec le texte complet de la tâche + le contexte minimum nécessaire.
+2. Le sub-agent code, teste, commit.
+3. Tu **dispatche un spec reviewer** qui vérifie que l'implémentation match la spec (pas trop, pas pas assez).
+4. Si OK, tu **dispatches un code reviewer** qui vérifie la qualité du code.
+5. Si OK, tu passes à la tâche suivante.
+
+**Pourquoi des sub-agents frais** : ton contexte principal reste propre. Le sub-agent voit la tâche, fait son truc, te renvoie un résumé. Tu n'as pas 12 conversations parallèles qui s'emmêlent.
+
+**Pourquoi deux reviews** : la première vérifie "as-tu fait ce qui était demandé" (compliance), la deuxième vérifie "est-ce que c'est bien fait" (quality). Les deux sont nécessaires.
+
+## Ce que ça change concrètement
+
+Avant ce workflow :
+- Je perdais 30% du temps à expliquer le contexte à chaque session.
+- Je découvrais en fin de feature qu'on avait dérivé sur la spec.
+- Les sessions longues étaient confuses, le contexte saturé.
+
+Avec ce workflow :
+- Le contexte est dans des fichiers, pas dans mon souvenir.
+- Toute déviation est visible à la review d'étape.
+- Je peux **arrêter à n'importe quel moment** et reprendre une semaine plus tard sans rien perdre.
+
+Le portfolio sur lequel tu lis cet article a été refait de zéro en suivant exactement ce workflow. 73 tâches, ~30 commits, zéro session de 4 heures où tu te demandes ce que tu fabriques.
+
+## Les contre-indications
+
+Ce workflow n'est pas pour :
+- **Du throwaway** (un script d'une après-midi). Trop lourd à mettre en place.
+- **L'exploration créative pure** où tu ne sais pas ce que tu veux. Là, code direct, ça te coûtera moins cher.
+- **Les tâches très ad-hoc** type "fix ce bug". Pas besoin de spec pour 3 lignes.
+
+Mais dès qu'un projet dépasse 5 jours de travail, le coût de mise en place s'amortit dans la première heure.
+
+## Comment tu te lances
+
+1. Installer le plugin Superpowers dans Claude Code (instructions sur le repo officiel).
+2. Sur ton prochain projet, ne tape pas une ligne de code avant d'avoir lancé `/superpowers:brainstorming`.
+3. Laisse Claude poser les questions. Réponds une par une.
+4. Va jusqu'au bout du pipeline.
+
+C'est inconfortable la première fois — tu as l'impression de perdre du temps à "discuter au lieu de coder". Tu vas le rattraper trois fois la première semaine.
