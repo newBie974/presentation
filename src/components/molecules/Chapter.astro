@@ -6,19 +6,19 @@ interface Props {
   locale: Locale;
 }
 const { chapter, locale } = Astro.props;
+
+const stackLabel = locale === "fr" ? "STACK" : "STACK";
 ---
 
 <article class="chapter">
-  <div class="rail">
-    <span class="dot" aria-hidden="true"></span>
-    <span class="line" aria-hidden="true"></span>
-  </div>
   <header class="head">
     <span class="years">{chapter.yearsLabel}</span>
     <h3>{chapter.title[locale]}</h3>
     <p class="role">{chapter.role[locale]}</p>
   </header>
+
   <p class="body">{chapter.body[locale]}</p>
+
   {
     chapter.highlights && chapter.highlights.length > 0 && (
       <ul class="highlights">
@@ -33,60 +33,36 @@ const { chapter, locale } = Astro.props;
       </ul>
     )
   }
+
   {
     chapter.technologies && chapter.technologies.length > 0 && (
-      <ul class="tech" aria-label="Technologies">
-        {chapter.technologies.map((t) => (
-          <li>{t}</li>
-        ))}
-      </ul>
+      <div class="stack">
+        <span class="stack-label">{stackLabel}</span>
+        <ul class="tech" aria-label="Technologies">
+          {chapter.technologies.map((t) => (
+            <li>{t}</li>
+          ))}
+        </ul>
+      </div>
     )
   }
 </article>
 
 <style>
   .chapter {
-    display: grid;
-    grid-template-columns: 40px 1fr;
-    column-gap: 0;
-    row-gap: 0;
-    padding: 24px 0 28px;
-    position: relative;
+    padding: 28px 0;
+    border-top: 1px dashed var(--color-border);
   }
-  .chapter:last-of-type .line {
-    display: none;
-  }
-
-  .rail {
-    grid-row: 1 / span 4;
-    grid-column: 1;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  .dot {
-    width: 12px;
-    height: 12px;
-    background: var(--color-strong-bg);
-    border: var(--border-w) solid var(--color-border);
-    margin-top: 8px;
-    flex-shrink: 0;
-  }
-  .line {
-    flex: 1;
-    width: 2px;
-    background: var(--color-border);
-    margin-top: 4px;
-    min-height: 24px;
+  .chapter:first-of-type {
+    border-top: none;
+    padding-top: 0;
   }
 
   .head {
-    grid-column: 2;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin-bottom: 10px;
+    gap: 6px;
+    margin-bottom: 14px;
   }
   .years {
     font-family: var(--font-mono);
@@ -109,27 +85,25 @@ const { chapter, locale } = Astro.props;
   }
 
   .body {
-    grid-column: 2;
     font-size: 14px;
-    line-height: 1.65;
-    margin: 0 0 12px;
+    line-height: 1.7;
+    margin: 0 0 14px;
   }
 
   .highlights {
-    grid-column: 2;
     list-style: none;
     padding: 0;
-    margin: 0 0 14px;
+    margin: 0 0 18px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
   .highlights li {
     display: grid;
-    grid-template-columns: 16px 1fr;
-    gap: 8px;
+    grid-template-columns: 18px 1fr;
+    gap: 10px;
     font-size: 13px;
-    line-height: 1.6;
+    line-height: 1.65;
   }
   .bullet {
     font-family: var(--font-mono);
@@ -140,8 +114,22 @@ const { chapter, locale } = Astro.props;
     color: var(--color-accent);
   }
 
+  .stack {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    gap: 16px;
+    align-items: start;
+    padding-top: 6px;
+  }
+  .stack-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    color: var(--color-text-muted);
+    padding-top: 4px;
+  }
   .tech {
-    grid-column: 2;
     list-style: none;
     padding: 0;
     margin: 0;
@@ -151,20 +139,17 @@ const { chapter, locale } = Astro.props;
   }
   .tech li {
     font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--color-text-muted);
-    padding: 3px 7px;
+    font-size: 11px;
+    color: var(--color-text);
+    padding: 3px 8px;
     background: var(--color-bg-soft);
     border: 1px solid var(--color-border);
   }
 
   @media (max-width: 720px) {
-    .chapter {
-      grid-template-columns: 24px 1fr;
-    }
-    .dot {
-      width: 10px;
-      height: 10px;
+    .stack {
+      grid-template-columns: 1fr;
+      gap: 8px;
     }
   }
 </style>
