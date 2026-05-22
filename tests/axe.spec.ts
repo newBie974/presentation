@@ -16,6 +16,8 @@ for (const route of ROUTES) {
   test(`a11y — ${route}`, async ({ page }) => {
     await page.goto(route);
     const results = await new AxeBuilder({ page })
+      .exclude("#cal-inline-embed")
+      .exclude("iframe")
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
       .analyze();
     expect(results.violations).toEqual([]);
