@@ -1,0 +1,107 @@
+---
+title: "RTK: how I cut 80% of the noise eating up my Claude context"
+date: 2026-05-12
+locale: en
+translationKey: "2026-05-rtk"
+tags: ["ai", "claude", "tools", "process"]
+excerpt: "A Rust CLI proxy that sits between Claude Code and your shell commands. It compresses verbose output (git status, ls, jest...) before it ever reaches the context window. One command to install, instant payoff."
+draft: false
+---
+
+When Claude Code runs `git status` on your machine, it doesn't see a summary. It sees the full output: potentially hundreds of lines across modified files, untracked, branches, remotes. All of it lands directly in its context. Multiply by ten `git status` calls in a session, add the `ls`, `cat`, `jest` runs, and you've already burned a meaningful chunk of your window.
+
+[RTK](https://github.com/rtk-ai/rtk) fixes this. I installed it a few weeks ago and I'm not going back.
+
+## The problem, concretely
+
+A coding session with an LLM agent is:
+- The agent firing shell commands to explore your repo.
+- Raw output flowing back into its context.
+- The context filling up, the agent getting confused, you opening a new session.
+
+On the most common commands — `ls`, `tree`, `git status`, `git diff`, `cat`, `grep`, test runners — the output is **full of noise**: whitespace, repeated lines, useless comments, version banners. The agent doesn't need any of that. It needs signal.
+
+## What RTK does
+
+RTK is a Rust binary you install globally. You run:
+
+```bash
+brew install rtk
+rtk init -g     # for Claude Code
+```
+
+That's it. No changes to your scripts, your `.zshrc`, or your Claude Code config. RTK installs a hook that intercepts the Bash commands Claude executes, rewrites them (`git status` becomes `rtk git status`), runs the real command, **filters/compresses the output**, and hands back the result.
+
+The official diagram sums it up:
+
+```
+Without RTK:                            With RTK:
+
+Claude --git status--> shell --> git     Claude --git status--> RTK --> git
+   ^                              |         ^                    |        |
+   |    ~2000 tokens (raw)        |         |   ~200 tokens      | filter |
+   +------------------------------+         +-----(filtered)-----+--------+
+```
+
+Four strategies applied per command type:
+- **Smart filtering** — drop the noise (comments, whitespace, boilerplate)
+- **Grouping** — aggregate similar items (files by directory, errors by type)
+- **Truncation** — keep relevant context, cut redundancy
+- **Deduplication** — collapse repeated lines into counts
+
+All in Rust, with advertised overhead below 10ms.
+
+## What it does on the commands I run most
+
+Per their benchmark table (take it as an order of magnitude, varies by project size):
+
+| Command | Raw output | With RTK | Savings |
+|---|---|---|---|
+| `ls` / `tree` | ~2,000 tokens | ~400 | -80% |
+| `cat` / file read | ~40,000 | ~12,000 | -70% |
+| `grep` / `rg` | ~16,000 | ~3,200 | -80% |
+| `git status` | ~3,000 | ~600 | -80% |
+| `git diff` | ~10,000 | ~2,500 | -75% |
+| `git add` / `commit` / `push` | ~1,600 | ~120 | -92% |
+| `npm test` / `jest` | ~25,000 | ~2,500 | -90% |
+| `pytest` / `cargo test` | ~8,000 | ~800 | -90% |
+| `tsc` | detailed | grouped by file | -80% |
+
+On a 30-minute session where Claude hits ~10x `ls`, ~20x `cat`, ~8x `grep`, ~10x `git status` and a few test runs, we're talking roughly **80% reduction on everything that goes through the Bash hook**. For Claude usage with a tight context budget, that's huge.
+
+## What changes in practice
+
+Before RTK, my context filled up fast whenever I let Claude explore a chunky repo. Now `git status` comes back as a few lines instead of a full page, `jest` output only shows failures, `tree` groups similar folders.
+
+The win isn't just financial (though yes, fewer tokens billed). Mostly:
+- **More room in the context for the actual code and conversation**, less wasted on shell noise.
+- **The agent stays coherent longer** within a single session.
+- **Fewer surprise "Compact conversation"** events.
+
+## The limitation to know
+
+The hook only fires on the agent's **Bash tool**. Claude Code's native tools — `Read`, `Grep`, `Glob` — which don't use Bash internally, don't go through RTK.
+
+If you want those workflows to benefit from compression too, you swap explicitly for shell commands: `cat`/`head`/`tail` instead of `Read`, `rg`/`grep` instead of `Grep`, `find` instead of `Glob`. Or call `rtk read`, `rtk grep`, `rtk find` directly.
+
+I keep the native tools for most file reads (better Claude integration) and let RTK handle anything that actually flows through Bash. Good compromise.
+
+## What seals the deal for me
+
+RTK is:
+- **Open source** under Apache 2.0, readable code in the repo.
+- **Single Rust binary**, zero dependencies, installable via `brew` or `cargo install`.
+- **Compatible with most agents**: Claude Code, Copilot, Gemini CLI, Codex, Cursor, Windsurf, Cline, etc.
+- **Multilingual** docs (EN, FR, ES, ZH, JA, KO).
+
+Exactly the kind of tool I want in my toolbox: one binary that does one precise thing, that you forget about once installed, and that costs nothing to maintain.
+
+## Verdict
+
+Installing RTK took me 90 seconds: `brew install rtk` + `rtk init -g` + restart Claude Code. At no point did I have to touch my existing config or learn a new CLI to use day-to-day.
+
+The ROI is immediate: fewer tokens spent on shell commands, more room in the context for real technical discussion, more coherence in long sessions.
+
+If you use Claude Code, Cursor, Gemini CLI or any agent that funnels its commands through Bash, this is probably the highest-ROI tool you'll install this year.
+
+→ The repo: [github.com/rtk-ai/rtk](https://github.com/rtk-ai/rtk)

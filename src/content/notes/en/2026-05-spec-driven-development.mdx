@@ -1,0 +1,130 @@
+---
+title: "Spec-Driven Development with Claude: the workflow that saved me a month"
+date: 2026-05-19
+locale: en
+translationKey: "2026-05-spec-driven"
+tags: ["ai", "claude", "process"]
+excerpt: "Brainstorming → spec → detailed plan → sub-agent execution with review. The workflow I've been using for a few months that finally makes AI usable on multi-day projects, not just snippets."
+draft: false
+---
+
+There are two ways to code with an AI agent.
+
+The first is to throw "do this for me" and correct as you go. It works for a 50-line script. Beyond that, you spend more time correcting the agent than coding.
+
+The second is **Spec-Driven Development**. You lay down the spec, the plan, you launch execution, you review between steps. It's the workflow that took me from "Claude that helps me" to "Claude that ships". Here's how.
+
+## The 4-step pipeline
+
+```
+1. Brainstorming   → define the what and the why
+2. Spec            → write the what and the why in markdown
+3. Plan            → turn the what into a task-by-task execution plan
+4. Subagents       → execute the plan, one task at a time, with review
+```
+
+Each step produces a **markdown artifact persisted in the repo**. Not an ephemeral chat that evaporates at the next `/clear` — a file that lives with the project.
+
+## Step 1: Brainstorming
+
+The classic mistake with an LLM is jumping straight to code. Brainstorming is 20-40 minutes of Q&A to frame.
+
+I use the `brainstorming` skill from [superpowers](https://github.com/anthropics/superpowers):
+
+```
+/superpowers:brainstorming
+```
+
+Claude asks structured questions one at a time:
+- What's the main goal?
+- Which audience?
+- What visual mood?
+- Which sections?
+- What technical constraints?
+
+You're **not allowed to write code** during this phase. The point is to crystallize product decisions into clear answers. At the end, Claude proposes 2-3 approaches, you validate one.
+
+## Step 2: Spec
+
+From the validated brainstorm, Claude generates a spec file at `docs/superpowers/specs/YYYY-MM-DD-feature-name.md`.
+
+The spec describes:
+- The **what** (pages, components, sections)
+- The **why** (justified product decisions)
+- The **non-goals** (what we're explicitly NOT doing in V1)
+- The **success criteria** (measurable)
+- The **technical architecture** (deps, folders, configs)
+- The **quality bars** (perf, a11y, SEO, GEO)
+
+This spec is your **contract with the agent**. You commit it to the repo. Any future discussion about "should we add X?" gets resolved by pointing at the spec.
+
+For the site you're reading this on, the spec is 590 lines. It was written in one 30-minute session after an hour of brainstorming. Without this spec, we'd have drifted for two weeks.
+
+## Step 3: Execution plan
+
+From the spec, you generate a detailed task-by-task plan at `docs/superpowers/plans/`.
+
+```
+/superpowers:writing-plans
+```
+
+The plan is the spec **decomposed into executable tasks of 2-5 minutes each**. Each task contains:
+- The **files to create or modify**, exactly
+- The **complete code** (no "TODO: implement")
+- The **commands to run** with expected output
+- The **commit message**
+
+My plan for this site is ~5000 lines, 4 phases, 73 tasks. Printable. Followable by anyone.
+
+The detail that changes everything: **each phase ends with a review checkpoint**. You validate the whole phase before the next. No big bang.
+
+## Step 4: Sub-agent execution
+
+This is where the magic happens. Instead of coding yourself or letting Claude do everything in one shot, you **dispatch one task at a time to a fresh sub-agent**.
+
+```
+/superpowers:subagent-driven-development
+```
+
+For each task:
+1. You **dispatch an implementer** with the full task text + the minimal context needed.
+2. The sub-agent codes, tests, commits.
+3. You **dispatch a spec reviewer** that checks the implementation matches the spec (not more, not less).
+4. If OK, you **dispatch a code reviewer** that checks code quality.
+5. If OK, you move to the next task.
+
+**Why fresh sub-agents**: your main context stays clean. The sub-agent sees the task, does its thing, sends you a summary. No 12 tangled parallel conversations.
+
+**Why two reviews**: the first checks "did you do what was asked" (compliance), the second checks "is it well built" (quality). Both are needed.
+
+## What it actually changes
+
+Before this workflow:
+- I lost 30% of the time re-explaining context every session.
+- I'd discover at the end of a feature that we'd drifted from the spec.
+- Long sessions were confused, the context was saturated.
+
+With this workflow:
+- The context lives in files, not in my memory.
+- Any deviation is visible at the phase review.
+- I can **stop at any moment** and pick up a week later without losing anything.
+
+The portfolio you're reading this article on was rebuilt from zero following exactly this workflow. 73 tasks, ~30 commits, zero 4-hour sessions where you wonder what you're even doing.
+
+## The contra-indications
+
+This workflow isn't for:
+- **Throwaway code** (a one-afternoon script). Too heavy to set up.
+- **Pure creative exploration** where you don't know what you want. There, code direct, it'll cost less.
+- **Highly ad-hoc tasks** like "fix this bug". No spec needed for 3 lines.
+
+But the minute a project goes past 5 days of work, the setup cost amortizes within the first hour.
+
+## How you get started
+
+1. Install the Superpowers plugin in Claude Code (instructions on the official repo).
+2. On your next project, don't type a line of code before running `/superpowers:brainstorming`.
+3. Let Claude ask the questions. Answer one at a time.
+4. Go all the way through the pipeline.
+
+It feels uncomfortable the first time — like you're wasting time "talking instead of coding". You'll make it back three times over in the first week.

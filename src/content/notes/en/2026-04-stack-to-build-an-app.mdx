@@ -1,0 +1,133 @@
+---
+title: "The 2026 stack to build an app without losing your mind"
+date: 2026-04-20
+locale: en
+translationKey: "2026-04-stack"
+tags: ["stack", "indie", "mobile"]
+excerpt: "Three apps shipped in two years. The stack I'd pick again tomorrow, the anti-patterns I lived through, and the specific traps you won't find in the docs."
+draft: false
+---
+
+My first app took me much longer than my third. The delta isn't in my typing speed: it's in the stack choices.
+
+Here's the stack I'd use to ship a solo app tomorrow morning, the anti-patterns I went through, and the concrete traps that aren't in the documentation.
+
+## The rule that underpins everything
+
+**You code for 6 weeks, or you code for 4 months. The difference isn't in how fast you type.**
+
+It's in:
+- How much time you spend debugging Apple certificates, Stripe webhooks, or home-rolled auth.
+- How many times you rebuild the same infra because your previous choice doesn't hold up.
+- How many libraries you integrate that "do the same thing but better".
+
+Everything below is optimized to minimize those three losses.
+
+## Mobile: Expo, and forget bare React Native
+
+```bash
+npx create-expo-app my-app --template blank-typescript
+```
+
+No early ejection. No bare RN. You start in Expo Go for the proto, then move to a dev build as soon as you need a native module (`react-native-purchases`, advanced `expo-av` config).
+
+**What this actually saves you**: EAS Build hands you a TestFlight-ready IPA in minutes. By hand, it's several days of figuring out fastlane, certificates, provisioning profiles and the Apple system. Never by hand again.
+
+**The trap**: if you eject (custom native build), you lose Expo OTA updates. Keep ejection as a last resort, only if literally no module covers your need.
+
+**Flutter?** Great framework. But the JS ecosystem lets me share types and AI prompts between mobile and web — which reduces friction when I have a shared Edge Function backend. Unified TS stack everywhere = less mental load.
+
+## Backend: Supabase Edge Functions, full stop
+
+Managed Postgres + auth + RLS + Deno Edge Functions. All in the same dashboard.
+
+A typical endpoint (VoiceJournal's voice analysis):
+
+```typescript
+// supabase/functions/analyze-entry/index.ts
+Deno.serve(async (req) => {
+  const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+  const { data: { user } } = await supabase.auth.getUser(token);
+  if (!user) return new Response("Unauthorized", { status: 401 });
+
+  const transcript = await openai.audio.transcriptions.create({
+    file: audioFile, model: "whisper-1", language: "fr",
+  });
+
+  const analysis = await anthropic.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: buildPrompt(transcript.text) }],
+  });
+
+  return Response.json({ entry: parseAnalysis(analysis) });
+});
+```
+
+No server sitting idle costing money. You pay per invocation.
+
+**The trap**: Edge Functions have a non-trivial cold start (around 100-200ms). For an AI endpoint that takes several seconds anyway, it's invisible. For an endpoint that has to respond instantly, it starts to matter. Up to you to know if you have that type of endpoint.
+
+**Firebase?** Locked-in, NoSQL painful as soon as your model becomes relational, unpredictable pricing. Postgres + RLS > Firestore + security rules every single time.
+
+## AI: pick your model per endpoint, not per project
+
+The most useful lesson I learned. **The right model depends on the endpoint, not the app.**
+
+On VoiceJournal:
+- Audio transcription → **Whisper** (OpenAI). Specialized for audio, faster than Claude which doesn't really do audio.
+- Fine analysis of an entry → **Claude Sonnet 4.6**. Better French comprehension, clean JSON output, follows structured prompts well.
+- Bulk emotion classification → **Gemini Flash**. Cheaper when quality required is medium and volume is high.
+
+I have a `lib/llm.ts` util exposing `analyzeWithClaude`, `transcribeWithWhisper`, `classifyWithGemini`. If a better model ships tomorrow, I change one constant. Don't lock yourself to a single provider.
+
+## Subscriptions: RevenueCat from day 1
+
+Handling StoreKit (iOS) + Billing API (Android) yourself, solo, is several weeks of boilerplate. With RevenueCat, it's an afternoon.
+
+**The non-obvious trap**: you have to call `Purchases.logIn(supabase_user_id)` after Supabase login, and `Purchases.logOut()` on logout. Without that, RevenueCat webhooks send a wrong `app_user_id` to your backend and you can't sync Pro status server-side. The docs don't shout this loud enough.
+
+```typescript
+// After Supabase auth
+await Purchases.logIn(user.id);
+```
+
+Pricing: free up to an MRR threshold, percentage above. Not a concern while you're starting out.
+
+## Web: Astro, not Next.js
+
+For a landing, a blog, a portfolio: Next.js is overkill. Astro generates static HTML, zero JS by default, integrates Tailwind 4 natively, handles i18n and content collections.
+
+The site you're reading runs on Astro 6. Free deploy on GitHub Pages.
+
+**Next.js, when?** If you need SSR (auth-gated, real-time data at render), shared TS API routes, or you're building a complex web product. For a landing or a blog: oversized.
+
+## Mobile state: Zustand, period.
+
+```typescript
+import { create } from "zustand";
+
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  setUser: (user) => set({ user }),
+}));
+```
+
+1 KB. No provider to wrap. Clean hook API. All my global state needs go through it.
+
+**Redux?** Dead for solo dev. Too much boilerplate, and 90% of your state is local (`useState`).
+
+## What I tried and dropped
+
+| Tech | Why I picked it | Why I dropped it |
+|---|---|---|
+| Firebase | All-integrated, free | Unpredictable pricing, NoSQL painful when the model becomes relational |
+| "Serious" Node backend | A "real" backend | Edge Functions do the same job in 30 lines for $0/month |
+| OpenAI GPT-4 by default | What everyone was using | Claude renders better on my tasks, Gemini classifies for less |
+| MobX | Saw it on agency projects | Too magic, Zustand does it in 1 KB and stays explicit |
+
+## The only rule worth keeping
+
+You don't validate a tech because it's trendy, or because you already know it. You validate it because **it saves you time on things you already know how to do** and costs nothing while no one uses your app.
+
+This stack checks both. Copy it, ship in a few weeks, and move on to what actually matters.

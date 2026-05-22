@@ -1,0 +1,327 @@
+---
+title: "Shipping an AI app to the App Store in 2026: the actual rejections I got"
+date: 2026-05-16
+locale: en
+translationKey: "2026-05-app-store-ia"
+tags: ["launch", "mobile", "app-store"]
+excerpt: "VoiceJournal made it to the App Store, but not on the first try. The concrete rejections I got, the exact fixes, and the process traps (DSA, ITMS-90186, RevenueCat, App Groups) that aren't anywhere in Apple's docs."
+draft: false
+---
+
+I shipped [VoiceJournal](https://aivoicejournal.app) to the App Store. Not on the first try. Here are the concrete rejections I got from App Review, the exact fixes, and the process traps that cost me time and aren't documented anywhere official.
+
+If you're shipping an iOS app — especially an AI app with subscriptions — what follows will save you days.
+
+## Before even the first submission
+
+Three things to activate **on day 1**, not later:
+
+**1. Apple Small Business Program** ([the form](https://developer.apple.com/app-store/small-business-program/)). Cuts Apple's commission from 30% to 15% on all in-app purchases if you make less than $1M/year (= you). Free, applicable the following quarter. On a €4.99 subscription, you keep €4.24 instead of €3.49. No reason to wait.
+
+**2. DSA compliance (Digital Services Act)** if you target the EU. App Store Connect → Business → "Digital Services Act compliance" → check **"I have trader status"**. Without this, your subscriptions can get stuck in `DEVELOPER_ACTION_NEEDED` and won't be available, even in Sandbox.
+
+**3. Dedicated Sandbox Tester**. Don't try to test an IAP with your personal Apple account. Apple blocks it to prevent devs from cheating. Create a tester in App Store Connect → **Users & Access → Sandbox tab** (not "People"), use a `youremail+sandbox@gmail.com` alias, and sign in on the iPhone via **Settings → App Store → all the way down → Sandbox Account**.
+
+## What your app MUST contain before submitting
+
+Before the rejection stories, here are the **known rules** that there's no point trying to skirt. Apple checks them on almost every app, and it's more efficient to implement them upfront than to take the hits in review.
+
+### 1. Account deletion (Guideline 5.1.1)
+
+"Delete my account" button in settings. Must wipe **everything**: entries, profile, local subscription **and the auth account itself**.
+
+On Supabase, the client can't delete from `auth.users`. You need an Edge Function with the service role key:
+
+```typescript
+Deno.serve(async (req) => {
+  const { user } = await authenticate(req);
+  await supabase.from("entries").delete().eq("user_id", user.id);
+  await supabase.from("profiles").delete().eq("id", user.id);
+  await supabaseAdmin.auth.admin.deleteUser(user.id);
+  return new Response("ok");
+});
+```
+
+Apple tests: they create an account, delete it, try to log back in, confirm it's dead.
+
+### 2. AI consent screen (Guideline 5.1.2(i))
+
+Mandatory since 2025 if your app sends data to third-party AI services. Not a mention buried in the privacy policy — a **dedicated screen** in the flow, **before** the first transmission.
+
+Three elements on it:
+- Explicit naming of services ("OpenAI's Whisper receives your audio", "Anthropic's Claude receives the transcribed text").
+- Two buttons: "Accept and continue" and "No thanks".
+- Clickable link to the privacy policy.
+
+### 3. Sign in with Apple (Guideline 4.8)
+
+Mandatory **if you offer Google Sign-In, Facebook, or any third-party login**. Not optional.
+
+And not a custom button — use the official component:
+
+```tsx
+import { AppleAuthenticationButton } from "expo-apple-authentication";
+
+<AppleAuthenticationButton
+  buttonType={AppleAuthenticationButtonType.SIGN_IN}
+  buttonStyle={AppleAuthenticationButtonStyle.BLACK}
+  cornerRadius={5}
+  style={{ width: 200, height: 44 }}
+  onPress={handleAppleSignIn}
+/>
+```
+
+A generic "Sign in with Apple" button made from scratch with an SVG apple = instant rejection.
+
+### 4. Paywall — every info next to the purchase button (Guideline 3.1.2(c))
+
+Visually adjacent to the button:
+- **Title** of the subscription
+- **Duration** (1 month, 1 year)
+- **Price** billed
+- **Trial text** explicit: "7-day free trial. Then $4.99/month will be charged automatically."
+- **Legal text**: "Auto-renews. Cancellable in Settings > Subscriptions at least 24h before the end of the period."
+- **Clickable links** to Terms of Use and Privacy Policy.
+- **"Restore purchases" button**. Mandatory. Even if you find it ugly.
+
+### 5. Privacy Policy + Terms — hosting, content, links everywhere
+
+The most underestimated topic. Apple wants three things, simultaneously:
+
+**a) A hosted Privacy Policy + Terms web page.** GitHub Pages is free and enough. The Privacy Policy content must explicitly cover:
+
+- What data is collected and why
+- **All third-party services named** by their actual name (OpenAI Whisper, Anthropic Claude, Supabase, RevenueCat, etc.). Non-negotiable, first thing checked.
+- Where data is stored (EU, US) and for how long
+- International transfer (if servers outside the EU)
+- User rights (access, deletion, portability — GDPR)
+- Cookies and tracking, even if "none"
+- Sale of data: explicitly say "no"
+- Protection of minors (< 13 years old)
+- Contact procedure
+
+**b) Clickable links inside the app.** From Settings **and** from the paywall. Always via `WebBrowser.openBrowserAsync()` rather than `Linking.openURL()` — the latter can crash on some devices.
+
+```tsx
+import * as WebBrowser from "expo-web-browser";
+
+<Pressable onPress={() => WebBrowser.openBrowserAsync("https://aivoicejournal.app/privacy")}>
+  <Text>Privacy Policy</Text>
+</Pressable>
+```
+
+**c) Links in the App Store Connect description.** Apple wants to see these two lines at the end of the description text, in **every language** submitted:
+
+```
+Terms of Use: https://aivoicejournal.app/terms
+Privacy Policy: https://aivoicejournal.app/privacy
+```
+
+Missing **any one** of the three (hosted page, in-app links, links in the ASC description) = rejection 3.1.2(c).
+
+### 6. Privacy Nutrition Labels in App Store Connect
+
+"App Privacy" section. You must declare **every type of data** your app collects, and specify the usage. The reviewer compares what you declare with what they observe testing. Mismatch = rejection.
+
+For VoiceJournal, here's what's checked:
+
+| Category | Data | Usage |
+|---|---|---|
+| Contact Info | Email Address | App Functionality |
+| Contact Info | Name | App Functionality |
+| User Content | Audio Data | App Functionality |
+| User Content | Health & Fitness (mood) | App Functionality |
+| User Content | Journal & transcript | App Functionality |
+| Identifiers | User ID | App Functionality |
+| Purchases | — | App Functionality |
+| Tracking | — | **No** |
+
+Simple rule: if you send audio to a server, check "Audio". If you send text, "Text". If you compute a mood score, "Health & Fitness". If you rent data to third parties, "Tracking" — otherwise no.
+
+An incomplete nutrition label is the stupidest rejection to take. Twenty minutes of work, 24-48h of review lost if you forget.
+
+### 7. Health / wellness disclaimer
+
+If your app produces a score, advice, or analysis related to mental health, mood, nutrition, or sleep: show a visible disclaimer.
+
+> Not medical or psychological advice.
+
+VoiceJournal gives a Mind Score: disclaimer present in the app and in the App Store description.
+
+### 8. `NSMicrophoneUsageDescription` in English
+
+The reviewer is anglophone by default. If your `Info.plist` says "L'app a besoin du micro pour t'enregistrer", it gets rejected for incomplete metadata. Write in English (or bilingual), and **be specific**:
+
+```xml
+<key>NSMicrophoneUsageDescription</key>
+<string>VoiceJournal needs microphone access to record your voice journal.</string>
+```
+
+Same for `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, etc.
+
+### What is BANNED and triggers near-automatic rejection
+
+- **"Coming Soon"** on unimplemented features. Hide the button, don't grey it out.
+- **Mock data** visible to the user. If you have no data, show an explicit empty state.
+- **Dead buttons** that do nothing when clicked (see 2.1(a) rejection below).
+- **`console.log` in prod**. Apple doesn't look, but competitors can inspect debug logs.
+- Claiming **"end-to-end encryption"** when it's just HTTPS. It's a legal term, using it falsely is deceptive.
+- **API keys** from OpenAI/Anthropic/Stripe **client-side**. Not a direct rejection but a security hole that can cost you dearly.
+
+## The UX rejection that surprised me most: 4.0 — UI broken on iPad
+
+My app targets iPhone. I tested it on iPhone. Apple, on the other hand, **always tests on iPad** even if you set `supportsTablet: false`.
+
+On iPad, the tab bar is ~83px + a different safe area inset. My "I accept and continue" (AI consent) and "Analyze my entry" (record) buttons were completely hidden behind the tab bar.
+
+**Fix that worked first try:**
+- Every screen with a bottom button must be scrollable (`ScrollView` or equivalent).
+- Don't use `flex: 1 + justifyContent: space-between` on these screens.
+- Add a minimum `paddingBottom: 140px` (I had 48px, that was insufficient).
+- Apply this padding globally in the `ScreenContainer` for all scrollable screens.
+
+Screens affected: paywall, consent, login, record, settings — everything with a bottom CTA.
+
+## Rejection 2.1(a) — "No action when tapping Analyze my entry"
+
+The reviewer recorded **1 second**. My `handleAnalyze` checked `isValidDuration()` and silently returned `false` with no alert, no toast, nothing. Dead button → automatic rejection.
+
+**The general rule that comes out of it:**
+
+> Apple tests with minimum effort. If a button can be clicked and nothing visibly happens, it's a rejection.
+
+**Fix:**
+- Always produce a visible response: alert, toast, animation, error message.
+- "Recording too short. Speak for at least 15 seconds." is a thousand times better than a silent return.
+- I set 15 seconds as a realistic minimum (otherwise the AI has nothing to analyze anyway).
+- Bonus: note in the review remarks "Recording must be at least 15 seconds long" to help the reviewer.
+
+## Rejection 5.1.2(i) — Explicit AI consent
+
+Since 2025, Apple requires a dedicated consent screen if your app sends data to third-party AI services. Not just a mention in the privacy policy — a **screen in the flow** with:
+- Explicit naming of services ("ElevenLabs receives your audio", "Google Gemini receives the text")
+- "Accept" and "No thanks" buttons
+- Direct link to the privacy policy
+
+Displayed **before** the first data transmission to an AI service. Not after, not during. Before.
+
+## Rejection 3.1.2(c) — Annual price displayed like a monthly price
+
+My annual paywall showed "€2.91/month" big and "€34.99/year" small below. Apple rejects: the **amount billed** must dominate visually (font size, color, position).
+
+```
+✅ ANNUAL
+   €34.99             ← big, billed price
+   per year
+   that's €2.91/mo    ← small, grey
+
+❌ ANNUAL
+   €2.91              ← big, calculated monthly
+   per month
+   €34.99/yr          ← small
+```
+
+Both pieces of info are OK to show. It's the **visual hierarchy** that matters.
+
+## Rejection 3.1.2(c) — Free trial pricing not clear enough
+
+I had written "7 days free, then €4.99/month". Rejected.
+
+**Exact fix:**
+
+> 7-day free trial. Then **€4.99/month will be charged automatically**.
+
+The word "automatically" is mandatory. Apple wants the user to understand they're the one who has to cancel if they don't want to be charged.
+
+## Rejection 5.1.1 — Incomplete account deletion
+
+A simple "Delete my account" button that erases entries isn't enough. Apple wants **all** data to disappear, **including** the auth account itself.
+
+On Supabase, the client can't delete from `auth.users`. Solution: an **Edge Function** with the service role key.
+
+```typescript
+Deno.serve(async (req) => {
+  const { user } = await authenticate(req);
+  await supabase.from("entries").delete().eq("user_id", user.id);
+  await supabase.from("profiles").delete().eq("id", user.id);
+  await supabaseAdmin.auth.admin.deleteUser(user.id);
+  return new Response("ok");
+});
+```
+
+Apple tests: they create an account, click delete, verify re-login fails.
+
+## The DSA trap: 175 countries "Unavailable" after approval
+
+My app is approved. I check availability → **174 "Unavailable" + 1 "Sale impossible"**. So 175/175. Message:
+
+> Trader status is required to distribute content in the App Store in the European Union.
+
+DSA only blocks the 27 EU countries, but ASC unchecks **all countries by default** as long as your trader status is pending. Surprising and poorly documented behavior.
+
+**Workaround to avoid waiting for DSA validation:**
+1. Sidebar → **Pricing and Availability** → "Edit countries or regions"
+2. Check all countries **except the EU** (US, UK, CA, AU, JP, Asia, Latin America, etc.) → save
+3. App live on ~170 countries in 30 min to 4 h
+4. Once DSA is validated (1-7 business days), re-check the EU
+
+You don't miss a market, you delay it by a few days.
+
+## The ITMS-90186 trap — version not bumped
+
+You push a new build with the same `version` in `app.json` as an already-approved version:
+
+```
+ITMS-90186: Invalid Pre-Release Train
+The train version '1.0.0' is closed for new build submissions
+```
+
+Apple closes the "train" of a version as soon as it's approved. No more builds can enter. **Every resubmission after approval, bump `version`**:
+
+```jsonc
+// app.json
+{
+  "expo": {
+    "version": "1.1.0"
+  }
+}
+```
+
+The lost build consumes an EAS credit. Rebuilding with the right version consumes another. Double-check before launching.
+
+## The RevenueCat trap — Product IDs silently broken
+
+My RevenueCat logs said:
+
+```
+Starting store products request for: ["rc_one_year", "rc_one_month"]
+```
+
+But in App Store Connect, the Product IDs were `rc_yearly_abo` and `rc_monthly_Abo`. Case-sensitive on top of that.
+
+Result: RevenueCat loads no products, the paywall shows a disabled button, the reviewer can't buy → rejection 2.1(b) "Purchase buttons were not shown".
+
+**Important derived rule:** never disable the purchase button. Always keep it clickable, and on click, retry `Purchases.getOfferings()`. Show a clear error only if the retry fails too.
+
+## The App Groups trap if you add a widget
+
+When I added an iOS widget (`expo-widgets`), the EAS build crashed:
+
+```
+Provisioning profile "...ExpoWidgetsTarget AdHoc" doesn't support
+the group.com.sowdev.voicejournal App Group.
+```
+
+The widget needs an App Group to share data with the main app, but this capability isn't enabled by default on the new target's bundle ID.
+
+**Fastest fix:** `eas credentials` → iOS → Build Credentials → relevant profile → target `ExpoWidgetsTarget` → **delete provisioning profile**. EAS regenerates it on the next build including the capability.
+
+If the same error comes back, go manually to **developer.apple.com → Identifiers**, check App Groups on the 2 bundle IDs (app + widget target), regenerate the profiles.
+
+## The general rule that wraps it all up
+
+Apple doesn't hate AI. Apple doesn't hate subscriptions. Apple doesn't hate indie devs.
+
+Apple hates **apps that don't work when a tired reviewer is testing at 5pm**: a button that doesn't respond, text saying "7 days free" without explaining what comes next, a paywall where the annual price looks like a monthly price, a UI broken on iPad they'll test even if you said "iPhone only".
+
+Every rejection on this list is, in reality, **a broken UX that deserves fixing independently of App Review**. The Apple review is just the moment you receive the bill for the UX issues you let through.

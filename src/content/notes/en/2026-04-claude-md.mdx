@@ -1,0 +1,152 @@
+---
+title: "Why I write a CLAUDE.md in every repo (and you should too)"
+date: 2026-04-30
+locale: en
+translationKey: "2026-04-claude-md"
+tags: ["ai", "claude", "process"]
+excerpt: "A markdown file at the root of your repo describing how we code here. Read by Claude (the agent) before every session, and by humans at first glance. It's become my most important engineering contract."
+draft: false
+---
+
+When Claude Code (or any AI agent) opens your repo, it does one thing first: it looks for a `CLAUDE.md` file at the root. If it finds one, it loads it into context before the first line of code. If it doesn't, it guesses.
+
+And that's where you lose.
+
+## The problem: AI codes "in general"
+
+Without a CLAUDE.md, the agent does what LLMs do best: produce "average" code — Stack Overflow patterns, 2022 React conventions, inline styles when you have a design system, catch-all `helpers.ts` files, `any` types when it's lazy.
+
+The result: on every PR from the agent, you correct the same 5 things. You tell it "no, we use Zustand, not Redux", "no, we have a `@/` alias", "no, files > 150 lines, we split". And the next session, it starts over.
+
+**A CLAUDE.md saves you from repeating yourself.** It says, in your repo, "here's how we code here — apply this by default, not 2023 web conventions".
+
+## What I put in it (the skeleton that works)
+
+Here's the structure I use across all my repos. Copy it as-is.
+
+### 1. Stack & versions (10 lines max)
+
+```
+Framework        : Astro 6 (static output)
+Language         : TypeScript strict
+Styling          : Tailwind 4 (@theme + CSS vars)
+Content          : Astro Content Collections + MDX
+i18n             : Native Astro i18n (defaultLocale fr, no prefix)
+Tests            : Lighthouse CI + @axe-core/playwright
+Deploy           : GitHub Pages via Actions
+```
+
+Why: Claude often proposes code based on an older version (e.g. Tailwind 3 with `tailwind.config.js` while Tailwind 4 uses `@theme` in CSS). This section costs you 30 seconds to write and saves you 10 corrections per session.
+
+### 2. Folder architecture
+
+A tree. You describe what goes where. Like:
+
+```
+src/
+├─ components/
+│  ├─ atoms/        # minimal UI element
+│  ├─ molecules/    # combine 2-3 atoms
+│  └─ organisms/    # a full section
+├─ lib/             # pure, testable logic
+├─ data/            # typed static data
+└─ pages/           # routes
+```
+
+Without this drawing, the agent invents. You end up with `src/helpers/`, `src/utilities/`, `src/services/`, `src/common/` — one file in each, duplicates everywhere.
+
+### 3. Non-negotiable rules (the heart of the file)
+
+This is where you lay down the law. I phrase each rule with **a ❌ example and a ✅ example** because AI learns better from contrast than from abstract description.
+
+Real example from my CLAUDE.md:
+
+```markdown
+### Size limit — 150 lines max per Astro component, 120 per .ts
+
+If a file goes over, it's a sign it's doing too much.
+
+✅ Hero.astro             — 90 lines  (pure component)
+✅ AppsGrid.astro         — 70 lines  (3 columns + AppCell extracted)
+
+❌ index.astro            — 280 lines (all sections inline)
+❌ MainLayout.astro       — 200 lines (head + nav + footer mixed)
+```
+
+I have about 10-12 rules. All in the same spirit: explicit naming, no `any`, no magic numbers, no logic in markup, one file = one responsibility, etc.
+
+The secret: **every rule comes with a concrete example pulled from the repo**. No "write good code". Always "here's what you do here, here's what you don't".
+
+### 4. Project-specific conventions
+
+Anything non-obvious the agent can't guess:
+
+- **i18n**: "Every UI string goes through `useTranslations`. Never hardcode text in a component."
+- **Images**: "Always `<Image>` from `astro:assets`, never `<img>`."
+- **Internal links**: "Always via `t.path('about')`, never `/about` hardcoded."
+- **SEO/GEO**: "Every public page has a `<JsonLd>` with at minimum Person + WebSite."
+
+These rules, the agent CANNOT invent. You have to state them.
+
+### 5. Project-specific traps to avoid
+
+The section I reread the most myself, because it compiles all the "I lost 2 hours on this" from the project.
+
+Example from my current CLAUDE.md:
+
+> **Astro hydrates nothing by default.** If you put an `onClick` in an Astro component, it won't work client-side. For interactivity, use `<script>` (vanilla TS) or a React component with `client:visible`.
+>
+> **Tailwind 4 uses `@theme`, not `tailwind.config.js`.** Don't create a `tailwind.config.js` — it will be ignored.
+>
+> **The fluo highlighter (#ccff00) is only used as background.** Never as text color on a light background (WCAG failure).
+
+Every trap is documented **the first time you take it in the face**. It turns lost time into a gain for every session after.
+
+### 6. A commit checklist
+
+At the end of the file, a concrete checklist. All checkboxes, all mentally executable before a `git commit`. Mine is 14 items:
+
+```
+□ astro check passes (0 errors, 0 warnings)
+□ npm run build passes
+□ No file > 150 lines
+□ No `any` TypeScript
+□ No hardcoded UI strings
+□ No hardcoded internal href
+□ Every new page has a <JsonLd>
+□ ...
+```
+
+The agent can ask itself this checklist before proposing a commit. You can also consult it before pushing.
+
+## What does NOT belong in a CLAUDE.md
+
+- **The "what/why" of the product.** That lives in a spec or a README. CLAUDE.md = the **how**.
+- **Vague rules** ("write clean code"). Without an example, it's useless.
+- **Things already enforced by your tooling.** If ESLint rejects files > 200 lines, no need to write it — except as a pedagogical reminder.
+- **Conventions you don't hold yourself.** The file loses all authority if half the repo doesn't follow its own rules.
+
+## How I use it day to day
+
+1. **Claude Code reads it automatically** when it opens the repo. Zero action on my part — it uses it as default context.
+
+2. **I reread it before every new feature.** Not to check that I know the rules, but to remind myself of the traps I had documented and half-forgotten.
+
+3. **I update it when I learn something.** Weird bug tied to a lib? New pattern that works well? Goes straight into the CLAUDE.md. The file lives with the project.
+
+4. **I keep it under ~700 lines.** Above that, the agent starts losing global context. If it overflows, decompose into separate sections linked from the main CLAUDE.md.
+
+## The bonus you didn't see coming: engineering signal
+
+My portfolio repo is public. The CLAUDE.md is at the root, readable by anyone. A dev reading the repo sees in 3 minutes:
+- The level of rigor you code at.
+- The conventions you defend.
+- How you think about quality (performance budget, a11y, GEO).
+
+It's become a **recruiting signal** as clear as a GitHub with 50 stars. Mine is open here: [github.com/newBie974/presentation/blob/main/CLAUDE.md](https://github.com/newBie974/presentation/blob/main/CLAUDE.md). Copy it, adapt it, save yourself 6 months of drift on your next project.
+
+## When to start writing one?
+
+The minute you start a new repo where you'll code for more than an afternoon. Five minutes to lay the basics — stack + tree + 3 rules. Enrich it as you learn things.
+
+Anything not in the CLAUDE.md, you'll re-explain to the agent. Every session. Forever.

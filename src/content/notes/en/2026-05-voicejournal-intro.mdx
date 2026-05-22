@@ -1,0 +1,140 @@
+---
+title: "VoiceJournal: 30 seconds of voice, AI writes your journal"
+date: 2026-05-08
+locale: en
+translationKey: "2026-05-voicejournal-intro"
+tags: ["build", "ia", "mobile"]
+excerpt: "You talk for 30 seconds. Whisper transcribes, Claude writes your journal, gives you a Mind Score and tags your emotions. Here's how it's built and why I did it."
+draft: false
+---
+
+[VoiceJournal](https://aivoicejournal.app) is the app I wanted to use and that didn't exist. It's been live on the App Store for a few months. Here's what it does, why I built it the way I did, and how the AI pipeline behind it works.
+
+## The problem
+
+90% of people want to journal. 90% of people don't. The reason is simple: after a day spent typing messages, emails, and docs, no one wants to type more text at night.
+
+Traditional journaling apps ask you to write. That's exactly the wrong format at the wrong time.
+
+## The insight
+
+You already debrief your day out loud. In the car on the way home. In the shower. At the dinner table with your partner. Before falling asleep.
+
+**What if that natural monologue became the journal?**
+
+That's what VoiceJournal is. You open the app, tap the orb, talk for 30 seconds to 3 minutes, AI does the rest.
+
+## The flow
+
+```
+1. You tap the orb and talk.
+2. Whisper transcribes your voice into text.
+3. Claude reads the transcript and produces:
+   → a journal written in the first person (3-4 sentences)
+   → a Mind Score from 0 to 100 (overall emotional state)
+   → 1 to 5 tagged emotions (positive / neutral / negative)
+   → a personalized psychological insight
+4. You have a complete journal entry, shareable, archived.
+```
+
+Total time between end of recording and result displayed: a few seconds. No blank page, no prompt, no reflection to provide — a finished journal entry that sounds like you.
+
+## The Mind Score, the signature feature
+
+It's the thing I'm most proud of. A single number, 0 to 100, summarizing your mental state for this entry.
+
+- 50 = neutral
+- 70+ = good day
+- 40- = tough day
+
+The score is computed by Claude from your transcript. Over weeks, you see a curve emerge. You notice your Mondays are systematically below 45, your mood rises in spring, you mention work with stress every Thursday.
+
+**It's the most honest emotional archive you'll ever have.** Not something you fill in when you feel good — something that captures your real week, because the friction cost is under one minute.
+
+## The design: "Nocturne Scribble"
+
+A journaling app shouldn't look like Notion. It shouldn't look like Todoist. It should feel like a moment of calm.
+
+I defined an entire design system I call **Nocturne Scribble**:
+
+- Deep dark background. Not a standard dark mode — an ink black that evokes a dimly lit room.
+- Amber accents. The color of a candle or an oil lamp.
+- Serif typography for headings. Journaling is an act of writing, not an act of productivity.
+- The recording orb breathes (slow animation, scale 1.0 → 1.05). When you talk, it dances to your voice via a live waveform.
+- Splash with twinkling stars.
+
+The goal is unique: you want to open it at night, the way you'd open a notebook. Not the way you'd open Slack.
+
+## The technical architecture
+
+Mobile side: React Native + Expo, strict TypeScript, Zustand for state, expo-av for audio recording, RevenueCat for subscriptions.
+
+Backend side: Supabase. Postgres for entries, RLS for security, and most importantly **Edge Functions** in Deno for all the AI logic.
+
+The key endpoint is `analyze-entry`. Here's its shape:
+
+```typescript
+// supabase/functions/analyze-entry/index.ts
+Deno.serve(async (req) => {
+  // 1. Verify Supabase JWT
+  const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+  const { data: { user } } = await supabase.auth.getUser(token);
+  if (!user) return new Response("Unauthorized", { status: 401 });
+
+  // 2. Get the audio
+  const formData = await req.formData();
+  const audioFile = formData.get("audio") as File;
+
+  // 3. Transcribe with Whisper (French)
+  const transcript = await openai.audio.transcriptions.create({
+    file: audioFile,
+    model: "whisper-1",
+    language: "fr",
+  });
+
+  // 4. Analyze with Claude — structured JSON output
+  const analysis = await anthropic.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: buildPrompt(transcript.text) }],
+  });
+
+  // 5. Parse, validate (Zod), save
+  const parsed = AnalysisSchema.parse(JSON.parse(extractJSON(analysis)));
+  const entry = await saveEntry(user.id, transcript.text, parsed);
+
+  return Response.json({ entry });
+});
+```
+
+The prompt sent to Claude is strict: it must return only valid JSON, no markdown. With a server-side Zod schema that rejects any malformed response. If Claude hallucinates an emotion outside the allowed set, the entry is rejected and we retry.
+
+It's this **format guarantee** that makes AI usable in production: no free-form output, no surprise markdown, no "Sure! Here's your analysis...".
+
+## The business model
+
+Classic freemium:
+
+- **3 free entries.** Plenty to grasp the value and form a habit.
+- **Pro at €4.99/month** or €2.91/month yearly. Unlimited, full analysis, cloud sync.
+
+The paywall fires naturally after the 3rd entry. If you've reached that point, you already have:
+- 3 days of archived journal,
+- your first Mind Score chart taking shape,
+- you see where it's heading.
+
+That's the moment when the unlock sells itself.
+
+## Beyond the journal: the vision
+
+VoiceJournal starts as a journaling app. The long-term goal is a **personal emotional archive** — months, then years, of your inner life, searchable, analyzable, private.
+
+With enough data, AI knows your patterns better than you do. It notices that you talk about work stress every Thursday. It sees your mood improve in spring. It sends you weekly recaps.
+
+It's the most honest mirror you'll have — because you talk to it when you're alone, in 30 seconds, with no filter.
+
+---
+
+[Download VoiceJournal on the App Store →](https://apps.apple.com/fr/app/voicejournal-journal-vocal-ia/id6762176421)
+
+In upcoming notes: how I handled the App Store review for an AI app (next article), and the Whisper+Claude pattern for reliable JSON outputs in production.

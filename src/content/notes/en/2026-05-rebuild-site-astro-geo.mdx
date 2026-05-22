@@ -1,0 +1,123 @@
+---
+title: "I rebuilt my site with Astro 6 and prepared for LLMs in search"
+date: 2026-05-22
+locale: en
+translationKey: "2026-05-site-refacto"
+tags: ["web", "astro", "geo"]
+excerpt: "Astro 6, Tailwind 4 with @theme, content collections + MDX, bilingual FR/EN, and a full GEO setup (llms.txt, JSON-LD entity graph, robots.txt with allow for AI bots). How and why I rebuilt it all."
+draft: false
+---
+
+My old site was a tiny Astro link-in-bio: my photo, my bio, my apps, my social links. One page. It did the job of pointing to the apps, but said nothing about who I am, what I can do, or how I work.
+
+I rebuilt it from zero. Here are the technical decisions and the visual stack that came out of it.
+
+## Positioning first, tech second
+
+I started with structured brainstorming (see [the Spec-Driven Development article](/en/writing/2026-05-spec-driven-development)). No code before deciding:
+- **Which audience?** Indie builders, freelance prospects, tech recruiters, future users of the apps.
+- **What positioning?** Indie builder first, freelance second. The apps are the proof; the freelance mission comes after.
+- **What visual mood?** After exploring 3 directions in mockups, I picked **D1 Swiss Brutalist**: 100% Inter Tight sans-serif, fluo accent `#ccff00` as highlighter, 2px black borders everywhere, no border-radius.
+
+For the first time, my visual decisions were all documented in a markdown spec before the first line of CSS. No "we'll see as we go".
+
+## Astro 6, and the migration from 5
+
+The previous site ran on Astro 5. I migrated to Astro 6 for the rebuild.
+
+**Notable breaking changes:**
+- `src/content/config.ts` → `src/content.config.ts` (no longer in `content/`, now at the root of `src/`).
+- Content collections now require an **explicit loader** (`glob`, `file`) — no more short `type: "content"`.
+- `z` is no longer re-exported from `astro:content` (deprecated). You install zod directly.
+- View Transitions are now stable, no more `experimental` flag. The component is called `<ClientRouter />`.
+
+Nothing dramatic. The migration took me an afternoon.
+
+## Tailwind 4 with @theme: a paradigm shift
+
+Tailwind 4 no longer uses `tailwind.config.js`. All configuration lives in a CSS file, via the `@theme` directive. My `theme.css` looks like:
+
+```css
+@theme {
+  --color-bg: #f6f6f4;
+  --color-text: #0a0a0a;
+  --color-accent: #ccff00;
+  --color-strong-bg: #0a0a0a;
+  --color-strong-fg: #ccff00;
+
+  --font-sans: "Inter Tight Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --border-w: 2px;
+  --radius-base: 0;
+}
+
+[data-theme="dark"] {
+  --color-bg: #0a0a0a;
+  --color-text: #f6f6f4;
+  --color-strong-bg: #ccff00;
+  --color-strong-fg: #0a0a0a;
+}
+```
+
+Every variable automatically becomes a utility class (`bg-bg`, `text-text`, `text-accent`, etc.). Dark mode fires by swapping `data-theme="dark"` on `<html>`, and utility classes follow the CSS vars with no extra config.
+
+**The trap I walked into face-first**: `@tailwindcss/vite@4.3.0` (recently released) bundles Vite 8, which clashes with the Vite 7 that ships with Astro 6. Fix: pin exactly `@tailwindcss/vite@4.1.18`. A few hours to figure out.
+
+## Bilingual FR/EN with localized slugs
+
+Astro's i18n is decent but doesn't translate slugs automatically. I have an explicit mapping:
+
+```typescript
+export const routes = {
+  fr: { home: "/", about: "/a-propos", notes: "/notes", work: "/collaborer" },
+  en: { home: "/en/", about: "/en/about", notes: "/en/writing", work: "/en/work" },
+};
+```
+
+The FR↔EN toggle on every page uses these routes. On articles, I match by `translationKey` (shared key in the frontmatter of both MDX files) — if the translation exists, the toggle appears, otherwise it's hidden.
+
+Notes live in `content/notes/fr/` and `content/notes/en/`. Each MDX file has its `translationKey`, unique per pair. Astro builds all routes at build time.
+
+## GEO: preparing for LLM search
+
+This is the part that changes everything in 2026 SEO. When a user asks Claude or Perplexity "who's a good indie builder in France?", the LLM goes looking for signal on the web. If your site isn't optimized to be read by an LLM, you don't exist in that answer.
+
+Three concrete things I added:
+
+**1. Rich JSON-LD entity graph.** Every public page has a `<script type="application/ld+json">` block with:
+- A `Person` node with my name, jobTitle, sameAs (all my social profiles), knowsAbout (my expertise domains).
+- A `WebSite` node pointing at the Person as publisher.
+- `SoftwareApplication` nodes for each of my apps, with `creator` pointing at the Person.
+- On articles: `BlogPosting` + `BreadcrumbList`.
+- On the work-together page: `FAQPage`.
+
+Everything is linked by `@id`. The result: an LLM reading my site understands who I am, what I've built, and who authored what.
+
+**2. `/llms.txt` at the root.** An emerging standard (see [llmstxt.org](https://llmstxt.org)). It's a markdown file summarizing my site for LLMs: bio, list of apps, key pages, recent articles, contact. Read first by AI crawlers. A few dozen lines, generated at build.
+
+**3. `robots.txt` with explicit allow for AI bots.** GPTBot, ClaudeBot, PerplexityBot, Google-Extended, CCBot, Applebot-Extended. Full opt-in. I want LLMs to index and cite my site. If you live off freelance or public apps, this is the right default.
+
+Bonus: a Node script `validate-jsonld.mjs` runs at build over `dist/` and checks no page misses its `Person` JSON-LD. If a page slips through without one, CI fails.
+
+## The final ship
+
+12 pages generated, ~30 KB of total JS on the homepage (mostly Astro runtime + view transitions), zero additional JS framework. Lighthouse target 95+ everywhere, axe-core on 8 routes in CI.
+
+The whole thing deployed on GitHub Pages with a custom domain, a CNAME at the root, a full CI passing lighthouse + axe + jsonld-validate before every deploy.
+
+## What I left for V1.1
+
+- Newsletter (email capture)
+- Live app metrics (MRR, downloads)
+- Testimonials
+- In-site notes search
+- Theme switcher (I designed D1 then D2 in exploration, kept only D1)
+
+YAGNI saved two weeks of scope creep.
+
+## What I learned
+
+**A personal site is no longer a placeholder.** In 2026, it's your first identity signal in a world where LLMs decide who to cite for you. You can have 10k followers on Twitter — if your site isn't crawlable and structured for AI bots, you disappear from Perplexity answers.
+
+The code of this site is public and readable on GitHub. Copy whatever you want.
