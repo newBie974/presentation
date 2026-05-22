@@ -36,14 +36,10 @@ const stackLabel = locale === "fr" ? "STACK" : "STACK";
 
   {
     chapter.technologies && chapter.technologies.length > 0 && (
-      <div class="stack">
+      <p class="stack">
         <span class="stack-label">{stackLabel}</span>
-        <ul class="tech" aria-label="Technologies">
-          {chapter.technologies.map((t) => (
-            <li>{t}</li>
-          ))}
-        </ul>
-      </div>
+        <span class="tech">{chapter.technologies.join(" · ")}</span>
+      </p>
     )
   }
 </article>
@@ -115,41 +111,20 @@ const stackLabel = locale === "fr" ? "STACK" : "STACK";
   }
 
   .stack {
-    display: grid;
-    grid-template-columns: 60px 1fr;
-    gap: 16px;
-    align-items: start;
-    padding-top: 6px;
+    margin: 6px 0 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.65;
+    color: var(--color-text);
   }
   .stack-label {
-    font-family: var(--font-mono);
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.15em;
     color: var(--color-text-muted);
-    padding-top: 4px;
+    margin-right: 12px;
   }
   .tech {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-  .tech li {
-    font-family: var(--font-mono);
-    font-size: 11px;
     color: var(--color-text);
-    padding: 3px 8px;
-    background: var(--color-bg-soft);
-    border: 1px solid var(--color-border);
-  }
-
-  @media (max-width: 720px) {
-    .stack {
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
   }
 </style>
