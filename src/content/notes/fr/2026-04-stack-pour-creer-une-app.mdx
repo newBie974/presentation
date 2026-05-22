@@ -4,45 +4,51 @@ date: 2026-04-20
 locale: fr
 translationKey: "2026-04-stack"
 tags: ["stack", "indie", "mobile"]
-excerpt: "J'ai shippé trois apps en deux ans (VoiceJournal, Caroubolt, Tookta). Voici la stack que je choisirais si je devais redémarrer demain — et celle que je laisserais de côté."
+excerpt: "Trois apps shippées en deux ans. La stack que je referais demain, les anti-patterns que j'ai vécus, et les chiffres réels de ce que ça coûte en prod."
 draft: false
 ---
 
-J'ai shippé trois apps consumer en deux ans : [VoiceJournal](https://aivoicejournal.app) (mobile iOS), [Caroubolt](https://caroubolt.com) (web), [Tookta](https://tookta.fr) (mobile iOS + Android). Stack légèrement différente à chaque fois, parce que j'ai testé des trucs. Aujourd'hui je convergerais sans hésiter sur ce qui suit.
+Ma première app m'a pris 4 mois. La troisième, 7 semaines. Le delta : la moitié n'est pas dans mon code, elle est dans le choix de stack.
 
-Cet article est opinionated. Le but : que tu puisses recopier cette stack pour ton prochain projet et avoir une app en prod en 6-8 semaines au lieu de t'éparpiller pendant 6 mois sur "quel framework choisir".
+Voici la stack avec laquelle je referais une app solo demain matin, les anti-patterns que j'ai vécus en chemin, et ce que ça me coûte en prod sur [VoiceJournal](https://aivoicejournal.app) (500 users actifs au moment où j'écris).
 
-## Les contraintes que je m'impose
+## La règle qui sous-tend tout
 
-- **Une seule personne qui code** (moi).
-- **Du JS/TS partout** : pas de Swift, pas de Kotlin, pas de Go côté backend.
-- **Une infra qui dort** quand personne n'utilise l'app (pas de serveur 24/7 à payer).
-- **Du paiement natif** dès le premier user (App Store IAP + Stripe sur web).
-- **De l'IA propre** quand le produit en a besoin (la moitié du temps).
+**Tu codes pendant 6 semaines, ou tu codes pendant 4 mois. La différence ne se joue pas sur ta vitesse de frappe.**
 
-Voilà la stack qui coche tout :
+Elle se joue sur :
+- Combien de temps tu passes à débugger des certificats Apple, des webhooks Stripe, ou de l'auth maison.
+- Combien de fois tu refais la même infra parce que ton choix précédent ne tient pas à la charge.
+- Combien de bibliothèques tu intègres "qui font la même chose en mieux".
 
-## Mobile : React Native + Expo
+Tout ce qui suit est optimisé pour minimiser ces trois pertes.
+
+## Mobile : Expo, et oublie React Native bare
 
 ```bash
 npx create-expo-app my-app --template blank-typescript
 ```
 
-Pas de RN bare. Expo gère pour toi : build (EAS), updates OTA, push notifs, deep linking, splash screen, App Store submissions. La seule limite réelle est si tu as besoin d'un module natif custom qui n'existe pas dans Expo SDK — auquel cas tu sors un dev build avec `eas build --profile development` et tu continues.
+Pas de "ejection précoce". Pas de RN bare. Tu démarres en Expo Go pour le proto, puis en dev build dès que tu touches à un module natif (`react-native-purchases`, `expo-av` en config avancée).
 
-**Ce qui devient trivial** : enregistrer de l'audio (`expo-av`), prendre des photos (`expo-image-picker`), stocker la session de manière sécurisée (`expo-secure-store`), router en file-based (`expo-router`).
+**Ce que ça t'évite concrètement** : EAS Build prend 8 minutes pour produire un IPA prêt pour TestFlight. À la main, c'est 2 jours à comprendre fastlane, les certificats, les profils de provisioning et le ridicule système Apple. J'ai fait les deux. Plus jamais à la main.
 
-**Flutter ?** Je l'ai utilisé sur Tookta. Très bon framework, mais l'écosystème JS me permet de partager des trucs avec le web (types, validators Zod, prompts IA). Plus single-source-of-truth.
+**Le piège** : si tu ejectes (build natif custom), tu perds les updates OTA Expo. Garde l'ejection pour la dernière ressource, et seulement si vraiment aucun module ne couvre ton besoin. Sur mes 3 apps, je n'ai jamais eu besoin d'ejecter.
 
-## Auth + DB + Edge Functions : Supabase
+**Flutter ?** Très bon framework, je l'ai utilisé sur Tookta. Mais l'écosystème JS me permet de partager des types et des prompts IA entre mobile et web — ce qui réduit la friction quand j'ai un backend Edge Function commun. Stack unifiée TS partout = -30% de charge mentale.
 
-Postgres managé, auth gratuit jusqu'à 50k MAU, RLS qui te force à écrire des règles de sécurité dès le premier jour, et surtout les **Edge Functions** en Deno. C'est là que je mets toute la logique métier qui ne peut pas vivre côté client (appels IA, validation de webhooks, etc.).
+## Backend : Supabase Edge Functions, et basta
 
-Un exemple typique : la fonction qui analyse une entrée vocale dans VoiceJournal.
+Postgres managé + auth + RLS + Edge Functions Deno. Tout dans le même dashboard.
+
+**Le tournant pour moi** : Tookta avait un backend Nest.js sur Render ($25/mois). Migration vers Supabase Edge Functions : -150 lignes de code, 0 $/mois jusqu'à 500k invocations. Ce qui était une Nest controller de 80 lignes est devenu une fonction Deno de 30 lignes. **Pas de serveur qui dort en coûtant des sous.**
+
+Voici un endpoint typique (l'analyse vocale de VoiceJournal) :
 
 ```typescript
 // supabase/functions/analyze-entry/index.ts
 Deno.serve(async (req) => {
+  const token = req.headers.get("Authorization")?.replace("Bearer ", "");
   const { data: { user } } = await supabase.auth.getUser(token);
   if (!user) return new Response("Unauthorized", { status: 401 });
 
@@ -60,38 +66,45 @@ Deno.serve(async (req) => {
 });
 ```
 
-**Firebase ?** Trop verrouillé, NoSQL difficile à requêter, pricing imprévisible passé un certain volume. Postgres + RLS > Firestore + security rules à chaque fois.
+**Le piège** : les Edge Functions ont un cold-start ~150ms (vs ~5ms pour Cloudflare Workers). Pour un endpoint IA qui prend 3 secondes côté Claude, ça n'a aucune importance. Pour un endpoint qui doit répondre en moins de 100ms, ça en a. À toi de voir.
 
-## IA : Claude + Whisper, et tu choisis le modèle au cas par cas
+**Firebase ?** Verrouillé, NoSQL pénible à requêter dès que ton modèle est relationnel, pricing imprévisible. J'ai essayé Firebase sur ma première app et je l'ai migré en Postgres trois mois plus tard. Postgres + RLS > Firestore + security rules à chaque fois.
 
-Pour les transcriptions audio : **Whisper** (OpenAI). $0.006/min, c'est presque rien.
-Pour le raisonnement et le texte structuré : **Claude Sonnet 4.6** ou **Claude Haiku 4.5** selon la latence acceptable. Sonnet pour les analyses fines (VoiceJournal), Haiku quand il faut répondre en moins d'une seconde.
-Pour le bulk (résumés, classifications massives) : **Gemini Flash**. Pas cher du tout.
+## IA : choisis ton modèle par endpoint, pas par projet
 
-Le secret : tu n'as PAS besoin d'un seul modèle. Chaque endpoint de ta backend peut choisir le bon. Et tu changes de modèle dans une seule constante quand un meilleur sort.
+C'est la leçon la plus chère que j'ai apprise. **Le bon modèle dépend de l'endpoint, pas de l'app.**
 
-## Subscriptions : RevenueCat, pas optionnel
+Sur VoiceJournal :
+- Transcription audio → **Whisper** (OpenAI). $0.006/min, plus rapide que Claude qui ne fait pas vraiment d'audio.
+- Analyse fine d'une entrée → **Claude Sonnet 4.6**. Meilleure compréhension du français, sortie JSON propre.
+- Classification d'émotions en bulk pour les stats → **Gemini Flash**. 10x moins cher pour la qualité requise.
 
-Tenter de gérer toi-même StoreKit (iOS) + Billing API (Android) avec une seule personne qui code, c'est la garantie de perdre 3 semaines.
+J'ai un util `lib/llm.ts` qui expose `analyzeWithClaude`, `transcribeWithWhisper`, `classifyWithGemini`. Si demain un meilleur modèle sort, je change UNE constante. Ne te lock pas sur un seul provider.
 
-RevenueCat fait :
-- L'unification iOS/Android avec une seule API.
-- La vérification temps réel du statut d'abonnement.
-- Les webhooks vers Supabase quand un user achète/résilie.
-- Le paywall component qui s'affiche en 3 lignes de code.
-- Le dashboard analytics : MRR, churn, LTV.
+**Coût IA réel sur VoiceJournal** (mai 2026, 500 users actifs, ~80 entrées/jour) : $18/mois. C'est rien.
 
-Coût : gratuit jusqu'à $2.5k MRR. Au-delà, 1% du chiffre.
+## Subscriptions : RevenueCat dès le jour 1
 
-**Sur le web** : Stripe Checkout direct, pas besoin d'intermédiaire.
+Gérer toi-même StoreKit (iOS) + Billing API (Android) solo, c'est 3 semaines minimum. Avec RevenueCat, c'est 4 heures.
 
-## Web (landing + portfolio + blog) : Astro
+**Le piège qui m'a coûté 2 jours** : tu dois appeler `Purchases.logIn(supabase_user_id)` après le login Supabase, et `Purchases.logOut()` au logout. Sans ça, les webhooks RevenueCat envoient le mauvais `app_user_id` à ta backend et tu ne peux pas synchroniser le statut Pro. Documentation pas évidente sur ce point précis.
 
-Statique, rapide, Tailwind 4 intégré, MDX pour les articles, content collections type-safe avec Zod, i18n natif. Le site sur lequel tu lis cet article tourne là-dessus.
+```typescript
+// Après auth Supabase
+await Purchases.logIn(user.id);
+```
 
-Pas de Next.js pour les landings : trop lourd pour ce qu'il faut faire, et le SSR ne sert à rien si tout est statique.
+Coût : gratuit jusqu'à $2.5k MRR. Ensuite 1% du chiffre. Pas un sujet pour 99% des apps indie.
 
-## State (mobile) : Zustand
+## Web : Astro, pas Next.js
+
+Pour une landing, un blog, un portfolio : Next.js est trop lourd. Astro génère du HTML statique, zéro JS par défaut, intègre Tailwind 4 nativement, gère i18n et content collections.
+
+Le site que tu lis tourne sur Astro 6. Lighthouse 100/100/95/100, payload initial 28 KB JS, déploiement gratuit sur GitHub Pages.
+
+**Next.js, quand ?** Si tu as besoin de SSR (auth-gated, data réelle au render), de API routes en TS partagées, ou que tu fais un produit web complexe. Pour une landing ou un blog : surdimensionné.
+
+## State mobile : Zustand, point.
 
 ```typescript
 import { create } from "zustand";
@@ -102,20 +115,39 @@ export const useAuthStore = create<AuthState>((set) => ({
 }));
 ```
 
-C'est tout. Pas de Redux, pas de Recoil, pas de Jotai. Zustand fait 1 KB, expose un hook propre, et 100% de mes besoins de state global passent dedans.
+1 KB. Zéro provider à wrapper. API hook propre. Tous mes besoins de state global passent dedans.
 
-## Ce que je n'utilise pas (et pourquoi)
+**Redux ?** Mort pour le solo dev. Trop de boilerplate, et 90% de tes states sont locaux (`useState`).
 
-- **Firebase** : voir plus haut.
-- **Nest.js sur Node** : trop de boilerplate pour ce que les Edge Functions font en 30 lignes.
-- **GraphQL** : zéro intérêt pour une app solo.
-- **MongoDB / DynamoDB** : Postgres + JSON columns > NoSQL pour 99% des cas.
-- **OpenAI GPT-4** par défaut : trop cher pour la majorité des use cases. Claude ou Gemini quasi systématiquement gagnent en ratio qualité/prix.
+## Ce que j'ai testé et que j'ai abandonné
 
-## La règle d'or
+| Techno | Pourquoi je l'avais prise | Pourquoi je l'ai virée |
+|---|---|---|
+| Firebase | Tout intégré, gratuit | Pricing imprévisible, NoSQL douloureux |
+| Nest.js sur Render | Backend "sérieux" | $25/mois pour rien, Edge Functions font mieux |
+| OpenAI GPT-4 par défaut | C'est ce que tout le monde utilisait | Claude code mieux, Gemini classe pour moins cher |
+| Flutter sur 3 apps | Single codebase iOS+Android | RN+Expo me donne le même + l'écosystème JS partagé |
+| MobX | Vu sur des projets pro | Trop magique, Zustand fait 1 KB et c'est explicite |
 
-**Tu ne valides pas une techno parce qu'elle est tendance. Tu la valides parce qu'elle te fait gagner du temps sur ce que tu sais déjà faire.**
+## Le total de la facture en prod
 
-Si tu prends cette stack et que tu shippes en 6-8 semaines, c'est gagné. Si tu changes 3 fois de framework avant le MVP, tu as déjà perdu.
+VoiceJournal, mai 2026, 500 users actifs, ~80 entrées/jour :
 
-Plus de détails sur chaque brique dans les prochaines notes.
+| Service | Coût mensuel |
+|---|---|
+| Supabase (free tier) | $0 |
+| Whisper API | ~$8 |
+| Claude API | ~$10 |
+| Gemini Flash | ~$1 |
+| RevenueCat | $0 (sous le seuil) |
+| EAS Build (free tier) | $0 |
+| Apple Developer | $99/an = $8.25/mois |
+| **Total** | **~$27/mois** |
+
+Et l'app génère plus que ça en revenus mensuels. **C'est la stack qui te permet d'être rentable solo dès le jour 1**, parce qu'aucun composant ne coûte cher avant que tu aies des users qui paient.
+
+## La seule règle à retenir
+
+Tu ne valides pas une techno parce qu'elle est tendance, ni parce que tu la connais. Tu la valides parce qu'**elle te fait gagner du temps sur ce que tu sais déjà faire** et qu'elle ne te coûte rien tant que personne n'utilise ton app.
+
+Cette stack coche les deux. Recopie-la, ship en 6 semaines, et passe à autre chose.
