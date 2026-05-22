@@ -1,0 +1,36 @@
+---
+import Icon from "@/components/atoms/Icon.astro";
+import type { Service, Locale } from "@/types";
+
+interface Props {
+  service: Service;
+  locale: Locale;
+}
+const { service, locale } = Astro.props;
+---
+
+<article class="card">
+  <Icon name={service.icon} size={20} />
+  <h3>{service.title[locale]}</h3>
+  <p>{service.description[locale]}</p>
+</article>
+
+<style>
+  .card {
+    padding: 18px;
+    border: var(--border-w) solid var(--color-border);
+    background: var(--color-bg-soft);
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 10px 0 6px;
+  }
+  p {
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+</style>

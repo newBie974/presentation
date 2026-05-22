@@ -1,0 +1,49 @@
+---
+interface Props {
+  roman: "i" | "ii" | "iii" | "iv";
+  title: string;
+  desc: string;
+}
+const { roman, title, desc } = Astro.props;
+---
+
+<div class="step">
+  <span class="roman">{roman}.</span>
+  <div>
+    <h3>{title}</h3>
+    <p>{desc}</p>
+  </div>
+</div>
+
+<style>
+  .step {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    gap: 14px;
+    padding: 14px 0;
+    border-top: 1px dashed var(--color-border);
+    align-items: start;
+  }
+  .step:first-of-type {
+    border-top: none;
+    padding-top: 0;
+  }
+  .roman {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    color: var(--color-text-muted);
+    font-weight: 600;
+  }
+  h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    letter-spacing: -0.02em;
+  }
+  p {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+</style>
