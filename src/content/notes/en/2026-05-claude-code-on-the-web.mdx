@@ -1,0 +1,105 @@
+---
+title: "Claude Code on the web: how I ship my apps from my phone"
+date: 2026-05-24
+locale: en
+translationKey: "2026-05-claude-code-web"
+tags: ["ai", "claude", "process", "indie"]
+excerpt: "A GitHub issue from the phone, a Claude Code session auto-triggered in a cloud container, a PR popping up in Slack, a merge from the GitHub app. My indie workflow when I'm away from the laptop — and what works vs. what doesn't."
+draft: false
+---
+
+I'm on a train. A user just messaged me: "The app crashes when I tap the orb without mic permission granted." I pull out the phone, open the Claude app, and type:
+
+> "On voicejournal, repro: mic permission denied → tap on the orb → crash. Catch the exception in `RecordOrb`, show an i18n toast 'Allow mic in Settings', and add a button that opens the iOS/Android settings. PR on `fix/mic-permission-crash`."
+
+I put the phone away. 8 minutes later, notification: the PR is open. I review it from the GitHub app at the arrival station, merge, go home.
+
+That's **Claude Code on the web**. And it changed how I work as an indie.
+
+## What it is
+
+Claude Code, originally, is a CLI on your laptop. You run `claude` in a terminal, it opens a session that touches local files.
+
+Claude Code on the web is the same thing, hosted. An ephemeral container is spun up in the cloud, your repo gets cloned into it fresh, the session runs there. You interact from:
+- the browser (`claude.ai/code`)
+- the Anthropic mobile app
+- a GitHub issue (with a trigger)
+- a PR review (autofix)
+- a Slack message if you wired the integration
+
+The container is thrown away at the end. If you want to keep your work, the agent pushes to a branch before the container disappears.
+
+## My setup in 30 seconds
+
+1. On **github.com/newBie974/voicejournal**, I connected the Claude Code app in Settings → Integrations.
+2. I defined the **network policies** I tolerate for this repo (outbound restricted to npm, supabase.com, gemini.googleapis.com, expo.dev). Documented on Anthropic's side here: [code.claude.com/docs](https://code.claude.com/docs/en/claude-code-on-the-web).
+3. I have a versioned `bootstrap.sh` that runs `npm install`, generates Supabase types, and copies `.env.example` → `.env` with secrets injected by the integration.
+4. My `CLAUDE.md` describes the stack in 30 lines and the branch convention for fixes (`fix/...`) vs features (`feat/...`).
+
+That's it. The container knows exactly where it landed, what to install, how to behave.
+
+## The 4 use cases where it changes everything
+
+### 1. Customer bug report → auto fix
+
+The opening scenario. You don't touch the laptop. You describe the bug, point at the suspect file if you know it. The agent boots the container, repros if possible, fixes, runs tests, pushes the PR.
+
+**The detail that makes it reliable**: a good CLAUDE.md + a good `bootstrap.sh`. Otherwise the agent gets lost in the unknown.
+
+### 2. "Kick CI green" on an existing PR
+
+You opened a PR from your laptop, you leave for the weekend, CI fails on a flaky test or a type drift. You ping the agent from your phone: "PR #42 — CI red, check the logs, rebase if needed, fix the types and re-push."
+
+The agent can subscribe to GitHub events (comments, CI status) and **stay awake until CI goes green**. No polling from you. You get a push notification when it merges.
+
+### 3. Review replies
+
+A teammate leaves 6 comments in review. Instead of addressing all by hand, you trigger a session on the PR: "Respond to actionable comments, propose a fix per comment, leave as draft the questions where you're unsure."
+
+The agent commits the fixes, replies inline on trivial comments, and leaves you only the 2 real questions to arbitrate.
+
+### 4. Article or doc drafts
+
+Not just code. This article — the one you're reading — was written in a Claude Code session on the web, triggered by me from my phone this morning. Branch `claude/blog-articles-writing-eFB25`, 4 MDX files (FR + EN × 2 articles), commit, push. I review from the GitHub app.
+
+## What works less well
+
+Not magic. Three things to know:
+
+**The container is ephemeral.** Anything not commit-and-push is lost at the end. It pushes you toward short, explicit sessions. Pretty healthy actually — but forget the "I leave a session running for 3 days simmering". Not that model.
+
+**Network policy can block an install.** If your `npm install` pulls a dep from a non-authorized mirror, it breaks. I fix by widening the policy once, then documenting it in `CLAUDE.md` for future sessions.
+
+**Interactive debugging is limited.** No live breakpoint, no Xcode Simulator in the container. For really nasty bugs that need a debugger or a physical device, you reopen the laptop. The web covers "easy to medium", not "I need to step-debug a race condition".
+
+## The combo that makes it truly indie-friendly
+
+Three pieces that make this workflow viable when you ship alone:
+
+1. **Spec-driven dev** ([article here](/en/writing/2026-05-spec-driven-development)) — your specs and plans live in the repo. The web agent doesn't need you around to understand the project: everything is in markdown, readable by it.
+
+2. **Claude Code hooks** ([article here](/en/writing/2026-05-claude-code-hooks)) — `SessionStart` to bootstrap, `PreToolUse` to block risky commands, `Stop` to notify. Same on web and laptop.
+
+3. **PR autopilot** — subscribe to PR events, the agent stays awake to respond to CI failures and review comments. You launch and forget until the "PR merged" notification.
+
+Without those three pieces, Claude Code on the web stays a gadget. With them, it's a real second pair of hands.
+
+## What it changes for a solo indie
+
+Before: I had to be at the laptop to fix a user bug. The bug waited until I got home in the evening. Fix cycle: 6-12h.
+
+Now: bug reported at 2pm, fix merged at 2:12pm, EAS build triggered, available in TestFlight within the hour. Fix cycle: 1h.
+
+And I'm not at the screen. I'm on the subway, in a meeting, at the gym. The agent handles the routine work, I keep my brain for the moment when there's really something to arbitrate.
+
+## How to get started
+
+1. Go to [claude.ai/code](https://claude.ai/code), connect your GitHub.
+2. Pick **a single repo** you know well to start with.
+3. Make sure that repo has a `CLAUDE.md` and a minimal bootstrap script.
+4. Launch a **trivial task** first (rename a string, add a test). Check the PR is correct end to end.
+5. Scale up gradually.
+
+The classic mistake: opening 5 concurrent sessions on 5 different repos and ending up with 5 half-baked PRs to review. One session at a time, one clear task at a time.
+
+It's less about "I delegate 100% of the work" than "I shift the right work to the right moment of my day". And for a solo indie, that's the difference between a feature shipped on Tuesday vs. shipped on Friday.

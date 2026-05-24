@@ -1,0 +1,151 @@
+---
+title: "Les hooks Claude Code que j'ai installés et qui me font gagner du temps tous les jours"
+date: 2026-05-24
+locale: fr
+translationKey: "2026-05-claude-code-hooks"
+tags: ["ai", "claude", "tools", "process"]
+excerpt: "Passer du Claude qui code au Claude qui s'auto-discipline. SessionStart pour bootstrap le repo, PreToolUse pour bloquer les commandes douteuses, Stop pour notifier la fin d'une tâche. Quatre hooks concrets que j'ai installés dans mes repos et qui tournent en silence."
+draft: false
+---
+
+Quand je travaille avec Claude Code, 80% des frictions ne sont pas dans le code lui-même. C'est dans le "et merde, il a oublié de lancer les tests avant de commit". "Il a essayé `rm -rf` dans un mauvais dossier". "Il a terminé la tâche depuis 10 min et je l'ai pas vu".
+
+Les **hooks**, c'est ce qui règle tout ça sans avoir à le dire à l'agent. Un hook est un script shell que Claude Code lance automatiquement à un moment précis (avant un tool, après un tool, au démarrage, à la fin d'une session). L'agent ne décide pas — c'est ton harnais qui décide.
+
+Voici les 4 hooks qui tournent dans mes repos `voicejournal` et `presentation`, et ce qu'ils m'évitent au quotidien.
+
+## Où ça vit
+
+Les hooks se déclarent dans `.claude/settings.json` (versionné) ou `.claude/settings.local.json` (perso, gitignored). Format :
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{ "matcher": "*", "hooks": [{ "type": "command", "command": "./scripts/bootstrap.sh" }] }],
+    "PreToolUse":   [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "./scripts/guard.sh" }] }],
+    "PostToolUse":  [{ "matcher": "Edit|Write", "hooks": [{ "type": "command", "command": "./scripts/lint.sh" }] }],
+    "Stop":         [{ "matcher": "*", "hooks": [{ "type": "command", "command": "./scripts/notify.sh" }] }]
+  }
+}
+```
+
+Quatre events, quatre rôles bien distincts.
+
+## Hook 1 — SessionStart : "que l'agent ne démarre pas dans le brouillard"
+
+Le problème : tu ouvres une session, l'agent ne sait pas si `npm install` est à jour, sur quelle branche tu es, si le dev server tourne, si ta base Supabase est seedée. Il commence par 8 commandes d'exploration. Tu paies en tokens et en temps.
+
+La solution : un script `bootstrap.sh` qui résume tout en 15 lignes au démarrage.
+
+```bash
+#!/usr/bin/env bash
+set -e
+echo "=== Branch ==="
+git rev-parse --abbrev-ref HEAD
+echo ""
+echo "=== Last commit ==="
+git log -1 --oneline
+echo ""
+echo "=== Modified files ==="
+git status --porcelain | head -10
+echo ""
+echo "=== Lockfile state ==="
+[ "$(stat -c %Y package-lock.json)" -gt "$(stat -c %Y node_modules 2>/dev/null || echo 0)" ] \
+  && echo "⚠️  npm install needed" \
+  || echo "✓ deps up to date"
+```
+
+Sortie envoyée à Claude au tout début. Il commence avec **le bon contexte** au lieu de partir en exploration. Gain typique : -10 commandes de scout par session.
+
+Pour les repos qui ont besoin de plus (build des types Supabase, génération de types Astro), je rajoute les commandes idempotentes là-dedans. SessionStart, c'est le seul endroit où tu peux dire "fais ça maintenant et tais-toi".
+
+## Hook 2 — PreToolUse : "bloque les commandes que je n'autorise jamais"
+
+Le PreToolUse se déclenche **avant** chaque tool call. S'il sort un code de retour non-zero, le tool est bloqué et le message d'erreur retourne à l'agent.
+
+Mon `guard.sh` sur la commande Bash :
+
+```bash
+#!/usr/bin/env bash
+# Lit le tool input depuis stdin (JSON)
+input=$(cat)
+cmd=$(echo "$input" | jq -r '.tool_input.command // ""')
+
+# Patterns que je n'autorise jamais en autopilot
+if echo "$cmd" | grep -qE '(rm -rf /|rm -rf \$|git push --force|git reset --hard origin)'; then
+  echo "❌ Commande bloquée par guard.sh : $cmd" >&2
+  exit 2
+fi
+
+exit 0
+```
+
+Cas d'usage réels qui m'ont sauvé :
+- Un `git reset --hard origin/main` proposé par l'agent alors que j'avais 3 heures de boulot non-pushé.
+- Un `rm -rf node_modules ios/Pods` qui aurait viré ma config Xcode locale.
+
+L'agent reçoit l'erreur et propose une alternative. Pas de drame, pas de perte.
+
+## Hook 3 — PostToolUse : "que les fichiers que tu touches restent propres"
+
+PostToolUse après chaque `Edit` ou `Write`, je lance le linter **uniquement sur le fichier modifié**.
+
+```bash
+#!/usr/bin/env bash
+input=$(cat)
+file=$(echo "$input" | jq -r '.tool_input.file_path // ""')
+
+# Skip si pas un fichier de code
+case "$file" in
+  *.ts|*.tsx|*.astro|*.mdx) ;;
+  *) exit 0 ;;
+esac
+
+# Lint + format silencieux
+npx eslint --fix "$file" 2>/dev/null || true
+npx prettier --write "$file" 2>/dev/null || true
+```
+
+Effet concret : je ne vois plus jamais de PR de Claude avec des trailing whitespaces, des imports désordonnés, ou des trailing commas manquantes. Le linter passe, sans que l'agent ait à y penser ou à lire la sortie.
+
+Important : `exit 0` toujours. Le hook ne doit jamais bloquer l'écriture — juste nettoyer après.
+
+## Hook 4 — Stop : "préviens-moi quand tu as fini"
+
+Quand Claude finit son tour (Stop event), je me fais notifier. Sinon je rate la fin et l'agent attend bêtement.
+
+Sur Mac :
+
+```bash
+#!/usr/bin/env bash
+osascript -e 'display notification "Tour terminé" with title "Claude Code" sound name "Pop"'
+```
+
+Sur Linux dev container : `notify-send "Claude Code" "Tour terminé"`.
+
+Sur Claude Code Web (cette session, par exemple), c'est encore plus utile combiné avec les push notifications du compte — tu reçois sur ton tel.
+
+Petit add-on : je log la durée de la session dans `.claude/sessions.log` pour avoir une vague idée du temps passé en agent par projet.
+
+## Ce qui ne marche PAS comme hook
+
+J'ai essayé, ça ne tient pas :
+- **Run la suite de tests complète** sur PostToolUse. Trop lent, l'agent attend, tu perds le bénéfice du flow. Les tests, c'est explicite à la fin d'une feature, pas en background sur chaque edit.
+- **Hooks qui parlent à l'agent** pour lui donner des conseils ("hé tu devrais utiliser tel pattern"). Mauvais signal — utilise un CLAUDE.md pour ça, pas un hook.
+- **Bloquer trop de commandes** au PreToolUse. À la fin tu passes ta vie à approuver des prompts. Garde la guard list ultra-courte : 5 patterns max, vraiment dangereux.
+
+## Le pattern qui fait gagner du temps
+
+Tous mes hooks ont une chose en commun : **ils ne demandent jamais rien à l'agent**. Ils filtrent, ils nettoient, ils notifient. L'agent ne sait même pas qu'ils existent (sauf le PreToolUse quand il bloque).
+
+C'est ça l'intérêt. Le harnais s'occupe de la discipline. L'agent s'occupe du code.
+
+## Comment tu te lances
+
+1. Crée `.claude/settings.json` à la racine du repo, versionné.
+2. Commence par **SessionStart** — c'est celui qui te rend le contexte de chaque session pour zéro effort.
+3. Ajoute **PostToolUse + linter** dès que tu en as marre de voir des diffs sales.
+4. **PreToolUse guard** quand tu as eu une vraie frayeur (toi ou un collègue).
+5. **Stop notif** dès que tu utilises Claude Code pendant que tu fais autre chose.
+
+Une fois en place, tu les oublies. Et c'est exactement ce que tu veux d'un bon harnais : invisible quand tout va bien, présent quand ça compte.
