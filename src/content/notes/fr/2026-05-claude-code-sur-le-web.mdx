@@ -1,0 +1,105 @@
+---
+title: "Claude Code sur le web : comment je shippe mes apps depuis mon téléphone"
+date: 2026-05-24
+locale: fr
+translationKey: "2026-05-claude-code-web"
+tags: ["ai", "claude", "process", "indie"]
+excerpt: "Une issue GitHub depuis le tel, une session Claude Code qui s'auto-déclenche dans un container cloud, une PR qui apparaît dans Slack, un merge depuis l'app GitHub. Mon workflow indie quand je suis loin du laptop — et ce qui marche / ce qui ne marche pas."
+draft: false
+---
+
+Je suis dans le train. Un user m'a envoyé un message : "L'app crash quand je tape sur l'orbe sans micro autorisé." Je sors le téléphone, j'ouvre l'app Claude, je tape :
+
+> "Sur voicejournal, repro : permission micro refusée → tap sur l'orbe → crash. Catch l'exception côté `RecordOrb`, affiche un toast i18n 'Autorise le micro dans Réglages', et propose un bouton qui ouvre les settings iOS/Android. PR sur `fix/mic-permission-crash`."
+
+Je ferme le téléphone. 8 minutes plus tard, notif : la PR est ouverte. Je la review en gare d'arrivée depuis l'app GitHub, je merge, je rentre.
+
+Ça, c'est **Claude Code sur le web**. Et ça a changé ma manière de bosser en indie.
+
+## Ce que c'est
+
+Claude Code, à la base, c'est un CLI sur ton laptop. Tu lances `claude` dans un terminal, ça ouvre une session qui touche les fichiers locaux.
+
+Claude Code sur le web, c'est la même chose mais hostée. Un container éphémère est créé dans le cloud, ton repo est cloné dedans frais, la session tourne là-bas. Tu interagis depuis :
+- le navigateur (`claude.ai/code`)
+- l'app mobile Anthropic
+- une issue GitHub (avec un trigger)
+- une PR review (autofix)
+- un message Slack si tu as branché l'intégration
+
+Le container est jeté à la fin. Si tu veux garder ton travail, l'agent push sur une branche avant que le container disparaisse.
+
+## Mon setup en 30 secondes
+
+1. Sur **github.com/newBie974/voicejournal**, j'ai connecté l'app Claude Code dans Settings → Integrations.
+2. J'ai défini les **policies réseau** que je tolère pour ce repo (outbound restreint à npm, supabase.com, gemini.googleapis.com, expo.dev). Documenté côté Anthropic ici : [code.claude.com/docs](https://code.claude.com/docs/en/claude-code-on-the-web).
+3. J'ai un script `bootstrap.sh` versionné qui lance `npm install`, génère les types Supabase, et copie `.env.example` → `.env` avec les secrets injectés par l'intégration.
+4. Mon `CLAUDE.md` décrit la stack en 30 lignes, et la branche à utiliser pour les fixes (`fix/...`) vs les features (`feat/...`).
+
+C'est tout. Le container sait exactement où il atterrit, quoi installer, comment se comporter.
+
+## Les 4 usages où ça change tout
+
+### 1. Le bug report client → fix automatique
+
+Le scénario du début. Tu ne touches pas au laptop. Tu décris le bug, tu pointes le fichier suspect si tu le connais. L'agent boot le container, repro si possible, fix, lance les tests, push la PR.
+
+**Le détail qui rend ça fiable** : un bon CLAUDE.md + un bon `bootstrap.sh`. Sinon l'agent se perd dans l'inconnu.
+
+### 2. Le "kick CI green" sur une PR existante
+
+Tu as ouvert une PR depuis ton laptop, tu pars en weekend, CI casse sur un test flaky ou un type qui dérive. Tu pingues l'agent depuis ton téléphone : "PR #42 — CI rouge, regarde les logs, rebase si besoin, fix les types et re-push."
+
+L'agent peut s'abonner aux events GitHub (commentaires, statut CI) et **rester réveillé jusqu'à ce que CI passe vert**. Pas de polling de ta part. Tu reçois une push notif quand c'est mergé.
+
+### 3. Le review reply
+
+Un collègue laisse 6 commentaires en review. Au lieu de tout adresser à la main, tu déclenches une session sur la PR : "Réponds aux commentaires actionnable, propose un fix par commentaire, laisse en draft les questions où tu n'es pas sûr."
+
+L'agent commit les fixes, répond inline sur les commentaires triviaux, et te laisse seulement les 2 vraies questions à arbitrer.
+
+### 4. Le draft d'article ou de doc
+
+Pas seulement du code. Cet article — celui que tu lis — a été écrit dans une session Claude Code sur le web, déclenchée par moi depuis mon tel ce matin. Branche `claude/blog-articles-writing-eFB25`, 4 fichiers MDX (FR + EN × 2 articles), commit, push. Je relis depuis l'app GitHub.
+
+## Ce qui marche moins bien
+
+C'est pas magique. Trois trucs à savoir :
+
+**Le container est éphémère.** Tout ce qui n'est pas commit-and-push est perdu à la fin. Ça pousse à des sessions courtes et explicites. C'est plutôt sain — mais oublie l'idée de "je laisse une session ouverte qui mijote pendant 3 jours". Pas ce modèle-là.
+
+**La policy réseau peut bloquer un install.** Si ton `npm install` chope une dep depuis un mirror non-autorisé, ça casse. Je résous en élargissant la policy une fois, puis en la documentant dans `CLAUDE.md` pour les sessions futures.
+
+**Le débogage interactif est limité.** Pas de breakpoint en live, pas de Xcode Simulator dans le container. Pour les bugs vraiment retors qui demandent un debugger ou un device physique, tu rouvres le laptop. Le web sert le "facile à moyen", pas le "j'ai besoin de step-debug une race condition".
+
+## Le combo qui rend ça vraiment indie-friendly
+
+Trois pièces qui rendent ce workflow viable quand tu shippes seul :
+
+1. **Spec-driven dev** ([article ici](/notes/2026-05-spec-driven-development)) — tes specs et plans sont dans le repo. L'agent web n'a pas besoin que tu sois là pour comprendre le projet : tout est en markdown, lisible par lui.
+
+2. **Hooks Claude Code** ([article ici](/notes/2026-05-hooks-claude-code)) — `SessionStart` qui bootstrap, `PreToolUse` qui bloque les commandes risquées, `Stop` qui notifie. Pareil sur web et sur laptop.
+
+3. **PR autopilot** — abonnement aux events PR, l'agent reste réveillé pour répondre aux CI failures et commentaires de review. Tu lances et tu oublies jusqu'à la notif "PR mergée".
+
+Sans ces trois pièces, Claude Code sur le web reste un gadget. Avec, c'est une vraie deuxième paire de mains.
+
+## Ce que ça change pour un indie solo
+
+Avant : je devais être au laptop pour fixer un bug user. Le bug attendait que je rentre chez moi le soir. Cycle de fix : 6-12h.
+
+Maintenant : bug remonté à 14h, fix mergé à 14h12, build EAS lancé, dispo en TestFlight dans l'heure. Cycle de fix : 1h.
+
+Et je suis pas devant l'écran. Je suis dans le métro, en réunion, à la salle. L'agent fait le boulot routinier, je garde mon cerveau pour le moment où il y a vraiment quelque chose à arbitrer.
+
+## Comment tu te lances
+
+1. Va sur [claude.ai/code](https://claude.ai/code), connecte ton GitHub.
+2. Sélectionne **un seul repo** que tu connais bien pour démarrer.
+3. Vérifie que ton repo a un `CLAUDE.md` et un script de bootstrap minimal.
+4. Lance une **tâche triviale** en premier (renommer une string, ajouter un test). Vérifie que la PR est correcte de bout en bout.
+5. Monte en ambition au fur et à mesure.
+
+L'erreur classique : ouvrir 5 sessions simultanées sur 5 repos différents et se retrouver avec 5 PRs à moitié foireuses à reviewer. Une session à la fois, une tâche claire à la fois.
+
+C'est moins du "je délègue 100% du boulot" que du "je décale le bon boulot au bon moment de ma journée". Et pour un indie solo, c'est la différence entre une feature shippée le mardi vs. shippée le vendredi.

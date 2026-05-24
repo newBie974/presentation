@@ -1,0 +1,151 @@
+---
+title: "The Claude Code hooks I installed that save me time every single day"
+date: 2026-05-24
+locale: en
+translationKey: "2026-05-claude-code-hooks"
+tags: ["ai", "claude", "tools", "process"]
+excerpt: "Going from Claude that codes to Claude that disciplines itself. SessionStart to bootstrap the repo, PreToolUse to block sketchy commands, Stop to notify you when a task ends. Four concrete hooks running silently in my repos."
+draft: false
+---
+
+When I work with Claude Code, 80% of the friction isn't in the code itself. It's in the "damn, it forgot to run the tests before committing." "It tried `rm -rf` in the wrong folder." "It finished 10 minutes ago and I didn't notice."
+
+**Hooks** are what fix all of this without you having to tell the agent. A hook is a shell script Claude Code runs automatically at a precise moment (before a tool, after a tool, on session start, on session end). The agent doesn't decide — your harness does.
+
+Here are the 4 hooks running in my `voicejournal` and `presentation` repos, and what they spare me every day.
+
+## Where they live
+
+Hooks are declared in `.claude/settings.json` (versioned) or `.claude/settings.local.json` (personal, gitignored). Format:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{ "matcher": "*", "hooks": [{ "type": "command", "command": "./scripts/bootstrap.sh" }] }],
+    "PreToolUse":   [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "./scripts/guard.sh" }] }],
+    "PostToolUse":  [{ "matcher": "Edit|Write", "hooks": [{ "type": "command", "command": "./scripts/lint.sh" }] }],
+    "Stop":         [{ "matcher": "*", "hooks": [{ "type": "command", "command": "./scripts/notify.sh" }] }]
+  }
+}
+```
+
+Four events, four very distinct roles.
+
+## Hook 1 — SessionStart: "don't let the agent start in the fog"
+
+The problem: you open a session, the agent doesn't know if `npm install` is up to date, what branch you're on, whether the dev server is running, whether the Supabase DB is seeded. It starts with 8 exploratory commands. You pay in tokens and time.
+
+The solution: a `bootstrap.sh` script that summarizes everything in 15 lines on start.
+
+```bash
+#!/usr/bin/env bash
+set -e
+echo "=== Branch ==="
+git rev-parse --abbrev-ref HEAD
+echo ""
+echo "=== Last commit ==="
+git log -1 --oneline
+echo ""
+echo "=== Modified files ==="
+git status --porcelain | head -10
+echo ""
+echo "=== Lockfile state ==="
+[ "$(stat -c %Y package-lock.json)" -gt "$(stat -c %Y node_modules 2>/dev/null || echo 0)" ] \
+  && echo "⚠️  npm install needed" \
+  || echo "✓ deps up to date"
+```
+
+Output is fed to Claude at the very start. It begins with **the right context** instead of scouting. Typical gain: -10 scout commands per session.
+
+For repos that need more (Supabase type generation, Astro type sync), I add the idempotent commands in there. SessionStart is the one place you get to say "do this now and shut up".
+
+## Hook 2 — PreToolUse: "block commands I never authorize"
+
+PreToolUse fires **before** each tool call. If it returns a non-zero exit code, the tool is blocked and the error message goes back to the agent.
+
+My `guard.sh` on Bash:
+
+```bash
+#!/usr/bin/env bash
+# Reads tool input from stdin (JSON)
+input=$(cat)
+cmd=$(echo "$input" | jq -r '.tool_input.command // ""')
+
+# Patterns I never authorize on autopilot
+if echo "$cmd" | grep -qE '(rm -rf /|rm -rf \$|git push --force|git reset --hard origin)'; then
+  echo "❌ Command blocked by guard.sh: $cmd" >&2
+  exit 2
+fi
+
+exit 0
+```
+
+Real cases that saved me:
+- A `git reset --hard origin/main` proposed by the agent while I had 3 hours of un-pushed work.
+- A `rm -rf node_modules ios/Pods` that would have wiped my local Xcode config.
+
+The agent gets the error and proposes an alternative. No drama, no loss.
+
+## Hook 3 — PostToolUse: "keep the files you touch clean"
+
+PostToolUse after each `Edit` or `Write`, I run the linter **only on the modified file**.
+
+```bash
+#!/usr/bin/env bash
+input=$(cat)
+file=$(echo "$input" | jq -r '.tool_input.file_path // ""')
+
+# Skip non-code files
+case "$file" in
+  *.ts|*.tsx|*.astro|*.mdx) ;;
+  *) exit 0 ;;
+esac
+
+# Silent lint + format
+npx eslint --fix "$file" 2>/dev/null || true
+npx prettier --write "$file" 2>/dev/null || true
+```
+
+Concrete effect: I never see a Claude PR with trailing whitespace, scrambled imports, or missing trailing commas again. The linter runs, with zero awareness from the agent.
+
+Important: always `exit 0`. The hook must never block writes — only clean up afterward.
+
+## Hook 4 — Stop: "ping me when you're done"
+
+When Claude finishes its turn (Stop event), I get notified. Otherwise I miss the end and the agent just waits.
+
+On Mac:
+
+```bash
+#!/usr/bin/env bash
+osascript -e 'display notification "Turn finished" with title "Claude Code" sound name "Pop"'
+```
+
+On a Linux dev container: `notify-send "Claude Code" "Turn finished"`.
+
+On Claude Code on the web (like this session), it's even more useful combined with push notifications on your account — you get pinged on your phone.
+
+Small add-on: I log session duration to `.claude/sessions.log` to get a vague sense of agent time spent per project.
+
+## What does NOT work as a hook
+
+I tried, didn't stick:
+- **Run the full test suite** on PostToolUse. Too slow, the agent waits, you lose the flow benefit. Tests are an explicit end-of-feature thing, not a background-on-every-edit thing.
+- **Hooks that talk to the agent** to give advice ("hey, you should use this pattern"). Wrong signal — use a CLAUDE.md for that, not a hook.
+- **Blocking too many commands** in PreToolUse. You end up spending your life approving prompts. Keep the guard list ultra short: 5 patterns max, truly dangerous.
+
+## The pattern that saves time
+
+All my hooks share one thing: **they never ask anything of the agent**. They filter, they clean up, they notify. The agent doesn't even know they exist (except the PreToolUse when it blocks).
+
+That's the point. The harness handles discipline. The agent handles code.
+
+## How to get started
+
+1. Create `.claude/settings.json` at the root of the repo, versioned.
+2. Start with **SessionStart** — it's the one that pays off the most for zero effort.
+3. Add **PostToolUse + linter** the moment you're tired of seeing messy diffs.
+4. **PreToolUse guard** after a real scare (you or a teammate).
+5. **Stop notif** the minute you use Claude Code while doing something else.
+
+Once in place, you forget them. And that's exactly what you want from a good harness: invisible when everything's fine, present when it counts.
