@@ -1,0 +1,212 @@
+---
+title: "J'ai transformé Claude en chasseur d'idées d'apps. Voici ce qu'il a trouvé sur La Réunion."
+date: 2026-05-25
+locale: fr
+translationKey: "2026-05-product-scout-skill"
+tags: ["ai", "claude", "tools", "indie"]
+excerpt: "Comment j'utilise les Claude Skills pour brainstormer 10 idées de SaaS scorées sur 100, en 15 minutes — avec un cas concret sur ma niche locale, La Réunion 974."
+draft: true
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+Vendredi soir, devant ma bière, je me demande quoi shipper après [VoiceJournal AI](https://aivoicejournal.app).
+
+J'ouvre Claude. Je tape une seule commande : `/product-scout apps mobiles IA pour La Réunion 974`.
+
+15 minutes plus tard, j'ai **10 idées d'apps scorées sur 100, avec pain points sourcés, concurrents listés, pricing chiffré et plan marketing 3 mois**. Plus 3 recos personnalisées à ma stack et mon profil.
+
+Pas un brainstorm flou. Pas un rapport McKinsey illisible. Un truc que je peux exécuter dès le lendemain.
+
+Voici comment je l'ai fait, ce que j'ai trouvé, et le skill complet que tu peux copier.
+
+## Le vrai problème quand tu cherches ta prochaine idée
+
+Tous les indie hackers connaissent ce moment : le projet en cours arrive en phase de croisière, et la question revient — *"je build quoi après ?"*
+
+Les options classiques :
+
+- **ChatGPT "donne-moi 10 idées de SaaS"** → tu reçois 10 dashboards B2B génériques que personne ne va payer
+- **Reddit / Indie Hackers** → 4 heures de scroll dans des posts US-centric, tu ressors avec l'impression d'avoir tout vu sauf rien d'actionnable
+- **Twitter / TikTok build in public** → de l'inspiration, jamais une niche cadrée
+
+Ce qu'il manque ? Un **consultant produit dédié** qui :
+
+1. Fait la recherche terrain à ta place
+2. Te sort des idées adaptées à ton profil et ta géographie
+3. Score chaque idée honnêtement (pas un cheerleader)
+4. Te donne un plan d'attaque actionnable
+
+J'aurais payé €500 pour ça. Et c'est exactement ce que j'ai construit avec Claude.
+
+## La solution : les Claude Skills
+
+Anthropic a sorti récemment les [Claude Skills](https://www.anthropic.com/news/agent-skills) — un système où tu peux transformer Claude en outil spécialisé avec un fichier `SKILL.md` posé dans `~/.claude/skills/<nom>/`.
+
+Concrètement, un skill c'est :
+
+- **Un prompt système structuré** qui définit le rôle, le ton, le processus, le format de sortie
+- **Persistant** : tu ne le recopies pas à chaque conversation, tu l'invoques avec `/nom-du-skill`
+- **Composable** : Claude le déclenche automatiquement quand ta demande matche, ou tu peux le forcer
+
+C'est la différence entre demander à un consultant "donne-moi des idées" (vague) et lui filer un **brief structuré qu'il a déjà internalisé** (précis).
+
+## Mon skill : `product-scout`
+
+J'ai construit un skill qui s'appelle `product-scout`. Sa mission :
+
+> Générer 10 idées de produits digitaux à shipper sur une niche donnée, avec recherche web réelle, scoring sur 100, et plan complet : besoin utilisateur, MVP, concurrents, temps de dev, monétisation, acquisition, budget marketing.
+
+Le ton : indie hacker direct, pas consultant en costard. Style Rob Walling × Pieter Levels × Marc Lou. Il nomme les choses : "ça pue", "à shipper ce week-end", "le gap est énorme".
+
+L'invocation est simple :
+
+```bash
+/product-scout [niche ou thème]
+/product-scout [niche] type: [saas|mobile|extension|ai|tout]
+/product-scout [niche] audience: [b2b|b2c|créateurs|perso]
+```
+
+Exemples :
+
+- `/product-scout freelances juridiques`
+- `/product-scout parents de bébés type: mobile`
+- `/product-scout productivité dev type: extension`
+
+## Le test live : ma niche perso
+
+Je suis Réunionnais. La Réunion = 870 000 habitants, identité forte, vie chère, niche géographique sous-servie côté IA mobile. Je me suis dit : si je devais shipper une app pour mon île, ce serait quoi ?
+
+J'ai tapé : `/product-scout apps mobiles IA pour La Réunion 974`.
+
+Claude a lancé 8 recherches web (Reddit r/LaReunion, Product Hunt, lexiques créoles, INSEE vie chère, état sentiers ONF, presse locale), agrégé les pain points, et sorti le rapport ci-dessous.
+
+### Le TL;DR qu'il a généré
+
+> L'île est une niche géo de **~870K habitants**, ultra-attachée à son identité (créole, cuisine, péi), mais aussi en galère sur des sujets concrets : vie chère (+37 % sur la bouffe vs Hexagone, INSEE), cyclones réguliers, météo de montagne traîtresse pour les randos, créole pas standardisé. Le marché mobile local est **sous-servi côté IA** — la plupart des apps "974" sont des news/portails institutionnels avec des UI de 2015. **Gap énorme à exploiter** : aucune app mobile IA native ne combine "intelligence locale" + "use case quotidien".
+
+### Le classement des 10 idées
+
+| Rang | Idée | Type | Note | Difficulté | Potentiel CA |
+|---|---|---|---|---|---|
+| 1 | **Kosa Lé** — assistant créole IA | App IA conversationnelle | 🔥 87/100 | Moyen 🟡 | €3-8K/mois MRR |
+| 2 | **Sa Pou Manzé** — cari IA anti-gaspi | App IA cuisine + scan frigo | 🔥 84/100 | Moyen 🟡 | €4-10K/mois |
+| 3 | **Trasé Léker** — copilote rando/trail IA | App IA outdoor + météo | 🟢 80/100 | Chaud 🔴 | €5-12K/mois |
+| 4 | **Lé Moin Cher** — comparateur prix IA péi | App IA + OCR ticket | 🟢 77/100 | Moyen 🟡 | €2-6K/mois |
+| 5 | **Ti Marmay** — coach parental créole IA | App IA famille | 🟢 74/100 | Facile 🟢 | €3-7K/mois |
+| 6 | **Kontrol Siklon** — copilote cyclone IA | App IA crise | 🟡 68/100 | Moyen 🟡 | €1-3K/mois |
+| 7 | **Lambians 974** — DJ vocal créole IA | App IA audio/créa | 🟡 65/100 | Chaud 🔴 | €2-5K/mois |
+| 8 | **Diagonale Coach** — IA Grand Raid | App IA training trail | 🟡 63/100 | Moyen 🟡 | €1-3K/mois |
+| 9 | **Zistwar Péi** — storyteller IA culture | App IA contenu jeunesse | 🟠 54/100 | Facile 🟢 | €500-2K/mois |
+| 10 | **Bazar Créole** — vendre péi via IA | App IA vendeur marché | 🟠 48/100 | Moyen 🟡 | €1-3K/mois |
+
+### Zoom sur l'idée #1 : Kosa Lé (87/100 🔥)
+
+> **Tagline :** "Apprends, traduis et parle le créole réunionnais comme un péi."
+
+**Le pain qu'il a identifié :**
+
+> "Je suis né à La Réunion mais mes parents m'ont parlé qu'en français — quand ma grand-mère me parle créole, je comprends à 60 %. Quand je dois répondre, je suis perdu. Google Translate ne connaît pas le créole."
+
+**Le contexte qu'il a sorti :**
+
+- **Qui :** Réunionnais 18-45 ans qui comprennent partiellement le créole, diaspora 2e/3e génération, ~80K zoreilles installés
+- **Quand :** conversations famille (grands-parents), réseaux sociaux péi, retour vacances au péi
+- **Combien :** ~870K résidents + ~250K diaspora francophone — estimation cible payante : 30-50K
+- **Pourquoi c'est pas réglé :** le créole réunionnais est langue régionale officielle depuis 2014 mais pas assez gros pour Duolingo, pas assez petit pour Google Translate. **Sweet spot indie.**
+
+**Le MVP qu'il propose :**
+
+1. Traduction conversationnelle FR ↔ créole avec dataset constitué (Lofis La Lang Kréol + lexiques publics)
+2. Mode "Konversasyon" : tu parles français, l'IA répond en créole avec audio TTS local
+3. Leçons "5 min/jour" thématiques (cuisine, famille, marché, kabar)
+
+**Concurrents identifiés :** Google Translate (créole pas supporté), lexiques web (statiques, moches), Assimil (livre + CD, format old-school), Lofis La Lang Kréol (institutionnel, pas d'app — *partenariat possible*).
+
+**Pricing chiffré :** Free 10 traductions/jour, Plan Marmay €4,99/mois, Plan Famille €7,99/mois. Cible 12 mois : 3-5K abos = **€15-25K MRR**.
+
+**Plan d'acquisition 3 canaux** : TikTok péi quotidien, groupes Facebook diaspora, partenariat Lofis + presse locale (Zinfos974, 1ère Réunion).
+
+C'est ce niveau de détail qui change la donne. Pas du "ça pourrait être intéressant" — du "voilà comment tu shippes".
+
+## Les 3 trucs que ça m'a appris
+
+### 1. Le scoring honnête force la rigueur
+
+Si je demandais à ChatGPT "donne-moi 10 idées sur la Réunion", il me sortirait 10 idées avec des emojis et "ça a du potentiel !". Mon skill descend Bazar Créole à **48/100** en disant texto "niche pro mais petite, marges fines, adoption tech difficile sur cette cible".
+
+Cette honnêteté est cablée dans le skill via :
+
+- Une grille de scoring explicite (taille marché, intensité du pain, faisabilité solo, monétisation, concurrence, acquisition)
+- Une règle non négociable : *"Si une idée pue, dis-le. Si la niche est saturée, dis-le et propose un pivot."*
+
+C'est la différence entre un brainstorm complaisant et un audit produit.
+
+### 2. Le mix obligatoire casse le biais "SaaS only"
+
+L'IA, livrée à elle-même, te ressort toujours du SaaS web. C'est dans ses données d'entraînement.
+
+J'ai cablé dans le skill :
+
+> *Au moins 2 idées mobile, 2 idées SaaS web, 1 idée extension/plugin/IA. Le reste : libre.*
+
+Résultat : sur 10 idées Réunion, j'ai eu 10 apps mobiles (parce que j'avais filtré explicitement), mais en mode "tout", j'ai obtenu un panaché bien plus utile. **La contrainte créative > le brief vague.**
+
+### 3. C'est un point de départ, pas un oracle
+
+Le rapport sort en 15 minutes avec des verbatims sourcés et des chiffres réels — mais ça reste une cartographie initiale, pas une bible.
+
+Avant de coder Kosa Lé, je devrais :
+
+- Recouper les verbatims (parler à 10 Réunionnais qui galèrent avec le créole)
+- Valider la waitlist (landing Carrd, objectif 200 emails en 7 jours)
+- Tester le pricing (DM 20 utilisateurs cible : "tu payerais combien ?")
+
+<Callout tone="warn">
+Le scout ne remplace pas la validation. Il te donne **10 hypothèses bien formulées à valider**, au lieu d'une seule idée vague. Le piège, c'est de coder direct sur la base du rapport — ne fais pas ça.
+</Callout>
+
+## Le bonus inattendu
+
+Je voulais 10 idées d'apps. J'ai eu 10 idées d'apps **+ un audit gratuit de mon marché local**.
+
+Maintenant je connais :
+
+- La taille exacte de la diaspora réunionnaise activable (~250K)
+- Les builders déjà sur le créneau IA (quasi zéro)
+- Les coûts d'acquisition estimés pour mon audience (CPC TikTok €0,15-0,30 sur diaspora FR)
+- Les partenariats institutionnels possibles (Lofis La Lang Kréol)
+
+<Callout tone="ok">
+Même si je ne shippe aucune de ces 10 idées demain, j'ai une carte mentale qui n'existait pas avant. **Le rapport vaut plus que les idées elles-mêmes.**
+</Callout>
+
+## Le skill, copiable
+
+Le skill complet est open-source sur GitHub : [github.com/newBie974/skills](https://github.com/newBie974/skills/blob/main/product-scout/SKILL.md).
+
+Tu peux le cloner directement dans ton dossier Claude skills :
+
+```bash
+mkdir -p ~/.claude/skills/product-scout
+curl -o ~/.claude/skills/product-scout/SKILL.md \
+  https://raw.githubusercontent.com/newBie974/skills/main/product-scout/SKILL.md
+```
+
+Et hop, dans Claude Code ou Desktop :
+
+```bash
+/product-scout [ta niche]
+```
+
+## Lance-le sur ta niche
+
+Le skill est gratuit. Tu peux le tweaker à ton style (le ton, la grille de scoring, les types de produits forcés dans le mix).
+
+Si tu testes, **DM-moi ton top 3** — je te dis honnêtement lequel je shipperais à ta place.
+
+Et si tu veux voir ce que je build, l'app sur laquelle je bosse en ce moment c'est [VoiceJournal AI](https://aivoicejournal.app) — du journaling vocal avec IA. Stack pareille (React Native + Expo + Claude + Supabase + RevenueCat) que ce que le scout recommande pour 80% des idées qu'il a sorties.
+
+L'idée pour la suite ? Je vais probablement piocher dans le rapport Réunion. Pas Kosa Lé tout de suite (faut que je valide), mais le scout m'a clairement ouvert la carte des prochaines 18 mois.
+
+Bon scout. 🌶️
