@@ -1,0 +1,115 @@
+---
+title: "Les règles clean code que j'impose à Claude sur React Native"
+date: 2026-05-29
+locale: fr
+translationKey: "2026-05-clean-code-react-native"
+tags: ["ia", "claude", "process", "mobile"]
+excerpt: "Un agent IA produit du code « moyen » par défaut : fichiers de 300 lignes, any partout, logique dans le JSX. Voici les 10 règles que j'ai écrites pour VoiceJournal, et pourquoi elles tiennent."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+J'ai déjà écrit [pourquoi je mets un CLAUDE.md dans chaque repo](/notes/2026-04-claude-md). Cet article, c'est la suite concrète : **les 10 règles** que j'impose à Claude pour [VoiceJournal](https://aivoicejournal.app), mon app React Native, et le **pourquoi** de chacune.
+
+Parce qu'une règle sans justification, l'agent la contourne dès qu'elle le gêne. Une règle avec une raison, il l'applique.
+
+## Pourquoi React Native amplifie le problème
+
+Un agent laissé libre code "en moyenne" : patterns Stack Overflow, conventions React 2022, styles inline, `any` dès qu'il a la flemme. Sur du web ça se voit vite. Sur du mobile ça pourrit en silence — un écran qui mélange UI, logique audio, gating freemium et styles, et tu ne le remarques que le jour où tu dois le modifier.
+
+## Les 10 règles
+
+1. **120 lignes max par fichier.** La règle la plus bête et la plus efficace : dès qu'un fichier dépasse, c'est le signal qu'il fait trop de choses. La limite force le découpage *avant* que la dette ne s'installe.
+
+2. **20 lignes max par fonction, une seule responsabilité.** Si tu dois écrire "et" pour décrire ce qu'elle fait, découpe-la.
+
+3. **Nommage explicite, zéro abréviation.** Booléens en `is`/`has`/`can`, handlers en `handle`, constantes en `SCREAMING_SNAKE_CASE`. Le nom doit dire ce que ça fait sans lire le corps.
+
+4. **Une structure de composant imposée.** Imports → types → constantes → hooks → handlers → JSX → styles. Toujours le même ordre, pour que l'œil sache où chercher.
+
+5. **TypeScript strict, zéro `any`.** Et validation Zod sur tout JSON externe.
+
+6. **Erreurs jamais avalées.** Pas de `catch {}` vide — erreur typée, remontée à l'UI.
+
+7. **Pas de logique dans le JSX.** Le render se lit comme une maquette, pas comme un pipeline `.filter().sort().slice()`.
+
+8. **Pas de magic numbers.** `3000` ne dit rien ; `MIN_RECORDING_DURATION_MS` dit tout.
+
+9. **Imports ordonnés + alias `@/`.** Les chemins relatifs `../../../stores` cassent au moindre déplacement ; l'alias survit aux refactors.
+
+10. **Un fichier = une responsabilité = un export.** Pas de `helpers.ts` fourre-tout. `RecordOrb.tsx` exporte `RecordOrb`, point.
+
+## Les quelques règles qui changent vraiment la donne
+
+Inutile d'illustrer les dix — la plupart se comprennent en une ligne. Voici les trois qui m'ont fait gagner le plus de temps, avec leur exemple.
+
+### Règle 2 — découper les fonctions
+
+```typescript
+// ❌ Une fonction qui arrête, valide, vérifie l'abo, upload, navigue
+async function handleStopRecording() {
+  await recording.stopAndUnloadAsync()
+  if (durationMs < 3000) { showToast('Trop court'); return }
+  if (!isPro && freeEntriesLeft === 0) { /* paywall */ }
+  /* upload + analyse + store + navigation… */
+}
+
+// ✅ Chaque sous-fonction = une responsabilité
+async function handleStopRecording() {
+  const uri = await stopRecording()
+  if (!isValidDuration(durationMs)) return
+  if (!await ensureAccessOrPaywall(isPro, freeEntriesLeft)) return
+  await analyzeAndNavigate(uri)
+}
+```
+
+La version du haut est intestable. En bas, chaque morceau se teste isolément — et `isValidDuration` finit dans `utils/` avec son test.
+
+### Règle 5 — `any` interdit, Zod sur le JSON externe
+
+```typescript
+// ❌
+const data: any = response
+const user = data as User
+
+// ✅ — la réponse du modèle est validée avant d'être utilisée
+const AnalysisSchema = z.object({
+  mind_score: z.number().int().min(0).max(100),
+  emotions: z.array(z.object({
+    label: z.string(),
+    type: z.enum(['pos', 'neu', 'neg']),
+  })).max(5),
+})
+```
+
+Sur une app IA, la réponse du modèle est du JSON dont tu ne contrôles pas la forme. Le `any` te fait croire que tout va bien jusqu'au crash en prod. Zod transforme une hallucination du modèle en erreur catchée.
+
+### Règle 6 — ne jamais avaler une erreur
+
+<Callout tone="warn">
+  Le pire ennemi d'une app IA mobile, ce n'est pas le bug qui crashe — c'est celui qui échoue en silence et laisse l'utilisateur devant un spinner figé. Un `catch {}` vide, c'est exactement ça.
+</Callout>
+
+Chaque erreur devient un type (`NETWORK_ERROR`, `ANALYSIS_FAILED`, `AUDIO_TOO_SHORT`…) remonté à l'UI, qui force à décider quoi afficher.
+
+## La checklist qui ferme la boucle
+
+Les dix règles finissent en checklist de commit dans le CLAUDE.md :
+
+```
+□ Aucun fichier > 120 lignes
+□ Aucune fonction > 20 lignes
+□ Aucun `any` TypeScript
+□ Aucune erreur avalée silencieusement
+□ Aucune logique dans le JSX
+□ Les magic numbers sont dans constants/
+```
+
+Je peux demander à Claude de la dérouler avant chaque commit. Lui comme moi.
+
+## Ce que ça change
+
+Avant ces règles, chaque PR de l'agent me coûtait les **mêmes 5 corrections** : "découpe ce fichier", "vire ce `any`", "sors cette logique du render". Maintenant elles sont dans le contrat. L'agent les applique par défaut, et je relis du code qui ressemble au mien — pas à la moyenne de GitHub.
+
+La méthode pour construire ce fichier est [dans l'article précédent](/notes/2026-04-claude-md).

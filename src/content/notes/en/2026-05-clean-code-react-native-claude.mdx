@@ -1,0 +1,115 @@
+---
+title: "The clean-code rules I make Claude follow on React Native"
+date: 2026-05-29
+locale: en
+translationKey: "2026-05-clean-code-react-native"
+tags: ["ia", "claude", "process", "mobile"]
+excerpt: "An AI agent ships «average» code by default: 300-line files, any everywhere, logic in the JSX. Here are the 10 rules I wrote for VoiceJournal, and why they hold."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+I've already written about [why I put a CLAUDE.md in every repo](/en/writing/2026-04-claude-md). This is the concrete follow-up: **the 10 rules** I make Claude follow for [VoiceJournal](https://aivoicejournal.app), my React Native app, and the **why** behind each one.
+
+Because a rule without a reason gets bypassed the moment it's inconvenient. A rule with a reason gets applied.
+
+## Why React Native amplifies the problem
+
+An unconstrained agent writes "average" code: Stack Overflow patterns, React 2022 conventions, inline styles, `any` whenever it's lazy. On the web it shows fast. On mobile it rots silently — one screen mixing UI, audio logic, freemium gating and styles, and you only notice the day you have to change it.
+
+## The 10 rules
+
+1. **120 lines max per file.** The dumbest, most effective rule: the moment a file goes over, it's a signal it does too much. The limit forces splitting *before* debt sets in.
+
+2. **20 lines max per function, one responsibility.** If you need an "and" to describe what it does, split it.
+
+3. **Explicit naming, zero abbreviation.** Booleans as `is`/`has`/`can`, handlers as `handle`, constants in `SCREAMING_SNAKE_CASE`. The name should say what it does without reading the body.
+
+4. **An imposed component structure.** Imports → types → constants → hooks → handlers → JSX → styles. Always the same order, so the eye knows where to look.
+
+5. **Strict TypeScript, zero `any`.** And Zod validation on any external JSON.
+
+6. **Errors never swallowed.** No empty `catch {}` — typed error, surfaced to the UI.
+
+7. **No logic in the JSX.** The render reads like a mockup, not a `.filter().sort().slice()` pipeline.
+
+8. **No magic numbers.** `3000` says nothing; `MIN_RECORDING_DURATION_MS` says everything.
+
+9. **Ordered imports + the `@/` alias.** Relative paths like `../../../stores` break on the slightest move; the alias survives refactors.
+
+10. **One file = one responsibility = one export.** No catch-all `helpers.ts`. `RecordOrb.tsx` exports `RecordOrb`, full stop.
+
+## The few rules that really move the needle
+
+No point illustrating all ten — most are clear in one line. Here are the three that saved me the most time, with their example.
+
+### Rule 2 — split your functions
+
+```typescript
+// ❌ One function that stops, validates, checks the sub, uploads, navigates
+async function handleStopRecording() {
+  await recording.stopAndUnloadAsync()
+  if (durationMs < 3000) { showToast('Too short'); return }
+  if (!isPro && freeEntriesLeft === 0) { /* paywall */ }
+  /* upload + analyze + store + navigation… */
+}
+
+// ✅ Each sub-function = one responsibility
+async function handleStopRecording() {
+  const uri = await stopRecording()
+  if (!isValidDuration(durationMs)) return
+  if (!await ensureAccessOrPaywall(isPro, freeEntriesLeft)) return
+  await analyzeAndNavigate(uri)
+}
+```
+
+The top version is untestable. At the bottom, each piece tests in isolation — and `isValidDuration` ends up in `utils/` with its own test.
+
+### Rule 5 — no `any`, Zod on external JSON
+
+```typescript
+// ❌
+const data: any = response
+const user = data as User
+
+// ✅ — the model's response is validated before it's used
+const AnalysisSchema = z.object({
+  mind_score: z.number().int().min(0).max(100),
+  emotions: z.array(z.object({
+    label: z.string(),
+    type: z.enum(['pos', 'neu', 'neg']),
+  })).max(5),
+})
+```
+
+In an AI app, the model's response is JSON whose shape you don't control. `any` lets you believe everything's fine until the prod crash. Zod turns a model hallucination into a caught error.
+
+### Rule 6 — never swallow an error
+
+<Callout tone="warn">
+  The worst enemy of an AI mobile app isn't the bug that crashes — it's the one that fails silently and leaves the user staring at a frozen spinner. An empty `catch {}` is exactly that.
+</Callout>
+
+Every error becomes a type (`NETWORK_ERROR`, `ANALYSIS_FAILED`, `AUDIO_TOO_SHORT`…) surfaced to the UI, which forces you to decide what to show.
+
+## The checklist that closes the loop
+
+All ten rules end up as a commit checklist in the CLAUDE.md:
+
+```
+□ No file > 120 lines
+□ No function > 20 lines
+□ No `any` TypeScript
+□ No silently swallowed error
+□ No logic in the JSX
+□ Magic numbers live in constants/
+```
+
+I can ask Claude to run through it before every commit. Both of us, really.
+
+## What it changes
+
+Before these rules, every agent PR cost me the **same 5 fixes**: "split this file", "drop that `any`", "pull this logic out of the render". Now they're in the contract. The agent applies them by default, and I review code that looks like mine — not like the GitHub average.
+
+The method for building that file is [in the previous article](/en/writing/2026-04-claude-md).
