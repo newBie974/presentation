@@ -6,12 +6,16 @@ import SectionLabel from "@/components/atoms/SectionLabel.astro";
 import Highlight from "@/components/atoms/Highlight.astro";
 import JsonLd from "@/components/atoms/JsonLd.astro";
 import { buildPersonJsonLd } from "@/lib/jsonLd";
+import { loadPublishedNotes } from "@/lib/notes";
+import { formatDate } from "@/lib/dates";
 
 const locale = "en" as const;
 const title = "Now — Aymeric Dijoux, what I'm working on right now";
 const description =
   "A short page, updated regularly, about what I'm working on right now. Decider.ai on the day job, VoiceJournal on the apps side, and acquisition taking center stage.";
-const lastUpdated = "May 22, 2026";
+const notes = await loadPublishedNotes(locale);
+const articleCount = notes.length;
+const lastUpdated = formatDate(notes[0].data.date, locale);
 ---
 
 <MainLayout title={title} description={description} locale={locale}>
@@ -116,10 +120,10 @@ const lastUpdated = "May 22, 2026";
     <SectionLabel number="04">WRITING</SectionLabel>
     <h2>What I'm <Highlight>publishing</Highlight></h2>
     <p>
-      I started a writing cycle on this site. Seven articles published to date —
-      on the 2026 stack, the Spec-Driven workflow with Claude, AI app submission
-      to the App Store, and others. Target cadence: one article every two weeks,
-      no more, no less.
+      I started a writing cycle on this site. {articleCount} articles published to
+      date — on the 2026 stack, the Spec-Driven workflow with Claude, AI app submission
+      to the App Store, and others. Target cadence: one article every two weeks, no
+      more, no less.
     </p>
     <p><a href="/en/writing">See all writing →</a></p>
   </section>

@@ -66,6 +66,8 @@ interface BlogPostingArgs {
   description: string;
   url: string;
   datePublished: Date;
+  dateModified?: Date;
+  image?: string;
   locale: Locale;
   tags: string[];
 }
@@ -77,11 +79,45 @@ export function buildBlogPostingJsonLd(args: BlogPostingArgs) {
     headline: args.title,
     description: args.description,
     url: args.url,
+    mainEntityOfPage: args.url,
     datePublished: args.datePublished.toISOString(),
+    dateModified: (args.dateModified ?? args.datePublished).toISOString(),
+    ...(args.image ? { image: args.image } : {}),
     inLanguage: args.locale === "fr" ? "fr-FR" : "en-US",
     keywords: args.tags.join(", "),
     author: { "@id": PERSON_ID },
     publisher: { "@id": PERSON_ID },
+  };
+}
+
+interface BlogPostRef {
+  title: string;
+  url: string;
+  datePublished: Date;
+  description: string;
+}
+
+export function buildBlogJsonLd(
+  posts: BlogPostRef[],
+  locale: Locale,
+  url: string,
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "@id": `${url}#blog`,
+    url,
+    name: SITE_NAME,
+    inLanguage: locale === "fr" ? "fr-FR" : "en-US",
+    author: { "@id": PERSON_ID },
+    publisher: { "@id": PERSON_ID },
+    blogPost: posts.map((post) => ({
+      "@type": "BlogPosting",
+      headline: post.title,
+      url: post.url,
+      datePublished: post.datePublished.toISOString(),
+      description: post.description,
+    })),
   };
 }
 

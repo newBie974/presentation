@@ -6,12 +6,16 @@ import SectionLabel from "@/components/atoms/SectionLabel.astro";
 import Highlight from "@/components/atoms/Highlight.astro";
 import JsonLd from "@/components/atoms/JsonLd.astro";
 import { buildPersonJsonLd } from "@/lib/jsonLd";
+import { loadPublishedNotes } from "@/lib/notes";
+import { formatDate } from "@/lib/dates";
 
 const locale = "fr" as const;
 const title = "Now — Aymeric Dijoux, ce sur quoi je bosse en ce moment";
 const description =
   "Une page courte, mise à jour régulièrement : ce sur quoi je bosse maintenant. Decider.ai côté boulot, VoiceJournal côté apps, et l'acquisition qui s'organise.";
-const lastUpdated = "22 mai 2026";
+const notes = await loadPublishedNotes(locale);
+const articleCount = notes.length;
+const lastUpdated = formatDate(notes[0].data.date, locale);
 ---
 
 <MainLayout title={title} description={description} locale={locale}>
@@ -121,9 +125,9 @@ const lastUpdated = "22 mai 2026";
     <SectionLabel number="04">CÔTÉ ÉCRITURE</SectionLabel>
     <h2>Ce que je <Highlight>publie</Highlight></h2>
     <p>
-      J'ai démarré un cycle d'articles sur ce site. Sept publiés à date — sur la
-      stack 2026, le workflow Spec-Driven avec Claude, la soumission App Store
-      IA, et d'autres. Rythme cible : un article toutes les deux semaines, pas
+      J'ai démarré un cycle d'articles sur ce site. {articleCount} publiés à date
+      — sur la stack 2026, le workflow Spec-Driven avec Claude, la soumission App
+      Store IA, et d'autres. Rythme cible : un article toutes les deux semaines, pas
       plus, pas moins.
     </p>
     <p><a href="/notes">Voir toutes les notes →</a></p>
