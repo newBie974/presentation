@@ -1,0 +1,89 @@
+---
+title: "I still write code — but that's no longer where the value is"
+date: 2026-06-08
+locale: en
+translationKey: "2026-06-developer-orchestrator"
+tags: ["ia", "process", "claude"]
+excerpt: "The dev job is shifting from typing to steering: orchestrating agents, writing the spec, guaranteeing that what ships is what was expected. What changes when you stop coding to produce, and start coding to validate."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+Let me break my own headline first: **I still write code.** Every day. I read diffs, I drop into a file, I fix a function by hand when that's faster than explaining it.
+
+But if I'm honest about where my days actually go, typing has become the smallest part of the job. The value moved elsewhere: into the spec I write before, the review I do after, the judgment in between. The code itself? More and more, the agent types it.
+
+This isn't "the developer is dead." It's the developer changing roles without changing companies.
+
+## What moved
+
+For fifteen years the job fit into a simple loop: understand a problem, write the code that solves it, check that it works. The bottleneck was **producing the code**. Typing speed, syntax recall, the number of patterns you carried in your head — all of it mattered.
+
+With an agent, producing the code is no longer the bottleneck. The agent types faster than me, knows more libraries than me, and never gets tired. The bottleneck shifted to **two things the agent does poorly on its own**: deciding precisely what to build, and judging whether what it produced is actually what was needed.
+
+I went from executor to director plus quality control. It's exactly the shift of a developer becoming a lead — except the team is made of agents.
+
+## The new job: managing agents
+
+The best image I've found: steering an agent is like managing a team of **brilliant but literal juniors**. Very fast, tireless, able to ship 300 clean lines in two minutes — but they do *exactly* what you say, not what you meant. If your instruction is vague, they fill the vagueness with the GitHub average.
+
+Managing that is not putting your hands on the keyboard for every line. It's:
+
+- **Framing** — turning a fuzzy intent into an instruction with no ambiguity.
+- **Delegating** — handing over the task with just enough context, no more, no less.
+- **Reviewing** — checking that what comes back fits, and rejecting it when it doesn't.
+
+A typical day now isn't "open the editor and type until evening." It's: I frame a feature, I break it down, I launch agents on it, I read what they return, I send back what drifted, I approve the rest. I spend far more time **reading and deciding** than writing.
+
+## The skills that rise, the ones that fall
+
+This shift reshuffles what makes a good developer.
+
+**What rises:**
+
+- **Writing a spec.** Being able to express, without ambiguity, what you want has become the number one skill. One clear intent is worth ten corrections.
+- **Decomposing.** Cutting a big problem into tasks an agent can handle in isolation is 80% of the result.
+- **Reviewing.** Reading code you didn't write, fast, and spotting what's off — design, edge cases, drift from the spec.
+- **Taste.** Judging "good" vs "average." The agent produces average by default; you're the one pulling it up.
+
+**What falls:**
+
+- **Memorizing syntax.** Knowing a library's API by heart no longer carries the same value — the agent knows it, and looks it up without mistakes.
+- **Raw typing speed.** Typing fast no longer sets you apart. It's not the wall you hit anymore.
+
+None of these skills appear overnight. But the slope changed: the developer who invests in judgment and clarity now moves faster than the one collecting keyboard shortcuts.
+
+## "Making sure what ships is what was expected"
+
+If I had to sum up my job in one sentence, that would be it. I no longer guarantee that *I wrote* the right code. I guarantee that the code that ships **matches what was expected** — regardless of who typed it.
+
+It rests on two artifacts:
+
+- **The spec is the contract.** What we build, why, and what we don't build. Without it, "expected" means nothing — you can't check conformance against fog. *How* I build that spec, I detailed in [Spec-Driven Development with Claude](/notes/2026-05-spec-driven-development).
+- **The review is the QA.** Once the code exists, two questions: does it do what was asked (conformance to the spec)? and is it well made (quality)? For the second, I lean on an explicit quality contract — the [clean code rules I impose on the agent](/notes/2026-05-clean-code-react-native-claude).
+
+<Callout tone="info">
+  Review is no longer the end-of-PR formality you rush through on a Friday evening. It became the core of the job. The day you delegate production, your only lever on quality is your ability to judge what comes back.
+</Callout>
+
+Spec upstream, review downstream: between the two, production is negotiable. That's what lets you hand it to an agent without losing control of what comes out.
+
+## What I still do by hand
+
+If I stopped here, it would read like an ad. The truth is there are still places where I write code, and not out of nostalgia.
+
+- **The gnarly architecture.** When the right solution depends on three implicit constraints I can't quite put into words, explaining it to an agent costs more than doing it.
+- **The subtle debug.** The bug that lives in an interaction between two systems, where you need an intuition the spec doesn't capture. There, I go into the code.
+- **The taste call you can't specify.** The micro-tweak on an animation, the right word in an error message. Specifying would cost more than doing.
+- **The last 5%.** The agent gets you to 95% fast. The final percent — the polish, the fine consistency — is often still me.
+
+These aren't setbacks. It's the frontier, and it moves. But it exists, and denying it would make everything else suspect.
+
+## What changes, what doesn't
+
+What changes: the shape of the work. I read more than I write, I decide more than I produce, I spend my days framing and judging instead of typing.
+
+What doesn't change: what we're paid for. We were never paid to type. We were paid for our **judgment** — understanding a problem, picking the right solution, guaranteeing that what ships is correct. Typing was the means, not the end.
+
+The agent took the means. It left us the end. And honestly, that was the best part all along.

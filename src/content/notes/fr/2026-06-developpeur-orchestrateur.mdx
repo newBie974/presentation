@@ -1,0 +1,89 @@
+---
+title: "Je code encore, mais ce n'est plus là qu'est la valeur"
+date: 2026-06-08
+locale: fr
+translationKey: "2026-06-developer-orchestrator"
+tags: ["ia", "process", "claude"]
+excerpt: "Le métier de dev glisse de la frappe au pilotage : orchestrer des agents, écrire la spec, garantir que ce qui part est ce qui était attendu. Ce que ça change quand on ne code plus pour produire, mais pour valider."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+Je vais commencer par casser ma propre accroche : **je code encore**. Tous les jours. Je relis du diff, je rentre dans un fichier, je corrige une fonction à la main quand c'est plus rapide que d'expliquer.
+
+Mais si je suis honnête sur où je passe mes journées, la frappe au clavier est devenue la plus petite partie du travail. La valeur a glissé ailleurs : dans la spec que j'écris avant, dans la review que je fais après, dans le jugement entre les deux. Le code, lui, c'est de plus en plus l'agent qui le tape.
+
+Ce n'est pas « le dev est mort ». C'est le dev qui change de poste sans changer d'entreprise.
+
+## Ce qui a bougé
+
+Pendant quinze ans, le métier tenait dans une boucle simple : tu comprends un problème, tu écris le code qui le résout, tu vérifies que ça marche. Le goulot d'étranglement, c'était **produire le code**. La vitesse de frappe, la mémoire de la syntaxe, le nombre de patterns que tu avais en tête — ça comptait.
+
+Avec un agent, produire le code n'est plus le goulot. L'agent tape plus vite que moi, connaît plus de libs que moi, et ne se fatigue pas. Le goulot s'est déplacé vers **deux choses que l'agent fait mal tout seul** : décider précisément quoi construire, et juger si ce qu'il a produit est vraiment ce qu'il fallait.
+
+Je suis passé d'exécutant à donneur d'ordre + contrôleur qualité. C'est exactement le glissement d'un dev qui devient lead, sauf que l'équipe est faite d'agents.
+
+## Le nouveau métier : manager d'agents
+
+La meilleure image que j'ai trouvée : piloter un agent, c'est manager une équipe de **juniors brillants mais littéraux**. Très rapides, infatigables, capables de pondre 300 lignes propres en deux minutes — mais qui font *exactement* ce que tu dis, pas ce que tu voulais dire. Si ta consigne est floue, ils comblent le flou par la moyenne de GitHub.
+
+Manager ça, ce n'est pas mettre la main au clavier pour chaque ligne. C'est :
+
+- **Cadrer** — transformer une intention vague en consigne sans ambiguïté.
+- **Déléguer** — donner la tâche avec le contexte juste suffisant, ni trop ni trop peu.
+- **Reviewer** — vérifier que ce qui revient correspond, et refuser quand non.
+
+Une journée type aujourd'hui, ce n'est plus « j'ouvre l'éditeur et je tape jusqu'au soir ». C'est : je cadre une feature, je la découpe, je lance des agents dessus, je relis ce qu'ils renvoient, je renvoie en correction ce qui dérive, je valide le reste. Je suis beaucoup plus souvent en train de **lire et décider** qu'en train d'écrire.
+
+## Les compétences qui montent, celles qui baissent
+
+Le glissement rebat les cartes de ce qui fait un bon dev.
+
+**Ce qui monte :**
+
+- **Écrire une spec.** Savoir exprimer sans ambiguïté ce qu'on veut, c'est devenu la compétence numéro un. Une intention claire vaut dix corrections.
+- **Décomposer.** Couper un gros problème en tâches qu'un agent peut traiter isolément, c'est 80 % du résultat.
+- **Reviewer.** Lire vite du code que tu n'as pas écrit et repérer ce qui cloche — design, edge case, dérive sur la spec.
+- **Le goût.** Juger « bon » vs « moyen ». L'agent produit du moyen par défaut ; c'est toi qui tires vers le haut.
+
+**Ce qui baisse :**
+
+- **Mémoriser la syntaxe.** Savoir par cœur l'API d'une lib n'a plus la même valeur — l'agent la connaît, et la cherche sans erreur.
+- **La vitesse de frappe pure.** Taper vite ne te distingue plus de personne. Ce n'est plus le mur contre lequel on bute.
+
+Aucune de ces compétences n'apparaît du jour au lendemain. Mais la pente a changé : le dev qui investit dans son jugement et sa clarté progresse plus vite que celui qui collectionne les raccourcis clavier.
+
+## « M'assurer que ce qui part est ce qui est attendu »
+
+Si je devais résumer mon job en une phrase, ce serait celle-là. Je ne garantis plus que j'ai *écrit* le bon code. Je garantis que le code qui part est **conforme à ce qui était attendu** — peu importe qui l'a tapé.
+
+Ça repose sur deux artefacts :
+
+- **La spec, c'est le contrat.** Ce qu'on construit, pourquoi, et ce qu'on ne construit pas. Sans elle, « attendu » ne veut rien dire — on ne peut pas vérifier une conformité contre du flou. Le *comment* je construis cette spec, je l'ai détaillé dans [Spec-Driven Development avec Claude](/notes/2026-05-spec-driven-development).
+- **La review, c'est la QA.** Une fois le code produit, deux questions : est-ce que ça fait ce qui était demandé (conformité à la spec) ? et est-ce que c'est bien fait (qualité) ? Pour la seconde, je m'appuie sur un contrat de qualité explicite — les [règles clean code que j'impose à l'agent](/notes/2026-05-clean-code-react-native-claude).
+
+<Callout tone="info">
+  La review n'est plus la formalité de fin de PR qu'on bâcle un vendredi soir. C'est devenu le cœur du métier. Le jour où tu délègues la production, ton seul levier de qualité, c'est ta capacité à juger ce qui revient.
+</Callout>
+
+Spec en amont, review en aval : entre les deux, la production est négociable. C'est ce qui permet de la confier à un agent sans perdre le contrôle de ce qui sort.
+
+## Ce que je fais encore à la main
+
+Si je m'arrêtais là, ça sonnerait comme une pub. La vérité, c'est qu'il reste des endroits où je code, et pas par nostalgie.
+
+- **L'archi tordue.** Quand la bonne solution dépend de trois contraintes implicites que je n'arrive pas à mettre en mots, l'expliquer à un agent coûte plus cher que de le faire.
+- **Le debug subtil.** Le bug qui tient à une interaction entre deux systèmes, où il faut une intuition que la spec ne capture pas. Là, je rentre dans le code.
+- **La décision de goût impossible à spécifier.** Le micro-ajustement d'une animation, le mot juste dans un message d'erreur. Spécifier coûterait plus que faire.
+- **Le dernier 5 %.** L'agent t'emmène vite à 95 %. Les derniers pourcents — le poli, la cohérence fine — c'est souvent encore moi.
+
+Ce ne sont pas des reculs. C'est la frontière, et elle bouge. Mais elle existe, et la nier rendrait tout le reste suspect.
+
+## Ce que ça change, ce que ça ne change pas
+
+Ce qui change : la forme du travail. Je lis plus que j'écris, je décide plus que je produis, je passe mes journées à cadrer et juger au lieu de taper.
+
+Ce qui ne change pas : ce pour quoi on est payé. On ne nous a jamais payés pour taper. On nous a payés pour notre **jugement** — comprendre un problème, choisir la bonne solution, garantir que ce qui sort est juste. La frappe était le moyen, pas la fin.
+
+L'agent a pris le moyen. Il nous a laissé la fin. Et honnêtement, c'était la meilleure partie.
