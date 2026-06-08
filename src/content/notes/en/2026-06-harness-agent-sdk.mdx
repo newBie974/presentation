@@ -1,0 +1,132 @@
+---
+title: "The harness: what turns an LLM into an agent (and why you don't have to build it)"
+date: 2026-06-08
+locale: en
+translationKey: "2026-06-harness-agent-sdk"
+tags: ["ia", "claude", "process"]
+excerpt: "An LLM predicts text; an agent runs tasks. In between sits the harness. I set out to understand it, and realized my mental pattern already described the Claude Agent SDK."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+I started from a dumb question: **what's a "harness" with AI agents?** The word is everywhere right now, and nobody really defines it.
+
+Digging in, I got a surprise. The mental pattern I was already using without naming it — **harness + skill + memory + agent.md** — describes the **Claude Agent SDK** almost word for word. In other words: I didn't have to build the harness. It exists, and you mostly use it by writing markdown.
+
+Here's what I worked out, in the order I worked it out.
+
+## What a harness is
+
+An LLM, on its own, does exactly one thing: predict the next token. It doesn't read your files, doesn't call APIs, doesn't remember anything between requests. The **harness** is all the infrastructure around the model that turns it from a text predictor into a **system that runs tasks over time**, with tools and memory.
+
+<Callout tone="info">
+  The line everyone repeats right now, and it's correct: the difference between a chatbot and an agent isn't the LLM — it's everything around it.
+</Callout>
+
+At the core of a harness is a simple loop:
+
+```
+1. Build the context (instructions + tools + history + memory)
+2. Call the LLM
+3. Final answer → stop
+   Tool call    → run it, feed the result back, loop again
+```
+
+`call → observe → decide → repeat`, until done or until a limit. That's it. The model is interchangeable; the harness is what makes the agent reliable — and reliability is the only metric that matters once you're past the demo.
+
+## The layers (what you'd build from scratch)
+
+If you built a harness by hand, you'd stack five layers around the LLM:
+
+- **LLM core** — the call to the model. The simplest part.
+- **Context & memory** — what to put in the prompt, what to keep, what to throw away.
+- **Tools & loop** — the tool definitions plus the execution machinery. Most of the logic lives here.
+- **Guardrails** — validating tool calls, token and iteration limits, security.
+- **Observability** — tracing every run, its cost, its success rate. Without it you're blind in prod.
+
+It's doable. I actually coded that loop by hand once, and it's the most instructive exercise there is. But for a real product, you don't want to maintain those five layers yourself.
+
+## The flip: this pattern is already the Agent SDK
+
+This is where it all clicked. My pattern **harness + skill + memory + agent.md** wasn't an idea of mine: it's exactly the approach of the **Claude Agent SDK** (the former Claude Code SDK, renamed). The SDK *is* the harness. The mapping is direct:
+
+| Pattern brick | SDK reality |
+|---|---|
+| **harness** | the `query()` function (loop + tools + context) |
+| **agent.md** | the `CLAUDE.md` file — instructions, tone, format, rules |
+| **skill** | `SKILL.md` files in `.claude/skills/`, loaded on demand |
+| **memory** | persisted memory by tier (`user` / `project` / `local`) |
+
+You no longer assemble the five layers: you mostly write markdown (a `CLAUDE.md`, a few skills) plus a small piece of code that launches the SDK.
+
+**A nuance I nearly missed**: the SDK does *not* load your `CLAUDE.md` by default — it starts from a minimal prompt. You enable it explicitly with `settingSources: ['project']`. Without that, your "contract" with the agent (the subject of [my CLAUDE.md article](/notes/2026-04-claude-md)) is simply ignored.
+
+## A concrete example (the snippets that matter)
+
+Take a "social profile analysis" agent: you drop a profile's content (bio + posts with their metrics) into a folder, and it returns a structured analysis — themes, tone, content angle, and above all **the posts that perform, with the reason they work**.
+
+The line that changes everything is the structured output. You describe the format you want as a JSON Schema, and the SDK guarantees the response matches it:
+
+```typescript
+import { query } from "@anthropic-ai/claude-agent-sdk";
+
+const SCHEMA = {
+  type: "object",
+  properties: {
+    themes: { type: "array", items: { type: "string" } },
+    tone: { type: "string" },
+    contentAngle: { type: "string" },
+    topPosts: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          post: { type: "string" },
+          reason: { type: "string" },
+        },
+        required: ["post", "reason"],
+      },
+    },
+  },
+  required: ["themes", "tone", "contentAngle", "topPosts"],
+};
+
+const result = query({
+  prompt: "Analyze the profile in ./inbox and rank its posts by performance.",
+  options: {
+    settingSources: ["project"],          // loads CLAUDE.md
+    skills: "all",                        // enables the SKILL.md files in .claude/skills/
+    allowedTools: ["Read", "Glob"],       // guardrail: read-only
+    outputFormat: { type: "json_schema", schema: SCHEMA },
+  },
+});
+```
+
+When the agent is done, the result holds a clean `structured_output` field, validated against your schema — no manual parsing, no regex. That's "it extracts in the format I want."
+
+And every brick of the pattern is visible:
+- **harness** → `query()`
+- **agent.md** → the `CLAUDE.md` loaded by `settingSources`
+- **skill** → `.claude/skills/profile-analysis/SKILL.md`, enabled by `skills`
+- **guardrail** → `allowedTools` (and `canUseTool` if you want to vet each call)
+
+Memory sits on top, so it keeps a history of profiles already analyzed and compares how they evolve from one run to the next.
+
+## The real decision: agentic search vs RAG
+
+The trap, when you want an agent to dig through documents, is to reach reflexively for a full RAG: vector DB, embeddings, chunking. **Don't do that by default.**
+
+In the example above, the agent has no vector store at all. It *searches the files itself* with its tools (`Read`, `Glob`) — that's **agentic search**. Simpler, less code, and you validate the product faster. You only add `pgvector` the day a corpus gets genuinely large and latency starts to matter.
+
+The tradeoff to know: multi-step agentic search burns more tokens than a plain vector lookup. Hence the rule — small/medium corpus → agentic over files; large corpus with frequent queries → a vector store as a sidecar.
+
+## Where to start
+
+The order that kept me from drowning:
+
+1. **Level 0 — the loop by hand, one evening.** Code `call → tool → feed-back` yourself, no framework, with one or two tools. ~80 lines. You see exactly what the SDK hides. The most formative step.
+2. **Level 1 — a real mini-harness with the SDK.** Reuse the example above: a `CLAUDE.md`, a skill, `query()` with guardrails. You've got a reusable agent.
+3. **Level 2 — observability & orchestration.** When the logic gets complex (sub-agents, branches), add logging and trace cost and success rate.
+
+The lesson I keep: start with the **loop**, not the model. The model you swap in one line. The harness is what separates a demo that impresses from an agent that ships — and the good news is, it's already written.

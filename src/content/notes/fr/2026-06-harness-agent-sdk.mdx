@@ -1,0 +1,132 @@
+---
+title: "Le harness : ce qui transforme un LLM en agent (et pourquoi tu n'as pas à le coder)"
+date: 2026-06-08
+locale: fr
+translationKey: "2026-06-harness-agent-sdk"
+tags: ["ia", "claude", "process"]
+excerpt: "Un LLM prédit du texte ; un agent exécute des tâches. Entre les deux : le harness. J'ai voulu le comprendre, et j'ai réalisé que mon pattern décrivait déjà le Claude Agent SDK."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+Je suis parti d'une question bête : **c'est quoi un « harness » avec les agents IA ?** Le mot revient partout en ce moment, et personne ne le définit vraiment.
+
+En creusant, j'ai eu une surprise. Le pattern mental que j'utilisais déjà sans le nommer — **harness + skill + memory + agent.md** — décrit presque mot pour mot le **Claude Agent SDK**. Autrement dit : le harness, je n'avais pas à le coder. Il existe, et il s'utilise surtout en écrivant du markdown.
+
+Voici ce que j'ai compris, dans l'ordre où je l'ai compris.
+
+## C'est quoi un harness
+
+Un LLM, tout seul, ne fait qu'une chose : prédire le prochain token. Il ne lit pas tes fichiers, n'appelle pas d'API, ne se souvient de rien entre deux requêtes. Le **harness** (« harnais »), c'est toute l'infrastructure autour du modèle qui le transforme d'un prédicteur de texte en **système qui exécute des tâches dans le temps**, avec des outils et une mémoire.
+
+<Callout tone="info">
+  La phrase que tout le monde répète en ce moment, et elle est juste : la différence entre un chatbot et un agent, ce n'est pas le LLM — c'est tout ce qu'il y a autour.
+</Callout>
+
+Le cœur d'un harness, c'est une boucle simple :
+
+```
+1. Construire le contexte (instructions + outils + historique + mémoire)
+2. Appeler le LLM
+3. Réponse finale  → on s'arrête
+   Appel d'outil   → on l'exécute, on réinjecte le résultat, on reboucle
+```
+
+`call → observe → decide → repeat`, jusqu'à la fin ou jusqu'à une limite. C'est tout. Le modèle est interchangeable ; le harness, c'est ce qui rend l'agent fiable — et la fiabilité est la seule métrique qui compte une fois sorti de la démo.
+
+## Les couches (ce que tu coderais en partant de zéro)
+
+Si tu construisais un harness à la main, tu empilerais cinq couches autour du LLM :
+
+- **Cœur LLM** — l'appel au modèle. La partie la plus simple.
+- **Contexte & mémoire** — quoi mettre dans le prompt, quoi garder, quoi jeter.
+- **Outils & boucle** — la définition des outils + la mécanique d'exécution. L'essentiel de la logique vit ici.
+- **Garde-fous** — validation des appels d'outils, limites de tokens et d'itérations, sécurité.
+- **Observabilité** — tracer chaque exécution, son coût, son taux de succès. Sans ça, tu es aveugle en prod.
+
+C'est faisable. J'ai d'ailleurs codé cette boucle à la main une fois, et c'est l'exercice le plus formateur qui soit. Mais pour un vrai produit, tu ne veux pas maintenir ces cinq couches toi-même.
+
+## La bascule : ce pattern, c'est déjà l'Agent SDK
+
+C'est là que tout s'est éclairé. Mon pattern **harness + skill + memory + agent.md** n'était pas une idée à moi : c'est exactement l'approche du **Claude Agent SDK** (l'ancien Claude Code SDK, renommé). Le SDK *est* le harness. La correspondance est directe :
+
+| Brique du pattern | Réalité du SDK |
+|---|---|
+| **harness** | la fonction `query()` (boucle + outils + contexte) |
+| **agent.md** | le fichier `CLAUDE.md` — instructions, ton, format, règles |
+| **skill** | des `SKILL.md` dans `.claude/skills/`, chargés à la demande |
+| **memory** | une mémoire persistée par tiers (`user` / `project` / `local`) |
+
+Tu n'assembles plus les cinq couches : tu écris surtout du markdown (un `CLAUDE.md`, quelques skills) et un petit bout de code qui lance le SDK.
+
+**Une nuance que j'ai failli rater** : le SDK ne charge *pas* ton `CLAUDE.md` par défaut — il part d'un prompt minimal. Il faut l'activer explicitement avec `settingSources: ['project']`. Sans ça, ton « contrat » avec l'agent (le sujet de [mon article sur le CLAUDE.md](/notes/2026-04-claude-md)) est tout simplement ignoré.
+
+## Un exemple concret (les extraits qui comptent)
+
+Prenons un agent « analyse de profil social » : tu déposes le contenu d'un profil (bio + posts avec leurs métriques) dans un dossier, et il te sort une analyse structurée — thèmes, ton, angle de contenu, et surtout **les posts qui performent avec la raison pour laquelle ils marchent**.
+
+La ligne qui change tout, c'est la sortie structurée. Tu décris le format que tu veux en JSON Schema, et le SDK garantit que la réponse le respecte :
+
+```typescript
+import { query } from "@anthropic-ai/claude-agent-sdk";
+
+const SCHEMA = {
+  type: "object",
+  properties: {
+    themes: { type: "array", items: { type: "string" } },
+    tone: { type: "string" },
+    contentAngle: { type: "string" },
+    topPosts: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          post: { type: "string" },
+          reason: { type: "string" },
+        },
+        required: ["post", "reason"],
+      },
+    },
+  },
+  required: ["themes", "tone", "contentAngle", "topPosts"],
+};
+
+const result = query({
+  prompt: "Analyse le profil dans ./inbox et classe ses posts par performance.",
+  options: {
+    settingSources: ["project"],          // charge le CLAUDE.md
+    skills: "all",                        // active les SKILL.md de .claude/skills/
+    allowedTools: ["Read", "Glob"],       // garde-fou : lecture seule
+    outputFormat: { type: "json_schema", schema: SCHEMA },
+  },
+});
+```
+
+Quand l'agent a fini, le résultat contient un champ `structured_output` propre, validé contre ton schéma — pas de parsing à la main, pas de regex. C'est ça, « il extrait au format que je veux ».
+
+Et chaque brique du pattern est visible :
+- **harness** → `query()`
+- **agent.md** → le `CLAUDE.md` chargé par `settingSources`
+- **skill** → `.claude/skills/analyse-profil/SKILL.md`, activé par `skills`
+- **garde-fou** → `allowedTools` (et `canUseTool` si tu veux valider chaque appel)
+
+La memory s'ajoute par-dessus, pour qu'il garde l'historique des profils déjà analysés et compare l'évolution d'un run à l'autre.
+
+## La vraie décision : recherche agentique vs RAG
+
+Le piège, quand on veut faire fouiller des documents à un agent, c'est de partir par réflexe sur un RAG complet : vector DB, embeddings, chunking. **Ne fais pas ça par défaut.**
+
+Dans l'exemple ci-dessus, l'agent n'a aucune base vectorielle. Il *fouille les fichiers lui-même* avec ses outils (`Read`, `Glob`) — c'est la **recherche agentique**. Plus simple, moins de code, et tu valides le produit plus vite. Tu n'ajoutes du `pgvector` que le jour où un corpus devient vraiment gros et que la latence compte.
+
+La contrepartie à connaître : la recherche agentique multi-étapes consomme plus de tokens qu'une simple requête vectorielle. D'où la règle — petit/moyen corpus → agentique sur fichiers ; gros corpus à requêtes fréquentes → vector store en complément.
+
+## Par où commencer
+
+L'ordre qui m'a évité de me noyer :
+
+1. **Niveau 0 — la boucle à la main, un soir.** Code `call → outil → réinjection` toi-même, sans framework, avec un ou deux outils. ~80 lignes. Tu vois exactement ce que le SDK te cache. C'est l'étape la plus formatrice.
+2. **Niveau 1 — un vrai mini-harness avec le SDK.** Tu reprends l'exemple ci-dessus : un `CLAUDE.md`, un skill, `query()` avec garde-fous. Tu tiens un agent réutilisable.
+3. **Niveau 2 — observabilité & orchestration.** Quand la logique se complexifie (sous-agents, branches), tu ajoutes du logging et tu traces coût et taux de succès.
+
+La leçon que je retiens : commence par la **boucle**, pas par le modèle. Le modèle, tu le changes en une ligne. Le harness, c'est lui qui fait la différence entre une démo qui impressionne et un agent qui ship — et la bonne nouvelle, c'est qu'il est déjà écrit.
