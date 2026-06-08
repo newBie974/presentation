@@ -1,0 +1,61 @@
+---
+// Récursif : rend une couche titrée, puis la couche suivante (ou le cœur).
+interface Props {
+  items: string[];
+  coreLabel: string;
+  coreNote?: string;
+}
+
+const { items, coreLabel, coreNote } = Astro.props;
+const [head, ...rest] = items;
+---
+
+<div class="hl-layer">
+  <span class="hl-label">{head}</span>
+  {
+    rest.length > 0 ? (
+      <Astro.self items={rest} coreLabel={coreLabel} coreNote={coreNote} />
+    ) : (
+      <div class="hl-core">
+        <span class="hl-core-label">{coreLabel}</span>
+        {coreNote && <span class="hl-core-note">{coreNote}</span>}
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .hl-layer {
+    border: var(--border-w) solid var(--color-border);
+    padding: 0.7rem;
+  }
+  .hl-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    margin-bottom: 0.6rem;
+  }
+  .hl-core {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    padding: 0.9rem 0.7rem;
+    text-align: center;
+  }
+  .hl-core-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .hl-core-note {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    margin-top: 0.4rem;
+  }
+</style>

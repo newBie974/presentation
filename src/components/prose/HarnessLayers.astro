@@ -1,0 +1,32 @@
+---
+import LayerStack from "./LayerStack.astro";
+
+interface Props {
+  items: string[];
+  coreLabel: string;
+  coreNote?: string;
+  caption?: string;
+  ariaLabel?: string;
+}
+
+const { items, coreLabel, coreNote, caption, ariaLabel } = Astro.props;
+---
+
+<figure class="hl-fig" role="group" aria-label={ariaLabel}>
+  <LayerStack items={items} coreLabel={coreLabel} coreNote={coreNote} />
+  {caption && <figcaption class="hl-cap">{caption}</figcaption>}
+</figure>
+
+<style>
+  .hl-fig {
+    margin: 1.5rem auto;
+    max-width: 26rem;
+  }
+  .hl-cap {
+    margin-top: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+</style>

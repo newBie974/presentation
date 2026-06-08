@@ -9,6 +9,7 @@ draft: false
 ---
 
 import Callout from "@/components/prose/Callout.astro";
+import HarnessLayers from "@/components/prose/HarnessLayers.astro";
 
 I started from a dumb question: **what's a "harness" with AI agents?** The word is everywhere right now, and nobody really defines it.
 
@@ -47,20 +48,12 @@ If you built a harness by hand, you'd stack five layers around the LLM:
 
 Visually, it nests like an exoskeleton: the LLM at the center, each layer wrapped around it.
 
-```
-┌─ observability ──────────────────┐
-│ ┌─ guardrails ─────────────────┐ │
-│ │ ┌─ tools & loop ───────────┐ │ │
-│ │ │ ┌─ context & memory ───┐ │ │ │
-│ │ │ │ ┌─ LLM core ───────┐ │ │ │ │
-│ │ │ │ │ call → observe → │ │ │ │ │
-│ │ │ │ │ decide → repeat  │ │ │ │ │
-│ │ │ │ └──────────────────┘ │ │ │ │
-│ │ │ └──────────────────────┘ │ │ │
-│ │ └──────────────────────────┘ │ │
-│ └──────────────────────────────┘ │
-└──────────────────────────────────┘
-```
+<HarnessLayers
+  items={["observability", "guardrails", "tools & loop", "context & memory"]}
+  coreLabel="LLM core"
+  coreNote="call → observe → decide → repeat"
+  ariaLabel="The harness layers: the LLM core at the center, wrapped by context & memory, tools & loop, guardrails, then observability."
+/>
 
 It's doable. I actually coded that loop by hand once, and it's the most instructive exercise there is. But for a real product, you don't want to maintain those five layers yourself.
 

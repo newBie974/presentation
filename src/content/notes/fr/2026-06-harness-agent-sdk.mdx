@@ -9,6 +9,7 @@ draft: false
 ---
 
 import Callout from "@/components/prose/Callout.astro";
+import HarnessLayers from "@/components/prose/HarnessLayers.astro";
 
 Je suis parti d'une question bête : **c'est quoi un « harness » avec les agents IA ?** Le mot revient partout en ce moment, et personne ne le définit vraiment.
 
@@ -47,20 +48,12 @@ Si tu construisais un harness à la main, tu empilerais cinq couches autour du L
 
 Visuellement, ça s'emboîte comme un exosquelette : le LLM au centre, chaque couche par-dessus.
 
-```
-┌─ observabilité ──────────────────┐
-│ ┌─ garde-fous ─────────────────┐ │
-│ │ ┌─ outils & boucle ────────┐ │ │
-│ │ │ ┌─ contexte & mémoire ─┐ │ │ │
-│ │ │ │ ┌─ cœur LLM ───────┐ │ │ │ │
-│ │ │ │ │ call → observe → │ │ │ │ │
-│ │ │ │ │ decide → repeat  │ │ │ │ │
-│ │ │ │ └──────────────────┘ │ │ │ │
-│ │ │ └──────────────────────┘ │ │ │
-│ │ └──────────────────────────┘ │ │
-│ └──────────────────────────────┘ │
-└──────────────────────────────────┘
-```
+<HarnessLayers
+  items={["observabilité", "garde-fous", "outils & boucle", "contexte & mémoire"]}
+  coreLabel="cœur LLM"
+  coreNote="call → observe → decide → repeat"
+  ariaLabel="Les couches du harness : le cœur LLM au centre, enveloppé par contexte & mémoire, outils & boucle, garde-fous, puis observabilité."
+/>
 
 C'est faisable. J'ai d'ailleurs codé cette boucle à la main une fois, et c'est l'exercice le plus formateur qui soit. Mais pour un vrai produit, tu ne veux pas maintenir ces cinq couches toi-même.
 
