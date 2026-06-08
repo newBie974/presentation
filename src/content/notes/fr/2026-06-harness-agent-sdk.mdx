@@ -45,6 +45,23 @@ Si tu construisais un harness à la main, tu empilerais cinq couches autour du L
 - **Garde-fous** — validation des appels d'outils, limites de tokens et d'itérations, sécurité.
 - **Observabilité** — tracer chaque exécution, son coût, son taux de succès. Sans ça, tu es aveugle en prod.
 
+Visuellement, ça s'emboîte comme un exosquelette : le LLM au centre, chaque couche par-dessus.
+
+```
+┌─ observabilité ──────────────────┐
+│ ┌─ garde-fous ─────────────────┐ │
+│ │ ┌─ outils & boucle ────────┐ │ │
+│ │ │ ┌─ contexte & mémoire ─┐ │ │ │
+│ │ │ │ ┌─ cœur LLM ───────┐ │ │ │ │
+│ │ │ │ │ call → observe → │ │ │ │ │
+│ │ │ │ │ decide → repeat  │ │ │ │ │
+│ │ │ │ └──────────────────┘ │ │ │ │
+│ │ │ └──────────────────────┘ │ │ │
+│ │ └──────────────────────────┘ │ │
+│ └──────────────────────────────┘ │
+└──────────────────────────────────┘
+```
+
 C'est faisable. J'ai d'ailleurs codé cette boucle à la main une fois, et c'est l'exercice le plus formateur qui soit. Mais pour un vrai produit, tu ne veux pas maintenir ces cinq couches toi-même.
 
 ## La bascule : ce pattern, c'est déjà l'Agent SDK

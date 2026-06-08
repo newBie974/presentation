@@ -45,6 +45,23 @@ If you built a harness by hand, you'd stack five layers around the LLM:
 - **Guardrails** — validating tool calls, token and iteration limits, security.
 - **Observability** — tracing every run, its cost, its success rate. Without it you're blind in prod.
 
+Visually, it nests like an exoskeleton: the LLM at the center, each layer wrapped around it.
+
+```
+┌─ observability ──────────────────┐
+│ ┌─ guardrails ─────────────────┐ │
+│ │ ┌─ tools & loop ───────────┐ │ │
+│ │ │ ┌─ context & memory ───┐ │ │ │
+│ │ │ │ ┌─ LLM core ───────┐ │ │ │ │
+│ │ │ │ │ call → observe → │ │ │ │ │
+│ │ │ │ │ decide → repeat  │ │ │ │ │
+│ │ │ │ └──────────────────┘ │ │ │ │
+│ │ │ └──────────────────────┘ │ │ │
+│ │ └──────────────────────────┘ │ │
+│ └──────────────────────────────┘ │
+└──────────────────────────────────┘
+```
+
 It's doable. I actually coded that loop by hand once, and it's the most instructive exercise there is. But for a real product, you don't want to maintain those five layers yourself.
 
 ## The flip: this pattern is already the Agent SDK
