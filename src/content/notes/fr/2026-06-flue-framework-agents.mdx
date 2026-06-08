@@ -1,0 +1,103 @@
+---
+title: "Flue : le harness d'agent, mais en framework (et c'est l'équipe Astro)"
+date: 2026-06-08
+locale: fr
+translationKey: "2026-06-flue-agent-framework"
+tags: ["ia", "claude", "stack"]
+excerpt: "L'équipe Astro sort « The Agent Harness Framework ». Flue prend le harness de l'article précédent et en fait un vrai framework. J'y ai porté notre agent d'analyse de profil pour voir."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+Ce site tourne sous **Astro**. Alors quand l'équipe Astro a sorti un nouveau framework, j'ai regardé — sauf que ce n'est pas un framework pour faire des sites. C'est un framework pour faire des **agents IA**. Ça s'appelle **Flue**, et son sous-titre est exactement le sujet de [mon article précédent](/notes/2026-06-harness-agent-sdk) : *« The Agent Harness Framework »*.
+
+Dans cet article-là, je concluais : le harness, tu n'as pas à le coder, le Claude Agent SDK *est* le harness. Flue monte d'un cran. Là où le SDK te donne la boucle, Flue te donne **tout le reste** — et il le fait à la manière d'Astro.
+
+## Rappel express
+
+Pour mémoire : un LLM prédit du texte, un agent exécute des tâches, et entre les deux il y a le **harness** — la boucle, le contexte, les outils, les garde-fous, l'observabilité. L'Agent SDK couvre le cœur. Mais les couches externes — sandbox, sessions durables, déploiement — c'était encore à toi de les assembler.
+
+C'est précisément ce que Flue prend en charge.
+
+## C'est quoi Flue
+
+La meilleure phrase pour le résumer vient de son propre README : **« comme Claude Code, mais 100% headless et programmable. »** Pas de TUI, pas d'humain dans la boucle — juste des fichiers TypeScript que tu déploies où tu veux : Node, Cloudflare Workers, une GitHub Action.
+
+<Callout tone="info">
+  Flue est à l'agent ce qu'Astro est au site : un framework runtime-agnostic qui te laisse écrire ta logique une fois et la déployer partout. Sauf qu'ici, la « page » est un agent autonome.
+</Callout>
+
+Le modèle mental tient en trois mots :
+
+- **agent** — un fichier dans `agents/<nom>.ts`, créé avec `createAgent()`.
+- **harness** — `init(agent)` te rend un harness configuré : modèle, outils, sandbox, filesystem, sessions.
+- **session** — `harness.session()` ouvre une conversation avec son historique.
+
+Et autour, tout ce que tu devrais sinon coder : sandbox virtuel (`just-bash` par défaut), skills, sous-agents (`task()`), serveurs MCP, exécution durable, observabilité.
+
+## Ce que Flue ajoute aux couches
+
+Souviens-toi du [schéma des couches](/notes/2026-06-harness-agent-sdk) : le LLM au centre, enveloppé par contexte, outils, garde-fous, observabilité. Le SDK te livre les couches du milieu. **Flue te livre les couches du bord** — celles qui font la différence entre un script qui tourne sur ta machine et un agent qui tourne en prod :
+
+- un **sandbox** où l'agent exécute ses commandes sans toucher ton système,
+- des **sessions durables** qui survivent à un redémarrage,
+- un **déploiement multi-cible** (Node / Workers / CI) sans réécrire l'agent,
+- de l'**observabilité** intégrée.
+
+C'est la partie « ops » du harness, livrée d'office.
+
+## Notre agent, version Flue
+
+Le plus parlant, c'est de reprendre l'agent de l'article précédent — l'**analyse de profil social** — et de le porter en Flue. Voici à quoi il ressemble :
+
+```typescript
+// agents/profile-analyzer.ts
+import { createAgent, type FlueContext } from "@flue/runtime";
+import * as v from "valibot";
+
+const profileAnalyzer = createAgent(() => ({
+  model: "anthropic/claude-opus-4-8",
+  skills: ["profile-analysis"], // .agents/skills/profile-analysis/SKILL.md
+}));
+
+const Analysis = v.object({
+  themes: v.array(v.string()),
+  tone: v.string(),
+  contentAngle: v.string(),
+  topPosts: v.array(v.object({ post: v.string(), reason: v.string() })),
+});
+
+export async function run({ init, payload }: FlueContext) {
+  const harness = await init(profileAnalyzer);
+  const session = await harness.session();
+  const { data } = await session.prompt(payload.message, { result: Analysis });
+  return data; // typé + validé par le schéma
+}
+```
+
+Tu le lances avec le CLI :
+
+```bash
+npx flue run profile-analyzer --target node \
+  --payload '{"message":"Analyse le profil dans ./inbox et classe ses posts par performance."}'
+```
+
+Les deux différences qui sautent aux yeux par rapport à la version Agent SDK :
+
+1. **La sortie structurée passe par Valibot**, pas par un JSON Schema. Côté SDK, c'était `outputFormat: { type: 'json_schema', schema }` puis un champ `structured_output`. Côté Flue, c'est `session.prompt(msg, { result: schémaValibot })` qui te rend un `data` déjà typé et validé. Plus idiomatique en TypeScript, moins verbeux.
+2. **Les skills vivent dans `.agents/skills/`** (et non `.claude/skills/`). Même idée — un `SKILL.md` chargé à la demande — mais le namespace est celui de Flue, pas celui de Claude Code.
+
+Le reste du pattern est intact : l'agent, le harness, la session, un skill, une sortie structurée. C'est le même harness — juste emballé dans un framework.
+
+## Ce que ça change vraiment
+
+Tant que tu restes sur un agent local one-shot, l'Agent SDK seul suffit largement — c'est plus léger. Flue devient intéressant le jour où tu veux **shipper** l'agent : le faire tourner sur un événement (un webhook, une Action), garder l'état entre les exécutions, l'exposer en HTTP/WebSocket, ou le déployer sur Workers sans toucher au code. Les sous-agents via `task()` et les sandboxes en font aussi un meilleur candidat pour de l'orchestration sérieuse.
+
+En clair : l'Agent SDK pour comprendre et prototyper ; Flue quand l'agent doit devenir un vrai service.
+
+## Honnête : où ça en est
+
+Flue est **jeune** (Apache-2.0, tout juste sorti par l'équipe Astro). Je l'ai porté pour voir, pas encore mis en prod — donc prends cet article comme une cartographie, pas comme un retour de combat. Mais l'angle me plaît : c'est l'équipe qui a rendu les sites statiques agréables à construire qui s'attaque au harness d'agent, avec le même réflexe — un framework runtime-agnostic, des conventions claires, du TypeScript et des fichiers.
+
+Et ça referme bien la boucle du sujet. Le harness, c'est d'abord un **concept** (l'exosquelette autour du LLM), puis un **SDK** (l'Agent SDK, qui code le cœur pour toi), et maintenant un **framework** (Flue, qui code le bord). À chaque étape, tu écris moins de plomberie et plus de produit. C'est exactement la direction qui m'intéresse.

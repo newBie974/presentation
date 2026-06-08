@@ -1,0 +1,103 @@
+---
+title: "Flue: the agent harness, but as a framework (and it's the Astro team)"
+date: 2026-06-08
+locale: en
+translationKey: "2026-06-flue-agent-framework"
+tags: ["ia", "claude", "stack"]
+excerpt: "The Astro team ships \"The Agent Harness Framework.\" Flue takes the harness from the previous article and turns it into a real framework. I ported our profile-analysis agent to it to see."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+This site runs on **Astro**. So when the Astro team shipped a new framework, I looked — except it's not a framework for building sites. It's a framework for building **AI agents**. It's called **Flue**, and its tagline is exactly the topic of [my previous article](/notes/2026-06-harness-agent-sdk): *"The Agent Harness Framework."*
+
+In that piece I concluded: you don't have to build the harness — the Claude Agent SDK *is* the harness. Flue goes one level up. Where the SDK gives you the loop, Flue gives you **everything else** — and it does it the Astro way.
+
+## Quick recap
+
+For memory: an LLM predicts text, an agent runs tasks, and between them sits the **harness** — the loop, the context, the tools, the guardrails, the observability. The Agent SDK covers the core. But the outer layers — sandbox, durable sessions, deployment — were still yours to assemble.
+
+That's exactly what Flue takes on.
+
+## What Flue is
+
+The best one-liner comes from its own README: **"like Claude Code, but 100% headless and programmable."** No TUI, no human in the loop — just TypeScript files you deploy wherever you want: Node, Cloudflare Workers, a GitHub Action.
+
+<Callout tone="info">
+  Flue is to the agent what Astro is to the site: a runtime-agnostic framework that lets you write your logic once and deploy it anywhere. Except here, the "page" is an autonomous agent.
+</Callout>
+
+The mental model fits in three words:
+
+- **agent** — a file in `agents/<name>.ts`, created with `createAgent()`.
+- **harness** — `init(agent)` hands you a configured harness: model, tools, sandbox, filesystem, sessions.
+- **session** — `harness.session()` opens a conversation with its own history.
+
+And around it, everything you'd otherwise code: a virtual sandbox (`just-bash` by default), skills, subagents (`task()`), MCP servers, durable execution, observability.
+
+## What Flue adds to the layers
+
+Remember the [layers diagram](/notes/2026-06-harness-agent-sdk): the LLM at the center, wrapped by context, tools, guardrails, observability. The SDK ships you the middle layers. **Flue ships you the outer ones** — the layers that separate a script running on your machine from an agent running in prod:
+
+- a **sandbox** where the agent runs its commands without touching your system,
+- **durable sessions** that survive a restart,
+- **multi-target deployment** (Node / Workers / CI) without rewriting the agent,
+- built-in **observability**.
+
+It's the "ops" part of the harness, shipped by default.
+
+## Our agent, the Flue version
+
+The clearest way to show it is to take the agent from the previous article — the **social profile analysis** one — and port it to Flue. Here's what it looks like:
+
+```typescript
+// agents/profile-analyzer.ts
+import { createAgent, type FlueContext } from "@flue/runtime";
+import * as v from "valibot";
+
+const profileAnalyzer = createAgent(() => ({
+  model: "anthropic/claude-opus-4-8",
+  skills: ["profile-analysis"], // .agents/skills/profile-analysis/SKILL.md
+}));
+
+const Analysis = v.object({
+  themes: v.array(v.string()),
+  tone: v.string(),
+  contentAngle: v.string(),
+  topPosts: v.array(v.object({ post: v.string(), reason: v.string() })),
+});
+
+export async function run({ init, payload }: FlueContext) {
+  const harness = await init(profileAnalyzer);
+  const session = await harness.session();
+  const { data } = await session.prompt(payload.message, { result: Analysis });
+  return data; // typed + validated by the schema
+}
+```
+
+You run it with the CLI:
+
+```bash
+npx flue run profile-analyzer --target node \
+  --payload '{"message":"Analyze the profile in ./inbox and rank its posts by performance."}'
+```
+
+The two differences that jump out versus the Agent SDK version:
+
+1. **Structured output goes through Valibot**, not a JSON Schema. On the SDK side it was `outputFormat: { type: 'json_schema', schema }` then a `structured_output` field. On the Flue side it's `session.prompt(msg, { result: valibotSchema })` handing you a `data` that's already typed and validated. More idiomatic in TypeScript, less verbose.
+2. **Skills live in `.agents/skills/`** (not `.claude/skills/`). Same idea — a `SKILL.md` loaded on demand — but the namespace is Flue's, not Claude Code's.
+
+The rest of the pattern is intact: the agent, the harness, the session, a skill, a structured output. It's the same harness — just wrapped in a framework.
+
+## What actually changes
+
+As long as you stay on a local one-shot agent, the Agent SDK alone is plenty — it's lighter. Flue gets interesting the day you want to **ship** the agent: run it on an event (a webhook, an Action), keep state between runs, expose it over HTTP/WebSocket, or deploy it to Workers without touching the code. Subagents via `task()` and sandboxes also make it a better candidate for serious orchestration.
+
+In short: the Agent SDK to understand and prototype; Flue when the agent has to become a real service.
+
+## Honest: where it's at
+
+Flue is **young** (Apache-2.0, just shipped by the Astro team). I ported the agent to see, not yet to run it in prod — so take this article as a map, not a battle report. But I like the angle: the team that made static sites pleasant to build is taking on the agent harness, with the same instinct — a runtime-agnostic framework, clear conventions, TypeScript and files.
+
+And it closes the loop on the topic nicely. The harness is first a **concept** (the exoskeleton around the LLM), then an **SDK** (the Agent SDK, coding the core for you), and now a **framework** (Flue, coding the edge). At each step you write less plumbing and more product. That's exactly the direction I care about.
