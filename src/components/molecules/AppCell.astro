@@ -15,7 +15,7 @@ const t = useTranslations(locale);
 const statusLabel =
   project.status === "live" ? t("status.live") : t("status.building");
 const platformLabel = project.platform.map((p) => p.toUpperCase()).join("+");
-const websiteLabel = locale === "fr" ? "Site" : "Website";
+const visitLabel = t("cta.visitSite");
 const appStoreHint = locale === "fr" ? "Télécharger sur" : "Download on";
 const playStoreHint = locale === "fr" ? "Disponible sur" : "Get it on";
 ---
@@ -26,7 +26,7 @@ const playStoreHint = locale === "fr" ? "Disponible sur" : "Get it on";
     href={project.url}
     target="_blank"
     rel="noopener noreferrer"
-    aria-label={`${project.title} — ${websiteLabel}`}
+    aria-label={`${project.title} — ${visitLabel}`}
   >
     <div class="logo">
       {
@@ -50,7 +50,7 @@ const playStoreHint = locale === "fr" ? "Disponible sur" : "Get it on";
   <ul class="tech" role="list">
     {project.techStack.slice(0, 3).map((tech) => <li>{tech}</li>)}
   </ul>
-  <p class="status">
+  <p class="status" data-status={project.status}>
     <span class="dot" aria-hidden="true"></span>{statusLabel.toUpperCase()} · {
       platformLabel
     }
@@ -97,7 +97,7 @@ const playStoreHint = locale === "fr" ? "Disponible sur" : "Get it on";
           target="_blank"
           rel="noopener noreferrer"
         >
-          {websiteLabel.toUpperCase()} →
+          {visitLabel} →
         </a>
       )
     }
@@ -108,29 +108,36 @@ const playStoreHint = locale === "fr" ? "Disponible sur" : "Get it on";
   .cell {
     display: flex;
     flex-direction: column;
-    padding: 20px;
+    padding: 22px;
     background: var(--color-bg-soft);
-    border-right: var(--border-w) solid var(--color-border);
+    border: 1px solid color-mix(in srgb, var(--color-border) 14%, transparent);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
     color: var(--color-text);
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease;
   }
-  .cell:last-child {
-    border-right: none;
+  .cell:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card-hover);
   }
   .logo-link {
     display: inline-block;
-    width: 48px;
+    width: 52px;
   }
   .logo {
-    width: 48px;
-    height: 48px;
-    background: var(--color-text);
-    border: var(--border-w) solid var(--color-border);
-    margin-bottom: 14px;
+    width: 52px;
+    height: 52px;
+    background: var(--color-bg);
+    border: 1px solid color-mix(in srgb, var(--color-border) 12%, transparent);
+    border-radius: 13px;
+    margin-bottom: 16px;
     overflow: hidden;
-    transition: background 150ms ease-out;
+    transition: transform 180ms ease;
   }
-  .logo-link:hover .logo {
-    background: var(--color-accent);
+  .cell:hover .logo {
+    transform: scale(1.05) rotate(-2deg);
   }
   .logo :global(img) {
     width: 100%;
@@ -141,7 +148,7 @@ const playStoreHint = locale === "fr" ? "Disponible sur" : "Get it on";
     font-size: 18px;
     font-weight: 700;
     letter-spacing: -0.02em;
-    margin: 0 0 4px;
+    margin: 0 0 5px;
   }
   .name a {
     color: inherit;
@@ -152,65 +159,82 @@ const playStoreHint = locale === "fr" ? "Disponible sur" : "Get it on";
     color: var(--color-on-accent);
     padding: 0 4px;
     margin: 0 -4px;
+    border-radius: 5px;
   }
   .desc {
-    font-size: 12px;
-    line-height: 1.5;
+    font-size: 12.5px;
+    line-height: 1.55;
     color: var(--color-text-muted);
-    margin: 0 0 12px;
+    margin: 0 0 14px;
   }
   .tech {
     list-style: none;
-    margin: 0 0 12px;
+    margin: 0 0 14px;
     padding: 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 5px;
   }
   .tech li {
     font-family: var(--font-mono);
-    font-size: 9px;
+    font-size: 10px;
     color: var(--color-text-muted);
-    padding: 3px 6px;
+    padding: 4px 9px;
     background: var(--color-bg);
+    border: 1px solid color-mix(in srgb, var(--color-border) 10%, transparent);
+    border-radius: var(--radius-pill);
   }
   .status {
-    margin: 0 0 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    margin: 0 0 16px;
+    padding: 4px 11px;
+    border-radius: var(--radius-pill);
     font-family: var(--font-mono);
     font-size: 10px;
-    color: var(--color-success);
+    letter-spacing: 0.04em;
     text-transform: uppercase;
+    color: var(--color-success);
+    background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  }
+  .status[data-status="building"] {
+    color: var(--color-building);
+    background: color-mix(in srgb, var(--color-building) 16%, transparent);
   }
   .status .dot {
-    display: inline-block;
     width: 6px;
     height: 6px;
-    background: var(--color-success);
-    margin-right: 4px;
-    vertical-align: middle;
+    border-radius: 50%;
+    background: currentColor;
   }
 
   .ctas {
     margin-top: auto;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 7px;
   }
   .badge {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 10px;
+    padding: 9px 12px;
     background: #0a0a0a;
     color: #f6f6f4;
-    border: var(--border-w) solid #0a0a0a;
+    border: 1px solid #0a0a0a;
+    border-radius: var(--radius-pill);
     text-decoration: none;
-    transition: background 150ms ease-out;
+    transition:
+      background 150ms ease-out,
+      transform 150ms ease-out;
   }
   .badge:hover {
     background: var(--color-accent);
     color: var(--color-on-accent);
     border-color: var(--color-accent);
+    transform: translateY(-1px);
   }
   .badge-text {
     display: flex;
@@ -230,23 +254,28 @@ const playStoreHint = locale === "fr" ? "Disponible sur" : "Get it on";
     letter-spacing: -0.01em;
   }
   .website-link {
-    display: inline-block;
-    padding: 8px 10px;
-    background: var(--color-bg);
-    color: var(--color-text);
-    border: var(--border-w) solid var(--color-border);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: var(--color-text);
+    color: var(--color-bg);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
     text-decoration: none;
     text-align: center;
-    transition: background 150ms ease-out;
+    transition:
+      background 150ms ease-out,
+      color 150ms ease-out,
+      transform 150ms ease-out;
   }
   .website-link:hover {
     background: var(--color-accent);
     color: var(--color-on-accent);
-    border-color: var(--color-accent);
+    transform: translateY(-1px);
   }
 </style>

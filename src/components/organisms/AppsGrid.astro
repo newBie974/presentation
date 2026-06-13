@@ -19,7 +19,12 @@ const heading = locale === "fr" ? headingFR : headingEN;
 
 <section id="apps" class="apps" data-reveal>
   <header class="head">
-    <h2>{heading.pre}<Highlight>{heading.hl}</Highlight></h2>
+    <h2>
+      {heading.pre}<Highlight>{heading.hl}</Highlight><span
+        class="emoji"
+        aria-hidden="true">🚀</span
+      >
+    </h2>
     <span class="count"
       >{liveCount.toString().padStart(2, "0")}
       {t("status.live").toUpperCase()}</span
@@ -55,10 +60,16 @@ const heading = locale === "fr" ? headingFR : headingEN;
     background: var(--color-strong-bg);
     color: var(--color-strong-fg);
   }
+  .emoji {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 0.85em;
+    vertical-align: baseline;
+  }
   .grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    border: var(--border-w) solid var(--color-border);
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 18px;
   }
   @media (max-width: 720px) {
     .apps {
@@ -66,13 +77,6 @@ const heading = locale === "fr" ? headingFR : headingEN;
     }
     .grid {
       grid-template-columns: 1fr;
-    }
-    .grid :global(.cell) {
-      border-right: none;
-      border-bottom: var(--border-w) solid var(--color-border);
-    }
-    .grid :global(.cell:last-child) {
-      border-bottom: none;
     }
   }
 </style>
