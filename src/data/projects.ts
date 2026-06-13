@@ -2,6 +2,7 @@ import type { Project } from "@/types";
 import tooktaLogo from "@/assets/tookta.png";
 import carouboltLogo from "@/assets/caroubolt-logo.png";
 import voicejournalLogo from "@/assets/voicejournal-logo.png";
+import karibteckLogo from "@/assets/karibteck-logo.svg";
 
 export const projects: Project[] = [
   {
@@ -53,5 +54,18 @@ export const projects: Project[] = [
     appStoreUrl: "https://apps.apple.com/fr/app/tookta/id6474099484",
     playStoreUrl: "https://play.google.com/store/apps/details?id=com.tookta.fr",
     logo: tooktaLogo,
+  },
+  {
+    slug: "karibteck",
+    title: "KaribTeck",
+    tagline: {
+      fr: "L'agence web qu'on bâtit aux Antilles : sites, apps mobiles et agents IA.",
+      en: "The web agency we're building in the French West Indies: sites, mobile apps and AI agents.",
+    },
+    url: "https://karibteck.com",
+    status: "building",
+    techStack: ["Astro", "TypeScript", "Tailwind CSS", "MDX"],
+    platform: ["web"],
+    logo: karibteckLogo,
   },
 ];
