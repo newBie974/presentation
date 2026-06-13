@@ -557,7 +557,8 @@ Site marketing statique → pas de tests unitaires sur les composants. On teste 
 | 2 | Accessibilité | `@axe-core/playwright` sur les routes critiques (`/`, `/a-propos`, `/notes`, `/notes/<latest>`, `/collaborer` + miroir EN) |
 | 3 | Performance | Lighthouse CI (`@lhci/cli`) — budget Perf ≥ 95, A11y = 100, BP ≥ 95, SEO = 100 |
 | 4 | JSON-LD | Script Node qui parse `dist/`, extrait les `<script type="application/ld+json">` et valide la présence de Person/WebSite sur chaque page publique |
-| 5 | Liens cassés | (Optionnel V1.1) `linkinator` sur `dist/` |
+| 5 | Contraste | `scripts/validate-contrast.mjs` (`npm run validate:contrast`) — résout les tokens de `theme.css` (y compris les `color-mix(... transparent)` sur leur fond) et vérifie WCAG AA ≥ 4.5:1 en clair + sombre, sans navigateur. Tourne au pre-commit (si `theme.css` change) et en CI avant le build, pour attraper un souci de contraste avant axe-core |
+| 6 | Liens cassés | (Optionnel V1.1) `linkinator` sur `dist/` |
 
 Pas de tests unitaires Vitest sur les composants Astro — la TS strict + le rendu statique attrapent l'essentiel. Si du jour 1 on a une logique métier réelle (ex: filtre complexe), on teste cette logique pure isolée dans `lib/` avec Vitest.
 

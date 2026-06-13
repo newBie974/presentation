@@ -39,6 +39,9 @@ jobs:
       - name: Format check
         run: npx prettier --check "src/**/*.{astro,ts,css,md}"
 
+      - name: Validate color contrast (WCAG AA)
+        run: npm run validate:contrast
+
       - name: Build
         run: npm run build
 
