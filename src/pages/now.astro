@@ -18,7 +18,12 @@ const articleCount = notes.length;
 const lastUpdated = formatDate(notes[0].data.date, locale);
 ---
 
-<MainLayout title={title} description={description} locale={locale}>
+<MainLayout
+  title={title}
+  description={description}
+  locale={locale}
+  routeKey="now"
+>
   <Fragment slot="head"><JsonLd data={buildPersonJsonLd()} /></Fragment>
   <Nav slot="nav" locale={locale} />
 

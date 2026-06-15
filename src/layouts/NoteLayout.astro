@@ -63,6 +63,7 @@ const jsonLd = [
   locale={locale}
   pageType="article"
   ogImage={ogImage}
+  alternatePath={altUrl ?? null}
 >
   <Fragment slot="head"><JsonLd data={jsonLd} /></Fragment>
   <Nav slot="nav" locale={locale} current="notes" />

@@ -14,9 +14,9 @@ import { buildPersonJsonLd, buildBreadcrumbJsonLd } from "@/lib/jsonLd";
 import { SITE_URL } from "@/lib/constants";
 
 const locale = "en" as const;
-const title = "About — Aymeric Dijoux, indie builder in Paris";
+const title = "About — Aymeric Dijoux, AI builder · Réunion & Paris";
 const description =
-  "Aymeric Dijoux is an indie builder and software engineer based in Paris. He builds and ships his own consumer apps (VoiceJournal, Caroubolt, Tookta) and helps select teams as a freelancer.";
+  "Aymeric Dijoux is an indie builder and software engineer, AI app expert, based in Réunion Island and Paris. He builds and ships his own consumer apps (VoiceJournal, Caroubolt, Tookta) and helps select teams as a freelancer.";
 const jsonLd = [
   buildPersonJsonLd(),
   buildBreadcrumbJsonLd([
@@ -26,7 +26,12 @@ const jsonLd = [
 ];
 ---
 
-<MainLayout title={title} description={description} locale={locale}>
+<MainLayout
+  title={title}
+  description={description}
+  locale={locale}
+  routeKey="about"
+>
   <Fragment slot="head"><JsonLd data={jsonLd} /></Fragment>
   <Nav slot="nav" locale={locale} current="about" />
 
@@ -34,8 +39,9 @@ const jsonLd = [
     <SectionLabel>— ABOUT</SectionLabel>
     <h1>Builder, engineer, <Highlight>founder</Highlight>.</h1>
     <p class="deck">
-      Aymeric Dijoux is an indie builder and software engineer based in Paris.
-      He codes, ships, and writes what he learns along the way.
+      Aymeric Dijoux is an indie builder and software engineer, AI app expert,
+      based in Réunion Island and Paris. He codes, ships, and writes what he
+      learns along the way.
     </p>
   </section>
 

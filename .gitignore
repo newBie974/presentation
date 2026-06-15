@@ -26,6 +26,11 @@ pnpm-debug.log*
 # superpowers brainstorming session files
 .superpowers/
 
+# agent skills tooling (installed via `npx skills add`)
+.agents/
+.claude/
+skills-lock.json
+
 # playwright
 test-results/
 playwright-report/

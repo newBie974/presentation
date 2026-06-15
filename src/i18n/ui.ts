@@ -22,7 +22,7 @@ export const ui = {
     "status.live": "Live",
     "status.building": "En cours",
     "status.dispoLabel": "Dispo S2 2026 · 1 slot",
-    "footer.copy": "© 2026 Aymeric Dijoux · Paris",
+    "footer.copy": "© 2026 Aymeric Dijoux · La Réunion & Paris",
   },
   en: {
     "nav.home": "Home",
@@ -43,18 +43,25 @@ export const ui = {
     "status.live": "Live",
     "status.building": "Building",
     "status.dispoLabel": "Available H2 2026 · 1 slot",
-    "footer.copy": "© 2026 Aymeric Dijoux · Paris",
+    "footer.copy": "© 2026 Aymeric Dijoux · La Réunion & Paris",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 
 export type UiKey = keyof (typeof ui)["fr"];
 
 export const routes = {
-  fr: { home: "/", about: "/a-propos", notes: "/notes", work: "/collaborer" },
+  fr: {
+    home: "/",
+    about: "/a-propos",
+    notes: "/notes",
+    work: "/collaborer",
+    now: "/now",
+  },
   en: {
     home: "/en/",
     about: "/en/about",
     notes: "/en/writing",
     work: "/en/work",
+    now: "/en/now",
   },
 } as const;

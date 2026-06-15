@@ -17,6 +17,11 @@
   --color-strong-bg: #0a0a0a;
   --color-strong-fg: #ccff00;
 
+  /* Inverse band (always-dark CTA block — constant across both themes) */
+  --color-inverse-bg: #0a0a0a;
+  --color-inverse-fg: #f6f6f4;
+  --color-inverse-muted: #a3a3a3;
+
   /* States */
   --color-success: #3f6b08;
   --color-building: #92400e;

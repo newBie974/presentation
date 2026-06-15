@@ -14,12 +14,17 @@ import { testimonials } from "@/data/testimonials";
 import Testimonial from "@/components/molecules/Testimonial.astro";
 import CalEmbed from "@/components/molecules/CalEmbed.astro";
 import JsonLd from "@/components/atoms/JsonLd.astro";
-import { buildPersonJsonLd, buildFAQJsonLd } from "@/lib/jsonLd";
+import {
+  buildPersonJsonLd,
+  buildFAQJsonLd,
+  buildProfessionalServiceJsonLd,
+} from "@/lib/jsonLd";
 
 const locale = "fr" as const;
-const title = "Collaborer — Aymeric Dijoux, freelance builder à Paris";
+const title =
+  "Collaborer — Aymeric Dijoux, freelance builder IA · La Réunion & Paris";
 const description =
-  "Aymeric Dijoux prend 1 à 2 missions freelance par semestre — mobile, web, prototype IA. Process clair, prix fixes ou TJM, call intro gratuit de 30 min.";
+  "Développeur freelance basé à La Réunion (974) et Paris, expert apps IA. Aymeric Dijoux prend 1 à 2 missions par semestre — mobile, web, prototype IA. Remote, prix fixes ou TJM, call intro gratuit de 30 min.";
 const calcomUrl =
   import.meta.env.PUBLIC_CALCOM_URL ?? "https://cal.eu/aymeric-dijoux/intro";
 const calLink = "aymeric-dijoux/intro";
@@ -48,11 +53,17 @@ const processSteps = [
 ];
 ---
 
-<MainLayout title={title} description={description} locale={locale}>
+<MainLayout
+  title={title}
+  description={description}
+  locale={locale}
+  routeKey="work"
+>
   <Fragment slot="head">
     <JsonLd
       data={[
         buildPersonJsonLd(),
+        buildProfessionalServiceJsonLd(locale),
         buildFAQJsonLd(faq.map((f) => ({ q: f.q[locale], a: f.a[locale] }))),
       ]}
     />
@@ -65,8 +76,9 @@ const processSteps = [
       Construire <Highlight>ensemble</Highlight>, pas juste coder pour toi.
     </h1>
     <p class="deck">
-      Je prends 1 à 2 missions par semestre, en remote ou Paris. Mobile, web,
-      prototype IA — tout ce qui se ship vite et bien.
+      Développeur freelance basé à <Highlight>La Réunion</Highlight> et Paris, en
+      remote partout. Je prends 1 à 2 missions par semestre. Mobile, web, prototype
+      IA — tout ce qui se ship vite et bien.
     </p>
     <StatusBadge label="Dispo S2 2026 · 1 slot restant" />
   </section>
@@ -191,8 +203,8 @@ const processSteps = [
     max-width: 580px;
   }
   .end-cta {
-    background: #0a0a0a;
-    color: #f6f6f4;
+    background: var(--color-inverse-bg);
+    color: var(--color-inverse-fg);
     padding: 56px 48px;
     text-align: center;
   }
@@ -205,11 +217,11 @@ const processSteps = [
     letter-spacing: -0.03em;
     margin: 0 0 14px;
     line-height: 1;
-    color: #f6f6f4;
+    color: var(--color-inverse-fg);
   }
   .end-cta p {
     font-size: 14px;
-    color: #a3a3a3;
+    color: var(--color-inverse-muted);
     max-width: 460px;
     margin: 0 auto 20px;
     line-height: 1.6;
@@ -223,7 +235,7 @@ const processSteps = [
   .end-cta .alt {
     font-family: var(--font-mono);
     font-size: 12px;
-    color: #a3a3a3;
+    color: var(--color-inverse-muted);
     margin-top: 12px;
   }
   .end-cta .email {

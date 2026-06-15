@@ -7,6 +7,30 @@ import icon from "astro-icon";
 import remarkGfm from "remark-gfm";
 import rehypeExternalLinks from "rehype-external-links";
 
+const SITE = "https://aymeric.dijoux.dev";
+
+// FR ↔ EN slugs differ, so the default prefix-based i18n sitemap can't pair
+// them. Declare the real translation pairs and inject reciprocal hreflang.
+const I18N_PAIRS = [
+  ["/", "/en/"],
+  ["/a-propos/", "/en/about/"],
+  ["/collaborer/", "/en/work/"],
+  ["/notes/", "/en/writing/"],
+  ["/now/", "/en/now/"],
+];
+
+/** @param {string} pathname */
+function i18nLinksFor(pathname) {
+  const pair = I18N_PAIRS.find(
+    ([fr, en]) => fr === pathname || en === pathname,
+  );
+  if (!pair) return undefined;
+  return [
+    { lang: "fr-FR", url: SITE + pair[0] },
+    { lang: "en-US", url: SITE + pair[1] },
+  ];
+}
+
 export default defineConfig({
   output: "static",
   site: "https://aymeric.dijoux.dev",
@@ -20,13 +44,17 @@ export default defineConfig({
     mdx({
       remarkPlugins: [remarkGfm],
       rehypePlugins: [
-        [rehypeExternalLinks, { target: "_blank", rel: ["noopener", "noreferrer"] }],
+        [
+          rehypeExternalLinks,
+          { target: "_blank", rel: ["noopener", "noreferrer"] },
+        ],
       ],
     }),
     sitemap({
-      i18n: {
-        defaultLocale: "fr",
-        locales: { fr: "fr-FR", en: "en-US" },
+      serialize(item) {
+        const links = i18nLinksFor(new URL(item.url).pathname);
+        if (links) item.links = links;
+        return item;
       },
     }),
     icon({ include: { lucide: ["*"], "simple-icons": ["*"] } }),

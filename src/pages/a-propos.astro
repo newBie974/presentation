@@ -14,9 +14,10 @@ import { buildPersonJsonLd, buildBreadcrumbJsonLd } from "@/lib/jsonLd";
 import { SITE_URL } from "@/lib/constants";
 
 const locale = "fr" as const;
-const title = "À propos — Aymeric Dijoux, indie builder à Paris";
+const title =
+  "À propos — Aymeric Dijoux, builder & expert IA · La Réunion & Paris";
 const description =
-  "Aymeric Dijoux est un indie builder et software engineer basé à Paris. Il construit et lance ses propres apps consumer (VoiceJournal, Caroubolt, Tookta) et accompagne quelques équipes en freelance.";
+  "Aymeric Dijoux est un indie builder et software engineer expert IA, basé à La Réunion et Paris. Il construit et lance ses propres apps consumer (VoiceJournal, Caroubolt, Tookta) et accompagne quelques équipes en freelance.";
 const jsonLd = [
   buildPersonJsonLd(),
   buildBreadcrumbJsonLd([
@@ -26,7 +27,12 @@ const jsonLd = [
 ];
 ---
 
-<MainLayout title={title} description={description} locale={locale}>
+<MainLayout
+  title={title}
+  description={description}
+  locale={locale}
+  routeKey="about"
+>
   <Fragment slot="head"><JsonLd data={jsonLd} /></Fragment>
   <Nav slot="nav" locale={locale} current="about" />
 
@@ -34,8 +40,8 @@ const jsonLd = [
     <SectionLabel>— À PROPOS</SectionLabel>
     <h1>Builder, engineer, <Highlight>founder</Highlight>.</h1>
     <p class="deck">
-      Aymeric Dijoux est un indie builder et software engineer basé à Paris. Il
-      code, lance, et écrit ce qu'il apprend en chemin.
+      Aymeric Dijoux est un indie builder et software engineer expert IA, basé à
+      La Réunion et Paris. Il code, lance, et écrit ce qu'il apprend en chemin.
     </p>
   </section>
 

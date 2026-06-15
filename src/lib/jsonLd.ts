@@ -4,17 +4,23 @@ import { socialLinks } from "@/data/socialLinks";
 import { projects } from "@/data/projects";
 
 const KNOWS_ABOUT = [
+  "AI app development",
+  "AI agents",
+  "LLM applications",
+  "RAG",
+  "Claude / Anthropic",
+  "AI prototyping",
   "Indie hacking",
   "Consumer app development",
   "React Native",
   "Flutter",
   "Astro",
   "Next.js",
-  "AI products",
   "Supabase",
-  "Mobile app design",
   "TypeScript",
 ];
+
+const AREA_SERVED = ["La Réunion", "France", "Worldwide (remote)"];
 
 export function buildPersonJsonLd() {
   return {
@@ -24,14 +30,49 @@ export function buildPersonJsonLd() {
     name: SITE_NAME,
     givenName: "Aymeric",
     familyName: "Dijoux",
-    jobTitle: "Indie builder & software engineer",
+    jobTitle: "AI app builder & software engineer",
     description:
-      "Aymeric Dijoux is an indie builder and software engineer based in Paris, building and shipping consumer apps (VoiceJournal, Caroubolt, Tookta) and helping select teams as a freelancer.",
+      "Aymeric Dijoux is a freelance AI app builder and software engineer based in Réunion Island (France) and Paris. He ships consumer apps (VoiceJournal, Caroubolt, Tookta), builds AI agents and RAG systems, and helps select teams as a freelancer — remote worldwide.",
     url: SITE_URL,
-    image: `${SITE_URL}/avatar.webp`,
-    homeLocation: { "@type": "Place", name: "Paris, France" },
+    image: `${SITE_URL}/avatar.png`,
+    address: {
+      "@type": "PostalAddress",
+      addressRegion: "La Réunion",
+      addressCountry: "FR",
+    },
+    homeLocation: [
+      { "@type": "Place", name: "La Réunion, France" },
+      { "@type": "Place", name: "Paris, France" },
+    ],
+    workLocation: { "@type": "Place", name: "Remote (worldwide)" },
+    worksFor: { "@type": "Organization", name: "Decider.ai" },
     knowsAbout: KNOWS_ABOUT,
     sameAs: socialLinks.map((l) => l.url),
+  };
+}
+
+const SERVICE_DESCRIPTION = {
+  fr: "Développeur freelance expert apps IA, basé à La Réunion et Paris. MVP mobile/web en 6-8 semaines, prototypes IA, renfort tech — en remote partout.",
+  en: "Freelance developer and AI app expert, based in Réunion Island and Paris. Mobile/web MVPs in 6-8 weeks, AI prototypes, tech rescue — remote everywhere.",
+};
+
+export function buildProfessionalServiceJsonLd(locale: Locale) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    "@id": `${SITE_URL}/#freelance-service`,
+    name: "Aymeric Dijoux — Freelance AI app builder",
+    description: SERVICE_DESCRIPTION[locale],
+    url: `${SITE_URL}${locale === "fr" ? "/collaborer" : "/en/work"}`,
+    provider: { "@id": PERSON_ID },
+    areaServed: AREA_SERVED,
+    serviceType: [
+      "Mobile app development",
+      "Web app development",
+      "AI prototyping",
+      "Freelance software engineering",
+    ],
+    inLanguage: locale === "fr" ? "fr-FR" : "en-US",
   };
 }
 

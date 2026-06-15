@@ -9,9 +9,9 @@ export const profile: Profile = {
     en: "I build the apps I wish existed.",
   },
   bio: {
-    fr: "Indie builder basé à Paris. Trois apps en prod, et un calendrier ouvert pour les bons projets.",
-    en: "Indie builder based in Paris. Three apps shipped, and a calendar open for the right projects.",
+    fr: "Indie builder & expert apps IA, basé à La Réunion et Paris. Trois apps en prod, et un calendrier ouvert pour les bons projets.",
+    en: "Indie builder & AI app expert, based in Réunion Island and Paris. Three apps shipped, and a calendar open for the right projects.",
   },
-  location: "Paris, France",
+  location: "La Réunion & Paris, France",
   email: "aymeric@dijoux.dev",
 };

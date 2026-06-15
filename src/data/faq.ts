@@ -3,12 +3,22 @@ import type { FaqEntry } from "@/types";
 export const faq: FaqEntry[] = [
   {
     q: {
+      fr: "Tu es basé où ?",
+      en: "Where are you based?",
+    },
+    a: {
+      fr: "Je suis Réunionnais, basé entre La Réunion (974) et Paris. Je travaille en remote avec des clients partout en France et à l'international.",
+      en: "I'm from Réunion Island, based between Réunion (974) and Paris. I work remotely with clients across France and internationally.",
+    },
+  },
+  {
+    q: {
       fr: "Tu bosses en remote ou sur place ?",
       en: "Do you work remote or on-site?",
     },
     a: {
-      fr: "Les deux. 100% remote par défaut, déplacement Paris possible pour kick-off ou jalons.",
-      en: "Both. 100% remote by default, on-site in Paris possible for kick-off or milestones.",
+      fr: "Les deux. 100% remote par défaut, déplacement Paris ou La Réunion possible pour kick-off ou jalons.",
+      en: "Both. 100% remote by default, on-site in Paris or Réunion possible for kick-off or milestones.",
     },
   },
   {

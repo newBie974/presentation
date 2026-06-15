@@ -29,7 +29,12 @@ const jsonLd = [
 ];
 ---
 
-<MainLayout title={title} description={description} locale={locale}>
+<MainLayout
+  title={title}
+  description={description}
+  locale={locale}
+  routeKey="notes"
+>
   <Fragment slot="head"><JsonLd data={jsonLd} /></Fragment>
   <Nav slot="nav" locale={locale} current="notes" />
 

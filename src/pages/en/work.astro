@@ -14,12 +14,17 @@ import { testimonials } from "@/data/testimonials";
 import Testimonial from "@/components/molecules/Testimonial.astro";
 import CalEmbed from "@/components/molecules/CalEmbed.astro";
 import JsonLd from "@/components/atoms/JsonLd.astro";
-import { buildPersonJsonLd, buildFAQJsonLd } from "@/lib/jsonLd";
+import {
+  buildPersonJsonLd,
+  buildFAQJsonLd,
+  buildProfessionalServiceJsonLd,
+} from "@/lib/jsonLd";
 
 const locale = "en" as const;
-const title = "Work together — Aymeric Dijoux, freelance builder in Paris";
+const title =
+  "Work together — Aymeric Dijoux, freelance AI builder · Réunion & Paris";
 const description =
-  "Aymeric Dijoux takes 1-2 freelance missions per half-year — mobile, web, AI prototype. Clear process, fixed price or day rate, free 30-min intro call.";
+  "Freelance developer based in Réunion Island (France) and Paris, AI app expert. Aymeric Dijoux takes 1-2 missions per half-year — mobile, web, AI prototype. Remote, fixed price or day rate, free 30-min intro call.";
 const calcomUrl =
   import.meta.env.PUBLIC_CALCOM_URL ?? "https://cal.eu/aymeric-dijoux/intro";
 const calLink = "aymeric-dijoux/intro";
@@ -48,11 +53,17 @@ const processSteps = [
 ];
 ---
 
-<MainLayout title={title} description={description} locale={locale}>
+<MainLayout
+  title={title}
+  description={description}
+  locale={locale}
+  routeKey="work"
+>
   <Fragment slot="head">
     <JsonLd
       data={[
         buildPersonJsonLd(),
+        buildProfessionalServiceJsonLd(locale),
         buildFAQJsonLd(faq.map((f) => ({ q: f.q[locale], a: f.a[locale] }))),
       ]}
     />
@@ -65,8 +76,9 @@ const processSteps = [
       Building <Highlight>with you</Highlight>, not just for you.
     </h1>
     <p class="deck">
-      I take 1-2 missions per half-year, remote or Paris. Mobile, web, AI
-      prototype — anything that ships fast and well.
+      Freelance developer based in <Highlight>Réunion Island</Highlight> and Paris,
+      remote everywhere. I take 1-2 missions per half-year. Mobile, web, AI prototype
+      — anything that ships fast and well.
     </p>
     <StatusBadge label="Available H2 2026 · 1 slot left" />
   </section>
@@ -191,8 +203,8 @@ const processSteps = [
     max-width: 580px;
   }
   .end-cta {
-    background: #0a0a0a;
-    color: #f6f6f4;
+    background: var(--color-inverse-bg);
+    color: var(--color-inverse-fg);
     padding: 56px 48px;
     text-align: center;
   }
@@ -205,11 +217,11 @@ const processSteps = [
     letter-spacing: -0.03em;
     margin: 0 0 14px;
     line-height: 1;
-    color: #f6f6f4;
+    color: var(--color-inverse-fg);
   }
   .end-cta p {
     font-size: 14px;
-    color: #a3a3a3;
+    color: var(--color-inverse-muted);
     max-width: 460px;
     margin: 0 auto 20px;
     line-height: 1.6;
@@ -223,7 +235,7 @@ const processSteps = [
   .end-cta .alt {
     font-family: var(--font-mono);
     font-size: 12px;
-    color: #a3a3a3;
+    color: var(--color-inverse-muted);
     margin-top: 12px;
   }
   @media (max-width: 720px) {

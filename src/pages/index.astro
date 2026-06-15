@@ -17,7 +17,7 @@ import {
 import { profile } from "@/data/profile";
 
 const locale = "fr" as const;
-const title = `${profile.name} — Indie builder & engineer`;
+const title = `${profile.name} — Builder & expert apps IA`;
 const description = profile.bio.fr;
 const jsonLd = [
   buildPersonJsonLd(),
@@ -30,6 +30,7 @@ const jsonLd = [
   title={title}
   description={description}
   locale={locale}
+  routeKey="home"
   ogImage="/og/home.png"
 >
   <Fragment slot="head"><JsonLd data={jsonLd} /></Fragment>
