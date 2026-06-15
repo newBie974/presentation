@@ -1,0 +1,70 @@
+---
+title: "J'ai structuré une archi backend depuis La Réunion. Le client n'a vu passer que la valeur."
+date: 2026-06-15
+locale: fr
+translationKey: "2026-06-remote-reunion-backend-architecture"
+tags: ["freelance", "backend", "remote"]
+excerpt: "Développeur freelance basé à La Réunion, +2h de Paris, 100% remote. Spoiler : le décalage n'a rien changé. Ce qui comptait, c'était l'archi backend que j'ai posée pour une équipe qui devait scaler — DDD, découpage en microservices, guidelines qui tiennent."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+Je suis développeur freelance, basé à **La Réunion**. Sur l'une de mes missions, j'ai accompagné une équipe pour structurer son **architecture backend** : poser les fondations, aider les devs à mettre en place les bons patterns, et faire en sorte que l'archi suive la croissance de l'équipe au lieu de la freiner.
+
+Le tout à **+2h de Paris**, en 100% remote. Et la vérité, c'est que le décalage n'a jamais été un sujet. Le client était content pour une seule raison : la valeur a été livrée. Pas parce que j'étais dans le bon open space.
+
+## Le décalage +2h, en vrai
+
+La Réunion, c'est UTC+4, sans changement d'heure. Paris bascule entre UTC+1 et UTC+2. L'été, ça fait **2 heures d'avance** sur Paris ; l'hiver, 3.
+
+Concrètement : quand il est 7h à Paris, il est 9h chez moi. On partage la quasi-totalité de la journée de travail. Ce n'est pas un fuseau « US » où tu attrapes deux heures de chevauchement à l'arrache — c'est un fuseau où **le recouvrement est presque total**, avec juste un petit coussin aux extrémités.
+
+Et ce coussin, je l'ai transformé en avantage : mes deux premières heures de matinée tombent avant que Paris se réveille. Zéro Slack, zéro réunion, zéro interruption. C'est exactement là que je faisais le travail qui demande le plus de concentration — penser une archi, ça ne se fait pas entre deux pings.
+
+## Pourquoi ça ne pose aucun souci
+
+Le décalage n'est pas le vrai sujet. Le vrai sujet, c'est **comment tu travailles**. Un remote qui marche, ce n'est pas « être joignable tout le temps » — c'est livrer ce qui était attendu, de façon vérifiable, sans que personne ait à surveiller ta présence.
+
+Ce qui fait que ça tient :
+
+- **L'async par défaut.** Les décisions importantes passent par écrit (doc, PR, message structuré), pas par une réunion qu'il faut caler dans la fenêtre commune. Tout le monde peut lire et répondre sur son créneau.
+- **Des livrables, pas des heures.** On se met d'accord sur ce qui doit être posé cette semaine — un découpage de domaine, un service extrait, une guideline documentée. La présence ne se mesure pas, le résultat si.
+- **Une démo régulière.** Chaque semaine, du concret : ce qui a avancé, ce qui reste, les arbitrages. C'est ça qui crée la confiance, pas le statut vert sur Slack.
+
+<Callout tone="info">
+Le remote ne crée pas les problèmes d'une équipe — il les **révèle**. Si une boîte a besoin de te voir au bureau pour être rassurée, c'est que ses livrables ne sont pas assez clairs. Une fois qu'ils le sont, l'endroit d'où tu travailles devient une note de bas de page.
+</Callout>
+
+## La vraie valeur : l'archi que j'ai posée
+
+Voilà ce pour quoi j'étais payé. Pas pour être en ligne de 9h à 18h — pour laisser derrière moi une base sur laquelle l'équipe pouvait construire vite et sans se marcher dessus.
+
+**J'ai découpé par domaine métier, pas par couche technique.** L'erreur classique, c'est d'organiser le code en `controllers / services / repositories` et de croire qu'on a une architecture. On a juste rangé. Le vrai découpage suit le métier : chaque **bounded context** (au sens DDD) regroupe ce qui change pour la même raison et appartient à la même équipe. Résultat : une équipe peut bouger dans son domaine sans casser celui des autres.
+
+**Les microservices, seulement quand le découpage métier le justifie.** Je n'ai pas explosé le système en quinze services parce que c'est à la mode. La règle que j'ai appliquée : on commence par un **monolithe modulaire** propre — modules isolés, frontières nettes, dépendances explicites — et on n'extrait un microservice que quand un domaine a une vraie raison de vivre à part : un cycle de déploiement différent, une charge qui scale autrement, une équipe qui doit être autonome. Couper trop tôt, c'est se payer la complexité du distribué sans en avoir le bénéfice.
+
+**Des guidelines qui tiennent sans moi.** Le but n'était pas que je reste la personne qui sait. C'était que l'équipe sache. J'ai donc documenté les patterns, pas juste le code :
+
+- Où vit la logique métier (dans le domaine, jamais dans le controller).
+- Comment un module parle à un autre (par des contrats explicites, pas en tapant dans la base de l'autre).
+- Quand introduire une abstraction (quand le besoin existe deux fois, pas « au cas où »).
+- Ce qu'on refuse en review (le couplage caché, le service fourre-tout, le modèle anémique).
+
+<Callout tone="ok">
+La bonne mesure d'une mission d'archi, ce n'est pas le diagramme final. C'est : **un mois après mon départ, l'équipe prend-elle les bonnes décisions sans moi ?** Si oui, la valeur est dans leur tête et dans leurs guidelines, pas dans ma présence.
+</Callout>
+
+## Scaler l'équipe, pas juste le système
+
+On parle souvent de scalabilité comme d'un problème de machines : plus de requêtes, plus de serveurs. Mais le scaling qui coince en premier, c'est celui de **l'équipe**. À cinq devs sur un code mal découpé, chaque feature en touche dix autres, chaque PR fait peur, et la vitesse s'effondre.
+
+Une bonne archi, c'est d'abord ça : permettre à plusieurs personnes de travailler en parallèle sans collision. Le DDD et le découpage en modules ne servent pas à faire joli sur un schéma — ils servent à ce que la dixième personne qui rejoint l'équipe soit productive sans devoir comprendre tout le système d'un coup.
+
+## Ce que le remote bien fait change
+
+La leçon de cette mission tient en une phrase : **la valeur ne dépend pas de l'endroit d'où tu la livres.**
+
+J'ai posé une architecture solide, j'ai outillé une équipe pour qu'elle reste propre après mon départ, et le client était content — depuis une île à 9 000 km et deux fuseaux de son siège. Le décalage horaire n'a pas été un compromis qu'on a « toléré ». Il n'a simplement rien changé, parce que ce qui compte, c'est le livrable, et que le livrable se juge sur sa qualité, pas sur sa géolocalisation.
+
+C'est aussi pour ça que je travaille comme ça : depuis La Réunion, en remote, pour des équipes en France et ailleurs. Pas par contrainte — parce que c'est l'organisation qui me permet de livrer le meilleur travail. Le reste, c'est de la logistique.

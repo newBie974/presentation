@@ -1,0 +1,70 @@
+---
+title: "I structured a backend architecture from Réunion Island. The client only ever saw the value."
+date: 2026-06-15
+locale: en
+translationKey: "2026-06-remote-reunion-backend-architecture"
+tags: ["freelance", "backend", "remote"]
+excerpt: "Freelance developer based in Réunion Island, +2h from Paris, fully remote. Spoiler: the time difference changed nothing. What mattered was the backend architecture I laid down for a team that had to scale — DDD, microservices decomposition, guidelines that hold."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+I'm a freelance developer, based in **Réunion Island**. On one of my missions, I helped a team structure its **backend architecture**: laying the foundations, helping the devs put the right patterns in place, and making sure the architecture would follow the team's growth instead of holding it back.
+
+All of it **+2h from Paris**, fully remote. And the truth is, the time difference was never the issue. The client was happy for one reason only: the value got delivered. Not because I was sitting in the right open space.
+
+## The +2h gap, for real
+
+Réunion is UTC+4, no daylight saving. Paris swings between UTC+1 and UTC+2. In summer that's **2 hours ahead** of Paris; in winter, 3.
+
+In practice: when it's 7am in Paris, it's 9am for me. We share almost the entire working day. This isn't a "US" time zone where you scramble for two hours of overlap — it's a zone where **the overlap is nearly total**, with just a small cushion at the edges.
+
+And I turned that cushion into an advantage: my first two morning hours fall before Paris wakes up. No Slack, no meetings, no interruptions. That's exactly when I did the work that demands the most focus — you don't design an architecture between two pings.
+
+## Why it causes no problem
+
+The time difference isn't the real topic. The real topic is **how you work**. Remote that works isn't "being reachable all the time" — it's delivering what was expected, verifiably, without anyone having to monitor your presence.
+
+What makes it hold together:
+
+- **Async by default.** Important decisions go through writing (a doc, a PR, a structured message), not a meeting you have to squeeze into the shared window. Everyone can read and respond on their own schedule.
+- **Deliverables, not hours.** We agree on what has to land this week — a domain boundary, an extracted service, a documented guideline. Presence isn't measured; the result is.
+- **A regular demo.** Every week, something concrete: what moved, what's left, the trade-offs. That's what builds trust, not a green dot on Slack.
+
+<Callout tone="info">
+Remote doesn't create a team's problems — it **exposes** them. If a company needs to see you at the office to feel reassured, it's because its deliverables aren't clear enough. Once they are, where you work from becomes a footnote.
+</Callout>
+
+## The real value: the architecture I laid down
+
+This is what I was paid for. Not to be online from 9 to 6 — to leave behind a foundation the team could build on, fast and without stepping on each other.
+
+**I split by business domain, not by technical layer.** The classic mistake is to organise code into `controllers / services / repositories` and believe you have an architecture. You've just tidied up. Real decomposition follows the business: each **bounded context** (in the DDD sense) groups what changes for the same reason and belongs to the same team. The result: a team can move within its domain without breaking anyone else's.
+
+**Microservices only when the domain split justifies it.** I didn't blow the system into fifteen services because it's fashionable. The rule I applied: start with a clean **modular monolith** — isolated modules, sharp boundaries, explicit dependencies — and extract a microservice only when a domain has a genuine reason to live on its own: a different deployment cycle, load that scales differently, a team that needs autonomy. Cutting too early buys you the complexity of distributed systems without the benefit.
+
+**Guidelines that hold without me.** The goal wasn't for me to remain the person who knows. It was for the team to know. So I documented the patterns, not just the code:
+
+- Where business logic lives (in the domain, never in the controller).
+- How one module talks to another (through explicit contracts, not by reaching into the other's database).
+- When to introduce an abstraction (when the need exists twice, not "just in case").
+- What we reject in review (hidden coupling, the catch-all service, the anaemic model).
+
+<Callout tone="ok">
+The right measure of an architecture mission isn't the final diagram. It's: **a month after I leave, does the team still make the right decisions without me?** If so, the value is in their heads and their guidelines, not in my presence.
+</Callout>
+
+## Scaling the team, not just the system
+
+We often talk about scalability as a machine problem: more requests, more servers. But the scaling that breaks first is the **team's**. With five devs on a badly split codebase, every feature touches ten others, every PR is scary, and velocity collapses.
+
+A good architecture is that, first: letting several people work in parallel without collision. DDD and module decomposition aren't there to look good on a diagram — they're there so the tenth person joining the team is productive without having to understand the whole system at once.
+
+## What remote, done right, changes
+
+The lesson from this mission fits in one sentence: **value doesn't depend on where you deliver it from.**
+
+I laid down a solid architecture, equipped a team to keep it clean after I left, and the client was happy — from an island 9,000 km and two time zones from their HQ. The time difference wasn't a compromise we "tolerated." It simply changed nothing, because what matters is the deliverable, and a deliverable is judged on its quality, not its geolocation.
+
+That's also why I work this way: from Réunion Island, remote, for teams in France and beyond. Not out of constraint — because it's the setup that lets me deliver my best work. The rest is logistics.
