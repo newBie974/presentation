@@ -8,6 +8,7 @@ import AboutExcerpt from "@/components/organisms/AboutExcerpt.astro";
 import NotesSection from "@/components/organisms/NotesSection.astro";
 import CollabBand from "@/components/organisms/CollabBand.astro";
 import Footer from "@/components/organisms/Footer.astro";
+import LabGrid from "@/components/organisms/LabGrid.astro";
 import JsonLd from "@/components/atoms/JsonLd.astro";
 import {
   buildPersonJsonLd,
@@ -15,10 +16,12 @@ import {
   buildSoftwareAppJsonLd,
 } from "@/lib/jsonLd";
 import { profile } from "@/data/profile";
+import { useTranslations } from "@/i18n/utils";
 
 const locale = "fr" as const;
 const title = `${profile.name} — Builder & expert apps IA`;
 const description = profile.bio.fr;
+const t = useTranslations(locale);
 const jsonLd = [
   buildPersonJsonLd(),
   buildWebSiteJsonLd(),
@@ -38,6 +41,13 @@ const jsonLd = [
   <Hero locale={locale} />
   <SocialBar locale={locale} />
   <AppsGrid locale={locale} />
+  <LabGrid
+    locale={locale}
+    limit={3}
+    heading={t("section.lab")}
+    moreHref={t.path("lab")}
+    moreLabel={t("cta.viewAllLab")}
+  />
   <AboutExcerpt locale={locale} />
   <NotesSection locale={locale} />
   <CollabBand locale={locale} />
