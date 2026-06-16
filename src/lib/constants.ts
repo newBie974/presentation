@@ -1,6 +1,7 @@
 export const SITE_URL = "https://aymeric.dijoux.dev";
 export const SITE_NAME = "Aymeric Dijoux";
 export const NOTES_ON_HOME = 3;
+export const LAB_ON_HOME = 3;
 export const NOTES_PER_PAGE = 20;
 export const LONG_ARTICLE_WORD_THRESHOLD = 800;
 export const SCROLL_REVEAL_DELAY_MS = 250;

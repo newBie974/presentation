@@ -17,6 +17,7 @@ import {
 } from "@/lib/jsonLd";
 import { profile } from "@/data/profile";
 import { useTranslations } from "@/i18n/utils";
+import { LAB_ON_HOME } from "@/lib/constants";
 
 const locale = "en" as const;
 const title = `${profile.name} — AI app builder & engineer`;
@@ -43,7 +44,7 @@ const jsonLd = [
   <AppsGrid locale={locale} />
   <LabGrid
     locale={locale}
-    limit={3}
+    limit={LAB_ON_HOME}
     heading={t("section.lab")}
     moreHref={t.path("lab")}
     moreLabel={t("cta.viewAllLab")}
