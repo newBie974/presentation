@@ -30,6 +30,21 @@ const heading = locale === "fr" ? headingFR : headingEN;
       {t("status.live").toUpperCase()}</span
     >
   </header>
+  <fieldset class="filters">
+    <legend class="sr-only">{t("filter.legend")}</legend>
+    <input
+      class="sr-only"
+      type="radio"
+      name="appfilter"
+      id="appfilter-all"
+      checked
+    />
+    <label for="appfilter-all">{t("filter.all")}</label>
+    <input class="sr-only" type="radio" name="appfilter" id="appfilter-app" />
+    <label for="appfilter-app">{t("filter.app")}</label>
+    <input class="sr-only" type="radio" name="appfilter" id="appfilter-web" />
+    <label for="appfilter-web">{t("filter.web")}</label>
+  </fieldset>
   <div class="grid">
     {projects.map((project) => <AppCell project={project} locale={locale} />)}
   </div>
@@ -44,7 +59,57 @@ const heading = locale === "fr" ? headingFR : headingEN;
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    border: 0;
+    padding: 0;
+    margin: 0 0 24px;
+  }
+  .filters label {
+    padding: 5px 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    background: var(--color-bg-soft);
+    border: 1px solid color-mix(in srgb, var(--color-border) 14%, transparent);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition:
+      background 150ms ease,
+      color 150ms ease;
+  }
+  .filters label:hover {
+    color: var(--color-text);
+  }
+  .filters input:checked + label {
+    background: var(--color-strong-bg);
+    color: var(--color-strong-fg);
+    border-color: var(--color-strong-bg);
+  }
+  .filters input:focus-visible + label {
+    box-shadow: 0 0 0 2px var(--color-accent);
+  }
+  /* CSS-only filtering: the checked radio hides the non-matching cells */
+  .apps:has(#appfilter-app:checked) .grid > :global([data-type="web"]),
+  .apps:has(#appfilter-web:checked) .grid > :global([data-type="app"]) {
+    display: none;
   }
   h2 {
     font-size: clamp(24px, 4vw, 32px);

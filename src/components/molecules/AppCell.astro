@@ -14,13 +14,17 @@ const t = useTranslations(locale);
 
 const statusLabel =
   project.status === "live" ? t("status.live") : t("status.building");
+const isMobileApp = project.platform.some(
+  (p) => p === "ios" || p === "android",
+);
+const projectType = isMobileApp ? "app" : "web";
 const platformLabel = project.platform.map((p) => p.toUpperCase()).join("+");
 const visitLabel = t("cta.visitSite");
 const appStoreHint = locale === "fr" ? "Télécharger sur" : "Download on";
 const playStoreHint = locale === "fr" ? "Disponible sur" : "Get it on";
 ---
 
-<article class="cell">
+<article class="cell" data-type={projectType}>
   <a
     class="logo-link"
     href={project.url}
