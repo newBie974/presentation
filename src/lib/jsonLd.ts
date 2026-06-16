@@ -204,7 +204,7 @@ export function buildLabItemListJsonLd(locale: Locale) {
         "@type": "ListItem",
         position: i + 1,
         name: exp.title,
-        url: exp.url,
+        item: exp.url,
       })),
     },
   };
