@@ -18,19 +18,29 @@ const t = useTranslations(locale);
         {experiment.title}
       </a>
     </h3>
-    <span class="date">{experiment.date}</span>
+    <time class="date" datetime={experiment.date}>{experiment.date}</time>
   </div>
   <p class="desc">{experiment.tagline[locale]}</p>
   <ul class="tech" role="list">
     {experiment.techStack.slice(0, 3).map((tech) => <li>{tech}</li>)}
   </ul>
   <div class="links">
-    <a href={experiment.url} target="_blank" rel="noopener noreferrer">
+    <a
+      href={experiment.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${experiment.title} — ${t("cta.demo")}`}
+    >
       {t("cta.demo")} ↗
     </a>
     {
       experiment.repoUrl && (
-        <a href={experiment.repoUrl} target="_blank" rel="noopener noreferrer">
+        <a
+          href={experiment.repoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${experiment.title} — ${t("cta.code")}`}
+        >
           {t("cta.code")} ↗
         </a>
       )
