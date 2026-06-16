@@ -27,6 +27,16 @@ export interface Project {
   logo?: ImageMetadata;
 }
 
+export interface Experiment {
+  slug: string;
+  title: string;
+  tagline: { fr: string; en: string };
+  url: string;
+  date: string; // "YYYY-MM" — used for descending sort
+  techStack: string[];
+  repoUrl?: string;
+}
+
 export interface SocialLink {
   platform: "instagram" | "tiktok" | "linkedin" | "x" | "github";
   url: string;
