@@ -17,4 +17,20 @@ export const experiments: Experiment[] = [
       en: "/en/writing/2026-06-ai-world-cup-predictions",
     },
   },
+  {
+    slug: "learn-english",
+    title: "Mes mots d'anglais",
+    tagline: {
+      fr: "3000 mots d'anglais en cartes mémoire, sans compte ni serveur.",
+      en: "The 3000 most useful English words as flashcards — no account, no server.",
+    },
+    url: "https://newbie974.github.io/learn-english/",
+    date: "2026-06",
+    techStack: ["Vanilla JS", "Leitner SRS", "GitHub Pages"],
+    repoUrl: "https://github.com/newBie974/learn-english",
+    articleHref: {
+      fr: "/notes/2026-06-app-3000-mots-anglais",
+      en: "/en/writing/2026-06-3000-english-words-app",
+    },
+  },
 ];

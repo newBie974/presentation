@@ -1,0 +1,57 @@
+---
+title: "I built an app to memorize 3000 English words. No account, no server, no build."
+date: 2026-06-16
+locale: en
+translationKey: "2026-06-learn-english-3000-words"
+tags: ["build", "web", "indie"]
+excerpt: "The 3000 most useful English words, ordered by frequency, as flashcards with spaced repetition. It all lives in the browser, the data is the single source of truth, and it's online on GitHub Pages. The story of a mini-app designed to last with zero maintenance."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+I wanted something specific to review my English: not a €9.99/month app with guilt-trip streaks, just **the words that actually matter, in the order they matter**, and a spaced-repetition engine that puts them back in front of me at the right time.
+
+Since that didn't quite exist, I built it. It's called **Mes mots d'anglais** ("My English words"): [demo here](https://newbie974.github.io/learn-english/).
+
+## The idea: frequency first
+
+The 3000 most frequent words cover the overwhelming majority of everyday English. Learning them **from most frequent to rarest** maximizes return on effort: each word you learn early unlocks more sentences than ten rare words learned at the end.
+
+So the app sorts the 3000 words into **6 levels of 500**, from most useful to most niche. You progress level by level, and you see your real progress (words discovered / mastered) instead of an empty gamified score.
+
+## The engine: Leitner, in your browser
+
+Review runs on a classic **Leitner system** — 6 boxes. Answer correctly and the word moves up a box and comes back less often; get it wrong and it drops down and returns soon. Spaced repetition, simple, and it works.
+
+The point I cared about most: **no account, no server**. Your progress lives in your browser's `localStorage`. No database to host, no GDPR to manage, no data to leak — it never leaves your machine.
+
+<Callout tone="info">
+"No account" isn't a limitation, it's a product decision. For a personal review tool, login is friction that only serves whoever collects the data. Removing it makes the app instant and private by construction.
+</Callout>
+
+## The architecture I'm proudest of: data is the truth
+
+The real structural decision is this one: **all content lives in JSON files, and the code only reads them.**
+
+- `words.json` — the 3000 words (`en`, `fr`, part of speech, level).
+- `verbs.json` — irregular verbs; `phrasal.json`, `expressions.json` — multiple-choice decks.
+- `sentences.json` — fill-in-the-blank sentences for the "complete the sentence" exercise.
+
+To add or fix content, I touch **a JSON file, never the HTML or the JS**. A small script (`validate-data.mjs`) checks the format every time. The result: enriching the app is data editing, not development. That's what makes it maintainable by one person, over the long run.
+
+## Several exercises, one page
+
+At first there was only a 3-choice quiz. I grew it into **multi-exercise**, organized in three sections: **Vocabulary** (the 6 levels), **Grammar** (irregular verbs, phrasal verbs, expressions), **Practice** (complete a sentence, tap-to-place).
+
+I ran that rework [spec-first](/en/writing/2026-05-spec-driven-development): a short design doc before touching the code, to decide the categorization and the config-driven deck model *before* coding. On a build-less app where everything lives in a single `app.js`, writing the spec first kept me from painting myself into a corner.
+
+<Callout tone="ok">
+All of it stays **static, zero build, deployed on GitHub Pages**. `app.js` `fetch()`es its JSON and runs in the browser. No pipeline, no runtime to pay for, no server to wake up. The kind of stack that will still be online and working in five years without me touching it.
+</Callout>
+
+## What I take from it
+
+The lesson isn't "reinvent Anki." It's that **a hard constraint — no server, no account, no build — pushes toward a cleaner architecture, not a poorer one**. Data at the center, the browser as the runtime, GitHub as both host and database.
+
+Try it here: **[Mes mots d'anglais →](https://newbie974.github.io/learn-english/)** ([the code is open](https://github.com/newBie974/learn-english)). An experiment from my [lab](/en/lab) — built fast and designed to run on its own.

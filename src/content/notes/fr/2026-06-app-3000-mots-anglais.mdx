@@ -1,0 +1,57 @@
+---
+title: "J'ai buildé une app pour mémoriser 3000 mots d'anglais. Zéro compte, zéro serveur, zéro build."
+date: 2026-06-16
+locale: fr
+translationKey: "2026-06-learn-english-3000-words"
+tags: ["build", "web", "indie"]
+excerpt: "Les 3000 mots d'anglais les plus utiles, classés par fréquence, en cartes mémoire avec révision espacée. Tout tient dans le navigateur, la donnée est l'unique source de vérité, et c'est en ligne sur GitHub Pages. Le récit d'une mini-app pensée pour durer sans rien maintenir."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+Je voulais un truc précis pour réviser mon anglais : pas une app à 9,99 €/mois avec des streaks culpabilisants, juste **les mots qui servent vraiment, dans l'ordre où ils servent**, et un moteur de répétition espacée qui me les remette sous le nez au bon moment.
+
+Comme ça n'existait pas exactement, je l'ai buildé. Ça s'appelle **Mes mots d'anglais** : [la démo est ici](https://newbie974.github.io/learn-english/).
+
+## L'idée : la fréquence d'abord
+
+Les 3000 mots les plus fréquents couvrent l'écrasante majorité de l'anglais courant. Les apprendre **du plus fréquent au plus rare**, c'est maximiser le retour sur effort : chaque mot appris au début te débloque plus de phrases que dix mots rares appris à la fin.
+
+L'app range donc les 3000 mots en **6 paliers de 500**, du plus utile au plus pointu. Tu avances palier par palier, et tu vois ta progression réelle (mots découverts / maîtrisés) au lieu d'un score gamifié vide de sens.
+
+## Le moteur : Leitner, dans ton navigateur
+
+La révision tourne sur un **système de Leitner** classique — 6 boîtes. Tu réponds juste, le mot monte d'une boîte et revient moins souvent ; tu te trompes, il redescend et revient vite. C'est de la répétition espacée, simple et qui marche.
+
+Le point que je tenais à respecter : **aucun compte, aucun serveur**. Ta progression vit dans le `localStorage` de ton navigateur. Pas de base de données à héberger, pas de RGPD à gérer, pas de données à fuiter — elles ne quittent jamais ta machine.
+
+<Callout tone="info">
+« Pas de compte » n'est pas une limite, c'est une décision de produit. Pour un outil perso de révision, le login est une friction qui ne sert que celui qui collecte la donnée. Le retirer rend l'app instantanée et privée par construction.
+</Callout>
+
+## L'archi dont je suis le plus content : la donnée est la vérité
+
+La vraie décision structurante, c'est celle-ci : **tout le contenu vit dans des fichiers JSON, et le code ne fait que les lire.**
+
+- `words.json` — les 3000 mots (`en`, `fr`, nature, palier).
+- `verbs.json` — les verbes irréguliers, `phrasal.json`, `expressions.json` — des decks de QCM.
+- `sentences.json` — des phrases à trou pour l'exercice « compléter ».
+
+Pour ajouter ou corriger du contenu, je touche **un JSON, jamais le HTML ni le JS**. Un petit script (`validate-data.mjs`) vérifie le format à chaque fois. Résultat : enrichir l'app, c'est de l'édition de données, pas du développement. C'est ce qui la rend maintenable à une main, sur le long terme.
+
+## Plusieurs exercices, une seule page
+
+Au départ il n'y avait qu'un QCM à 3 choix. Je l'ai fait évoluer vers du **multi-exercices**, rangé en trois rubriques : **Vocabulaire** (les 6 paliers), **Grammaire** (verbes irréguliers, phrasal verbs, expressions), **S'entraîner** (compléter une phrase, en tap-to-place).
+
+Cette refonte, je l'ai menée [en spec-first](/notes/2026-05-spec-driven-development) : un doc de design court avant de toucher au code, pour décider la catégorisation et le modèle de decks piloté par config *avant* de coder. Sur une app sans build, où tout est dans un seul `app.js`, écrire la spec d'abord m'a évité de peindre la maison en me coinçant dans un coin.
+
+<Callout tone="ok">
+Tout ça reste **statique, zéro build, déployé sur GitHub Pages**. `app.js` `fetch()` ses JSON et tourne dans le navigateur. Pas de pipeline, pas de runtime à payer, pas de serveur à réveiller. Le genre de stack qui sera encore en ligne et fonctionnelle dans cinq ans sans que j'y touche.
+</Callout>
+
+## Ce que j'en retire
+
+La leçon n'est pas « réinventer Anki ». C'est qu'une **contrainte forte — pas de serveur, pas de compte, pas de build — pousse vers une archi plus propre**, pas plus pauvre. La donnée au centre, le navigateur comme runtime, GitHub comme hébergeur et base de données à la fois.
+
+À tester ici : **[Mes mots d'anglais →](https://newbie974.github.io/learn-english/)** ([le code est ouvert](https://github.com/newBie974/learn-english)). Une expérience de mon [lab](/lab), buildée vite et faite pour durer toute seule.
