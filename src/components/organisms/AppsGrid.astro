@@ -88,12 +88,11 @@ const heading = locale === "fr" ? headingFR : headingEN;
     text-transform: uppercase;
     color: var(--color-text-muted);
     background: var(--color-bg-soft);
-    border: 1px solid color-mix(in srgb, var(--color-border) 14%, transparent);
-    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-border);
     cursor: pointer;
     transition:
-      background 150ms ease,
-      color 150ms ease;
+      background 120ms ease,
+      color 120ms ease;
   }
   .filters label:hover {
     color: var(--color-text);

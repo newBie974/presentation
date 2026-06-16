@@ -64,13 +64,15 @@ const t = useTranslations(locale);
     flex-direction: column;
     padding: 16px 18px;
     background: var(--color-bg-soft);
-    border: 1px solid color-mix(in srgb, var(--color-border) 14%, transparent);
-    border-radius: var(--radius-card);
+    border: var(--border-w) solid var(--color-border);
     color: var(--color-text);
-    transition: transform 150ms ease;
+    transition:
+      transform 120ms ease,
+      box-shadow 120ms ease;
   }
   .lab-cell:hover {
-    transform: translateY(-3px);
+    transform: translate(-3px, -3px);
+    box-shadow: 5px 5px 0 0 var(--color-accent);
   }
   .top {
     display: flex;
@@ -94,7 +96,6 @@ const t = useTranslations(locale);
     color: var(--color-on-accent);
     padding: 0 4px;
     margin: 0 -4px;
-    border-radius: 5px;
   }
   .date {
     font-family: var(--font-mono);
@@ -122,8 +123,7 @@ const t = useTranslations(locale);
     color: var(--color-text-muted);
     padding: 3px 8px;
     background: var(--color-bg);
-    border: 1px solid color-mix(in srgb, var(--color-border) 10%, transparent);
-    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-border);
   }
   .links {
     margin-top: auto;
