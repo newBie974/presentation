@@ -1,0 +1,55 @@
+---
+title: "I made Claude, GPT and Gemini predict the World Cup. I'm keeping score live."
+date: 2026-06-16
+locale: en
+translationKey: "2026-06-ai-world-cup-prono"
+tags: ["ia", "build", "claude"]
+excerpt: "Three frontier models, 72 group-stage matches, predictions frozen before kickoff, and a leaderboard that updates itself. A benchmark dressed up as a game — and the perfect excuse to ship a quick mini-app on GitHub Pages."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+I had a dumb question stuck in my head: **if I ask the three best models to predict the World Cup, which one does best?** Not in theory, not on some lab benchmark — on real matches, with real results, and a score that lands in real time.
+
+So I built it. It's called **AI Prono Battle**: Claude vs GPT vs Gemini on the 2026 World Cup group stage, live. [Demo here](https://newbie974.github.io/world-cup-ia-prono/).
+
+## The rules
+
+Deliberately simple, because simplicity is what makes the thing honest:
+
+- **All three AIs predict the 72 group-stage matches** — home win, draw, or away win — **before the tournament starts**.
+- Predictions are **frozen**: committed to the repo, timestamped. No editing after the fact.
+- Minimal scoring: **1 point per correct outcome**. No bonus for the exact score. Everyone plays by the same rule.
+- Three screens: **Dashboard** (matches + results), **Leaderboard** (who's ahead), **Rules** (the methodology).
+
+<Callout tone="info">
+The "predictions frozen before kickoff" constraint is the whole point. A prediction you can adjust afterward is worthless. A public, dated, tamper-proof prediction — that one holds up.
+</Callout>
+
+## Why it's smarter than a classic benchmark
+
+AI benchmarks all share one problem: the longer they exist, the more they leak into training data. The model has already seen the answers.
+
+Here, **impossible**. The matches haven't happened yet when the models predict. None of them can "cheat" — there's no right answer to memorize; it gets decided on the pitch, after the cutoff. Same question for all three, same rule, result verifiable by anyone. This is the kind of evaluation I like: **unfalsifiable**.
+
+Does it measure a model's "intelligence"? No. Football stays largely unpredictable, and three matches out of four are guessable (a favorite usually wins). But on the margin — the tight games, the traps — that's where the models separate. And that's fun to watch.
+
+## How it's wired (the build part)
+
+It's a mini-app, not a product. The goal was to ship it fast and have it run on its own:
+
+- **Vanilla JS + CSS front** (neo-brutalist, of course), zero framework, hosted on **GitHub Pages**. The client fetches two JSON files — `predictions.json` and `results.json` — and computes the leaderboard in the browser.
+- **No database.** Predictions and results live in versioned JSON files. Git *is* the database, and the history doubles as proof of when each prediction was made.
+- **A [Flue](/en/writing/2026-06-flue-agent-framework) agent (on Gemini 2.5 Flash)** automates the chore: pull the results of played matches, update the JSON, recompute, commit. I touch nothing — the agent does the rounds each matchday.
+- **Dual scoring logic**: a Python version (`score.py`) and a TypeScript version, intentionally identical. The TS one runs inside the agent; the Python one is the control. If the two diverge, there's a bug — a two-line safety net.
+
+<Callout tone="ok">
+The real lesson isn't football, it's orchestration: a dumb static app + an agent that feeds it autonomously = a living system I don't maintain by hand. Exactly the kind of small harness I reuse everywhere.
+</Callout>
+
+## What I take from it
+
+Honestly? First, that it's **addictive to watch**. But mostly that this format — freezing a public prediction and confronting it with reality — is a far better way to judge a model than a number pulled from a marketing PDF.
+
+The live leaderboard plays out here: **[AI Prono Battle →](https://newbie974.github.io/world-cup-ia-prono/)** ([the code is open](https://github.com/newBie974/world-cup-ia-prono)). It's an experiment from my [lab](/en/lab) — built fast, dropped into the wild, and left to run.

@@ -45,6 +45,16 @@ const t = useTranslations(locale);
         </a>
       )
     }
+    {
+      experiment.articleHref && (
+        <a
+          href={experiment.articleHref[locale]}
+          aria-label={`${experiment.title} — ${t("cta.readArticle")}`}
+        >
+          {t("cta.readArticle")} →
+        </a>
+      )
+    }
   </div>
 </article>
 

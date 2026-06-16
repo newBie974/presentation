@@ -1,0 +1,55 @@
+---
+title: "J'ai fait pronostiquer la Coupe du Monde à Claude, GPT et Gemini. Je tiens le score en live."
+date: 2026-06-16
+locale: fr
+translationKey: "2026-06-ai-world-cup-prono"
+tags: ["ia", "build", "claude"]
+excerpt: "Trois modèles frontière, 72 matchs de poules, des pronostics figés avant le coup d'envoi, et un classement qui se met à jour tout seul. Un benchmark déguisé en jeu — et un prétexte parfait pour builder vite fait une mini-app sur GitHub Pages."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+J'avais une question bête en tête : **si je demande aux trois meilleurs modèles de pronostiquer la Coupe du Monde, lequel se débrouille le mieux ?** Pas en théorie, pas sur un benchmark de labo — sur des vrais matchs, avec des vrais résultats, et un score qui tombe en direct.
+
+Alors je l'ai buildé. Ça s'appelle **AI Prono Battle** : Claude vs GPT vs Gemini sur la phase de poules du Mondial 2026, en temps réel. [La démo est ici](https://newbie974.github.io/world-cup-ia-prono/).
+
+## La règle du jeu
+
+C'est volontairement simple, parce que la simplicité, c'est ce qui rend le truc honnête :
+
+- **Les trois IA pronostiquent les 72 matchs de poules** — 1, X ou 2 — **avant le début du tournoi**.
+- Les pronos sont **figés** : commités sur le repo, horodatés. Pas de retouche après coup possible.
+- Scoring minimal : **1 point par résultat juste**. Pas de bonus pour le score exact. Tout le monde joue avec la même règle.
+- Trois écrans : **Dashboard** (les matchs + résultats), **Classement** (qui mène), **Règles** (la méthodo).
+
+<Callout tone="info">
+La contrainte « pronos figés avant le coup d'envoi » est le cœur du truc. Une prédiction qu'on peut ajuster après coup ne vaut rien. Une prédiction publique, datée, et impossible à modifier — ça, ça se défend.
+</Callout>
+
+## Pourquoi c'est plus malin qu'un benchmark classique
+
+Les benchmarks d'IA ont tous le même problème : à force d'exister, ils fuient dans les données d'entraînement. Le modèle a déjà vu les réponses.
+
+Là, **impossible**. Les matchs n'ont pas encore eu lieu au moment où les modèles pronostiquent. Aucun ne peut « tricher » : il n'y a pas de bonne réponse à mémoriser, elle se joue sur le terrain, après le cutoff. Même question pour les trois, même règle, résultat vérifiable par n'importe qui. C'est le genre d'évaluation que j'aime : **infalsifiable**.
+
+Est-ce que ça mesure « l'intelligence » d'un modèle ? Non. Le foot reste largement imprévisible, et trois matchs sur quatre se devinent (un favori gagne souvent). Mais sur la marge — les matchs serrés, les pièges — c'est là que les modèles se séparent. Et ça, c'est amusant à regarder.
+
+## Comment c'est branché (la partie build)
+
+C'est une mini-app, pas un produit. Le but, c'était de la sortir vite et qu'elle tourne toute seule :
+
+- **Front en vanilla JS + CSS** (néo-brutaliste, forcément), zéro framework, hébergé sur **GitHub Pages**. Le client fetch deux fichiers JSON — `predictions.json` et `results.json` — et calcule le classement côté navigateur.
+- **Pas de base de données.** Les pronos et les résultats vivent dans des fichiers JSON versionnés. Git *est* la base de données, et l'historique fait office de preuve d'antériorité.
+- **Un agent [Flue](/notes/2026-06-flue-framework-agents) (sur Gemini 2.5 Flash)** automatise la corvée : récupérer les résultats des matchs joués, mettre à jour le JSON, recalculer, committer. Je ne touche à rien — l'agent fait le tour à chaque journée.
+- **Double logique de scoring** : une version Python (`score.py`) et une version TypeScript, volontairement identiques. La TS tourne dans l'agent, la Python sert de contrôle. Si les deux divergent, c'est qu'il y a un bug — un filet de sécurité à deux lignes.
+
+<Callout tone="ok">
+Le vrai apprentissage n'est pas le foot, c'est l'orchestration : une app statique bête + un agent qui la nourrit en autonomie = un système vivant que je ne maintiens pas à la main. C'est exactement le genre de petit harnais que je réutilise partout.
+</Callout>
+
+## Ce que j'en retire
+
+Honnêtement ? D'abord que c'est **addictif à regarder**. Mais surtout que ce format — figer une prédiction publique et la confronter au réel — est une bien meilleure façon de juger un modèle qu'un score sorti d'un PDF marketing.
+
+Le classement live se joue ici : **[AI Prono Battle →](https://newbie974.github.io/world-cup-ia-prono/)** ([le code est ouvert](https://github.com/newBie974/world-cup-ia-prono)). C'est une expérience de mon [lab](/lab) — buildée vite, lâchée dans la nature, et laissée tourner.

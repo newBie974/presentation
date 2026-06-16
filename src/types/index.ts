@@ -35,6 +35,7 @@ export interface Experiment {
   date: string; // "YYYY-MM" — used for descending sort
   techStack: string[];
   repoUrl?: string;
+  articleHref?: { fr: string; en: string }; // localized path to a write-up note
 }
 
 export interface SocialLink {
