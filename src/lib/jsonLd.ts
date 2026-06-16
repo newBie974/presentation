@@ -2,6 +2,7 @@ import type { Locale } from "@/types";
 import { SITE_URL, SITE_NAME, PERSON_ID, WEBSITE_ID } from "./constants";
 import { socialLinks } from "@/data/socialLinks";
 import { projects } from "@/data/projects";
+import { experiments } from "@/data/experiments";
 
 const KNOWS_ABOUT = [
   "AI app development",
@@ -184,5 +185,27 @@ export function buildFAQJsonLd(items: { q: string; a: string }[]) {
       name: item.q,
       acceptedAnswer: { "@type": "Answer", text: item.a },
     })),
+  };
+}
+
+export function buildLabItemListJsonLd(locale: Locale) {
+  const labUrl = `${SITE_URL}${locale === "fr" ? "/lab" : "/en/lab"}`;
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "@id": `${labUrl}#lab`,
+    url: labUrl,
+    name: "Lab — Aymeric Dijoux",
+    inLanguage: locale === "fr" ? "fr-FR" : "en-US",
+    isPartOf: { "@id": WEBSITE_ID },
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: experiments.map((exp, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: exp.title,
+        url: exp.url,
+      })),
+    },
   };
 }

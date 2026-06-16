@@ -17,6 +17,7 @@ const I18N_PAIRS = [
   ["/collaborer/", "/en/work/"],
   ["/notes/", "/en/writing/"],
   ["/now/", "/en/now/"],
+  ["/lab/", "/en/lab/"],
 ];
 
 /** @param {string} pathname */

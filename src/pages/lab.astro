@@ -1,0 +1,66 @@
+---
+import MainLayout from "@/layouts/MainLayout.astro";
+import Nav from "@/components/organisms/Nav.astro";
+import Footer from "@/components/organisms/Footer.astro";
+import Highlight from "@/components/atoms/Highlight.astro";
+import LabGrid from "@/components/organisms/LabGrid.astro";
+import JsonLd from "@/components/atoms/JsonLd.astro";
+import { useTranslations } from "@/i18n/utils";
+import { buildPersonJsonLd, buildLabItemListJsonLd } from "@/lib/jsonLd";
+
+const locale = "fr" as const;
+const t = useTranslations(locale);
+const title = "Lab — Aymeric Dijoux, expériences & mini-apps IA";
+const description =
+  "Le lab d'Aymeric Dijoux : mini-apps et expériences IA buildées vite fait, hébergées sur GitHub Pages. La preuve par le débit.";
+---
+
+<MainLayout
+  title={title}
+  description={description}
+  locale={locale}
+  routeKey="lab"
+>
+  <Fragment slot="head">
+    <JsonLd data={[buildPersonJsonLd(), buildLabItemListJsonLd(locale)]} />
+  </Fragment>
+  <Nav slot="nav" locale={locale} />
+
+  <section class="page-hero">
+    <h1>Des trucs que je <Highlight>bricole</Highlight>.</h1>
+    <p class="deck">{description}</p>
+  </section>
+
+  <LabGrid locale={locale} heading={t("section.lab")} />
+
+  <Footer slot="footer" locale={locale} />
+</MainLayout>
+
+<style>
+  .page-hero {
+    padding: 64px 48px 32px;
+    border-bottom: var(--border-w) solid var(--color-border);
+    max-width: var(--container-content);
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: clamp(32px, 6vw, 48px);
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    margin: 14px 0;
+  }
+  .deck {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+    max-width: 560px;
+    margin: 0;
+  }
+  @media (max-width: 720px) {
+    .page-hero {
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+  }
+</style>
