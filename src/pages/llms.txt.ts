@@ -25,6 +25,7 @@ export async function GET() {
     `- [About](${SITE_URL}/en/about): path, philosophy, stack`,
     `- [Writing](${SITE_URL}/en/writing): notes and essays`,
     `- [Work together](${SITE_URL}/en/work): services, process, FAQ, booking`,
+    `- [Lab](${SITE_URL}/lab): quick AI experiments & mini-apps on GitHub Pages`,
     "",
     "## Latest writing",
     ...frNotes
