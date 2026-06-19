@@ -1,0 +1,93 @@
+---
+title: "Bazar Péi: turning DAAF price bulletins into a weapon against the cost of living"
+date: 2026-06-19
+locale: en
+translationKey: "2026-06-bazar-pei-mercuriales"
+tags: ["build", "ia", "data"]
+excerpt: "In Réunion, the real price of fruit and veg is public — locked inside PDFs nobody reads. Bazar Péi sets it free: what's cheap, when, and where. Here's the idea, and more importantly why I challenge it before believing it."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+**Bazar Péi** is my new app: an iOS-first mobile app, for Réunion Island, fighting the high cost of living on fruit and vegetables. The promise fits in one Creole sentence: **"Sak i lé bon marché, kan, é ousa"** — what's cheap, when, and where.
+
+The starting point isn't a product idea. It's an observation about a dataset. Before writing any code, I want to lay out why this data exists, what I want to do with it — and then tear my own project apart to see if it holds up.
+
+## The source: DAAF price bulletins
+
+Every week, **DAAF Réunion** (the regional food, agriculture and forestry directorate) publishes *mercuriales*: the official price readings for fruit and vegetables across the island's markets. Wholesale prices from producers, retail prices at open-air markets, the organic channel, meats. It's public data, under the **etalab 2.0 open licence**, free to reuse with attribution.
+
+In other words: **the real market price is already known, measured, and published.** Not an estimate, not a survey — an official reading, week after week.
+
+The problem is the format. This data is:
+
+- **Trapped in PDFs.** One web page per week, a PDF to download, a table inside. Nobody reads that to plan their shopping.
+- **Irregular.** The cadence varies, sometimes lagging by several weeks. No reliable rhythm to rely on.
+- **Inconsistent.** File names change format from one week to the next, and so do product labels ("PIMENT VERT GROS" becomes "GROS PIMENT VERT"). You can't guess a URL or run a simple match on names.
+
+<Callout tone="info">
+Open public data is rarely a clean file you just plug in. More often it's raw material — honest but hostile — that you have to crawl, parse, normalise and archive before it means anything to a human. **The data pipeline isn't a technical detail of Bazar Péi — it is the product.**
+</Callout>
+
+That's where the real work is. A cron job fetches new publications, follows the links to the PDFs, has an LLM read them and extract strict JSON (validated by Zod), flags price anomalies, normalises unstable labels onto a canonical product, then archives every quotation **append-only** — the history is never overwritten. From that history we derive **seasonality**: for each product, which month it bottoms out, and by how much.
+
+## The goal: put this data in people's pockets
+
+The cost of living in Réunion is a long-documented issue: on food, the price gap with mainland France is real and weighs on purchasing power. Against that, DAAF data is an underused resource. My goal is simple: **get it out of the PDF and into an app my mother could use before heading to the market.**
+
+Concretely, Bazar Péi answers three questions:
+
+- **What's cheap today?** The "Bazar du jour": the list of open-air market quotations, readable at a glance, with the price change and the real reading date always shown.
+- **When to buy?** Seasonality. Lychee in December, not in March. A 12-month curve and a "peak season" badge when the price collapses.
+- **How to build a smart basket?** An AI assistant: you give a budget and a number of people, it composes a basket from the real prices of the day and the season, with the estimated saving.
+
+All of it in a deliberate visual identity — *Modern Tropical Data*: the energy of a Réunion open-air market crossed with the rigour of a financial terminal. A Bloomberg of the bazaar, with figures in mono type and inverted semantics: here **a falling price shows in green**, because we're on the buyer's side, not the trader's.
+
+## Now, let me challenge the idea
+
+This is the part that matters. A good product idea that can't survive its own objections is just a good pitch. Here are the questions I ask myself — the ones that shape the product.
+
+### "Real-time cost of living"? No. And I have to own that.
+
+DAAF data lags by several weeks, and it's an **official quotation**, not the price you'll pay at your supermarket checkout tonight. Selling "the real price in real time" would be a lie.
+
+<Callout tone="warn">
+The marketing temptation would be to hide the freshness to look more "live". I do the opposite: the real reading date is **always visible**, on the home and on every product sheet. Honesty about freshness is a product principle, not a footnote. A purchasing-power app that lies about its data has already lost.
+</Callout>
+
+So Bazar Péi isn't a live shopping-cart comparator. It's a **trend and seasonality tool**: it tells you which product is structurally well-priced right now, not the exact cent on the shelf. Less sexy, but true — and enough to buy better.
+
+### Does the open-air market represent everyone's "shopping"?
+
+The main feed is retail prices at open-air markets. Yet many people do most of their shopping in supermarkets. The open-air market isn't a perfect proxy for the average basket.
+
+My answer: it's a **deliberate and useful** bias. The open-air market is fresh, local, short-circuit produce — exactly where seasonality swings prices by a factor of 3 or 4, and therefore where the information is most valuable. And community reporting (photo of a price tag → OCR) is designed to eventually widen coverage to prices actually seen in stores. But I won't pretend to cover supermarkets until the data allows it.
+
+### The paywall paradox on an anti-cost-of-living app
+
+Here's the hardest objection. Charging a subscription for an app that helps people spend less is a real tension. If the people most affected by the high cost of living are also the ones who can't pay €2.99/month, am I not betraying the promise?
+
+<Callout tone="ok">
+Hence a firm line: **the useful core is free, no account needed.** The full Bazar du jour, prices, changes, freshness — available to everyone, without even creating an account (soft wall). Premium is comfort and depth (long history, price alerts, unlimited AI basket). You don't put purchasing power behind a wall; you put the extras there.
+</Callout>
+
+Is that enough to make the model viable? Not sure, and it's honest to say so. That's exactly the question the market will settle. But I'd rather have a model that's economically uncertain and ethically aligned than the reverse.
+
+### Why an app, and not just a website or a bot?
+
+Fair question: if the data is public, wouldn't a simple website or a weekly notification do? An app is heavy to maintain, and in Réunion **Android dominates** while I'm starting iOS-first.
+
+That's a real risk, and iOS-first is a **build-speed** choice, not a market conviction — the architecture is designed not to block Android later. The bet on an app rests on usage: shopping is a recurring, mobile gesture, anchored in habit. Seasonality and price alerts only make sense pushed at the right moment, in your pocket. A PDF will never do that. But I keep the objection in mind: if retention doesn't follow, the format will have to move.
+
+### The cold start of the community layer
+
+Photo reports enrich the data — but they're worth nothing without users, and crowd-moderating open data is a problem in itself. So I do **not** rest the initial value on the community: the app is fully useful from day one with DAAF data alone. Reporting is a bonus that grows with the community, not a dependency.
+
+## What this project teaches me
+
+Bazar Péi starts from a simple conviction: **public, open, well-exploited data beats a brilliant app idea built on nothing.** The value isn't in the AI or the design — it's in the unglamorous chain that turns an unreadable official PDF into "lychee is 4× cheaper in December."
+
+And a project's health is measured by its ability to survive its own objections. Mine — freshness, representativeness, paywall, platform — don't kill the idea. They frame it: a tool honest about its data, free on the essentials, useful from day one. The rest is just build.
+
+*Written during the build. Data source: DAAF Réunion price bulletins — etalab 2.0 licence.*

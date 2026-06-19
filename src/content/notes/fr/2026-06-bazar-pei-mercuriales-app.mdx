@@ -1,0 +1,93 @@
+---
+title: "Bazar Péi : transformer les mercuriales DAAF en arme contre la vie chère"
+date: 2026-06-19
+locale: fr
+translationKey: "2026-06-bazar-pei-mercuriales"
+tags: ["build", "ia", "data"]
+excerpt: "À La Réunion, le vrai prix des fruits et légumes est public — coincé dans des PDF que personne ne lit. Bazar Péi les libère : Sak i lé bon marché, kan, é ousa. Voici l'idée, et surtout pourquoi je la challenge avant de la croire."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+**Bazar Péi** est ma nouvelle app : une app mobile iOS-first, pour La Réunion, contre la vie chère sur les fruits et légumes. La promesse tient en une phrase créole : **« Sak i lé bon marché, kan, é ousa »** — ce qui est au bon prix, quand, et où.
+
+L'idée de départ n'est pas une idée de produit. C'est une observation sur une donnée. Avant de coder quoi que ce soit, je veux poser pourquoi cette donnée existe, ce que je veux en faire — et ensuite démonter mon propre projet pour voir s'il tient debout.
+
+## La source : les mercuriales DAAF
+
+Chaque semaine, la **DAAF Réunion** (Direction de l'alimentation, de l'agriculture et de la forêt) publie des **mercuriales** : les relevés officiels de prix des fruits et légumes sur les marchés de l'île. Marché de gros chez les producteurs, prix au détail sur les marchés forains, filière bio, viandes. C'est une donnée publique, sous **licence etalab 2.0**, libre de réutilisation avec attribution.
+
+Autrement dit : **le vrai prix du bazar est déjà connu, mesuré, et publié.** Pas une estimation, pas un sondage — un relevé officiel, semaine après semaine.
+
+Le problème, c'est la forme. Cette donnée est :
+
+- **Enfermée dans des PDF.** Une page web par semaine, un PDF à télécharger, un tableau dedans. Personne ne lit ça pour faire ses courses.
+- **Irrégulière.** La cadence varie, avec parfois plusieurs semaines de retard. Pas de rythme fiable sur lequel se caler.
+- **Incohérente.** Les noms de fichiers changent de format d'une semaine à l'autre, les libellés produits aussi (« PIMENT VERT GROS » devient « GROS PIMENT VERT »). Impossible de deviner une URL ou de faire un simple `match` sur les noms.
+
+<Callout tone="info">
+La donnée publique ouverte, c'est rarement un fichier propre qu'on branche. C'est le plus souvent une matière brute, honnête mais hostile, qu'il faut crawler, parser, normaliser et historiser avant qu'elle vaille quelque chose pour un humain. **Le pipeline de données n'est pas un détail technique de Bazar Péi — c'est le produit.**
+</Callout>
+
+C'est là que se trouve le vrai travail. Un cron va chercher les nouvelles publications, suit les liens vers les PDF, les fait lire par un LLM qui en extrait un JSON strict (validé par Zod), repère les anomalies de prix, normalise les libellés instables vers un produit canonique, puis archive chaque cotation **en append-only** — on n'écrase jamais l'historique. De cet historique, on dérive la **saisonnalité** : pour chaque produit, à quel mois il est au plus bas, et de combien.
+
+## L'objectif : mettre cette donnée dans la poche des gens
+
+La vie chère à La Réunion est un sujet ancien et documenté : sur l'alimentaire, l'écart de prix avec l'Hexagone est réel et pèse sur le pouvoir d'achat. Face à ça, la donnée DAAF est une ressource sous-exploitée. Mon objectif est simple : **la sortir du PDF et la mettre dans une app que ma mère pourrait utiliser avant d'aller au marché.**
+
+Concrètement, Bazar Péi répond à trois questions :
+
+- **Qu'est-ce qui est bon marché aujourd'hui ?** Le « Bazar du jour » : la liste des cotations du marché forain, lisible d'un coup d'œil, avec la variation de prix et la date de relevé réelle toujours affichée.
+- **Quand acheter ?** La saisonnalité. Le letchi en décembre, pas en mars. Une courbe sur 12 mois et un badge « plein sézon » quand le prix s'effondre.
+- **Comment composer un panier malin ?** Un assistant IA : tu donnes un budget et le nombre de personnes, il compose un panier à partir des prix réels du jour et de la saison, avec l'économie estimée.
+
+Le tout dans une identité visuelle assumée — *Modern Tropical Data* : l'énergie d'un marché forain croisée avec la rigueur d'un terminal financier. Un Bloomberg du bazar, avec les chiffres en police mono et une sémantique inversée : ici **le prix qui baisse s'affiche en vert**, parce qu'on est du côté de l'acheteur, pas du trader.
+
+## Maintenant, je challenge l'idée
+
+C'est la partie qui compte. Une bonne idée de produit qui ne résiste pas à ses propres objections est juste une bonne idée de pitch. Voici les questions que je me pose à moi-même — et qui font évoluer le produit.
+
+### « Vie chère en temps réel » ? Non. Et il faut l'assumer.
+
+La donnée DAAF a un décalage de plusieurs semaines, et c'est une **cotation officielle**, pas le prix que tu paieras à la caisse de ton supermarché ce soir. Vendre « le vrai prix en temps réel » serait un mensonge.
+
+<Callout tone="warn">
+La tentation marketing serait de masquer la fraîcheur pour paraître plus « live ». Je fais l'inverse : la date de cotation réelle est **toujours visible**, sur le home comme sur chaque fiche. L'honnêteté sur la fraîcheur est un principe produit, pas une note de bas de page. Une app de pouvoir d'achat qui ment sur sa donnée a déjà perdu.
+</Callout>
+
+Bazar Péi n'est donc pas un comparateur de caddies en direct. C'est un **outil de tendance et de saisonnalité** : il te dit quel produit est structurellement au bon prix en ce moment, pas le centime exact du rayon. C'est moins sexy, mais c'est vrai — et c'est suffisant pour mieux acheter.
+
+### Le marché forain représente-t-il « les courses » de tout le monde ?
+
+Le flux principal, c'est le prix au détail sur les marchés forains. Or beaucoup de gens font surtout leurs courses en grande surface. Le marché forain n'est pas un proxy parfait du panier moyen.
+
+Ma réponse : c'est un parti pris **assumé et utile**. Le marché forain, c'est le frais, le péi, le circuit court — exactement là où la saisonnalité fait varier les prix d'un facteur 3 ou 4, et donc là où l'information a le plus de valeur. Et le signalement communautaire (photo d'étiquette → OCR) est conçu pour, à terme, élargir la couverture aux prix réellement constatés en magasin. Mais je ne prétendrai pas couvrir la GMS tant que la donnée ne le permet pas.
+
+### Le paradoxe du paywall sur une app anti-vie-chère
+
+Voilà l'objection la plus dure. Faire payer un abonnement pour une app qui aide des gens à dépenser moins, c'est une tension réelle. Si le public le plus concerné par la vie chère est aussi celui qui ne peut pas payer 2,99 €/mois, est-ce que je ne trahis pas la promesse ?
+
+<Callout tone="ok">
+D'où une ligne ferme : **le cœur utile est gratuit, sans compte.** Le Bazar du jour complet, les prix, les variations, la fraîcheur — consultables par tout le monde, sans même créer de compte (soft wall). Le premium, c'est le confort et la profondeur (historique long, alertes prix, panier IA illimité). On ne met pas le pouvoir d'achat derrière un mur ; on met le superflu.
+</Callout>
+
+Est-ce que ça suffit à rendre le modèle viable ? Pas sûr, et c'est honnête de le dire. C'est précisément la question que le marché tranchera. Mais je préfère un modèle économiquement incertain et éthiquement aligné que l'inverse.
+
+### Pourquoi une app, et pas juste un site ou un bot ?
+
+Question légitime : si la donnée est publique, un simple site ou une notif hebdo ne suffirait-il pas ? Une app, c'est lourd à maintenir, et à La Réunion **Android domine largement** alors que je démarre en iOS-first.
+
+C'est un vrai risque, et le iOS-first est un choix de **rapidité de build**, pas une conviction marché — l'archi est pensée pour ne pas bloquer Android ensuite. Le pari de l'app tient sur l'usage : faire ses courses est un geste récurrent, mobile, ancré dans une habitude. La saisonnalité et les alertes prix n'ont de sens que poussées au bon moment, dans la poche. Un PDF ne fera jamais ça. Mais je garde l'objection en tête : si la rétention ne suit pas, le format devra bouger.
+
+### Le démarrage à froid du communautaire
+
+Les signalements photo enrichissent la donnée — mais ils ne valent rien tant qu'il n'y a pas d'utilisateurs, et la modération d'une donnée ouverte par la foule est un problème en soi. Je ne fais donc **pas** reposer la valeur initiale sur le communautaire : l'app est entièrement utile dès le jour 1 avec la seule donnée DAAF. Le signalement est un bonus qui grandit avec la communauté, pas une dépendance.
+
+## Ce que ce projet m'apprend
+
+Bazar Péi part d'une conviction simple : **une donnée publique, ouverte et bien exploitée vaut mieux qu'une idée d'app brillante posée sur du vide.** La valeur n'est pas dans l'IA ni dans le design — elle est dans la chaîne, peu glamour, qui transforme un PDF officiel illisible en « le letchi est 4× moins cher en décembre ».
+
+Et la santé d'un projet se mesure à sa capacité à survivre à ses propres objections. Les miennes — fraîcheur, représentativité, paywall, plateforme — ne tuent pas l'idée. Elles la cadrent : un outil honnête sur sa donnée, gratuit sur l'essentiel, utile dès le premier jour. Le reste, c'est du build.
+
+*Article écrit pendant la construction. Source de la donnée : mercuriales DAAF Réunion — licence etalab 2.0.*
