@@ -1,0 +1,128 @@
+---
+title: "Deux agents, un aiguilleur : l'orchestrateur qui décide qui répond"
+date: 2026-06-26
+locale: fr
+translationKey: "2026-06-orchestrator-router"
+tags: ["ia", "claude", "process"]
+excerpt: "Passer d'un agent à deux, ce n'est pas écrire deux fois plus de code. C'est ajouter une troisième pièce qui ne répond jamais : l'orchestrateur qui détecte l'intention et aiguille vers le bon spécialiste."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+Jusqu'ici, ma série sur les agents tournait autour d'**un seul agent** : le [harness](/notes/2026-06-harness-agent-sdk) qui transforme un LLM en exécutant, le [Claude Agent SDK](/notes/2026-06-harness-agent-sdk) qui te livre la boucle. Un agent, une tâche, une réponse.
+
+La vraie bascule arrive quand tu en veux **deux**. Et la surprise, c'est qu'elle ne se joue pas dans les agents. Elle se joue dans la pièce qui ne répond jamais : **l'aiguilleur**.
+
+Le use case que je voulais : un petit assistant sur mon propre site. Tu lui poses une question, et selon ce que tu demandes, il va soit **fouiller mes notes**, soit **chercher l'actu sur le web**. Deux compétences qui n'ont rien à voir. La question intéressante n'est pas *« comment chacun répond »* — c'est *« qui décide lequel des deux bosse ? »*
+
+## Le pattern a un nom : le routeur
+
+Ce que je décris est un pattern d'agents documenté : le **routing**. Un composant classe l'intention de la requête, puis la dispatche vers le spécialiste adapté. Pas de magie — c'est exactement ce que fait un standard téléphonique : il ne résout pas ton problème, il te met en relation avec la bonne personne.
+
+```
+Question
+   │
+   ▼
+Orchestrateur ──► détecte l'intention
+   │
+   ├─ "info fraîche / externe"  ──►  Agent Web     (cherche sur internet)
+   └─ "info qui vit chez moi"   ──►  Agent Interne (fouille mes notes)
+```
+
+Trois composants, deux agents. L'orchestrateur n'est pas un troisième agent qui « fait » quelque chose — c'est un **trieur**. Et c'est lui le sujet de l'article, parce que c'est lui qui rend l'ensemble intelligent.
+
+## L'orchestrateur ne répond pas — il classe
+
+C'est le piège mental à éviter : on imagine l'orchestrateur comme un chef qui ferait un peu de tout. Faux. Sa seule responsabilité, c'est de transformer une question floue en **une décision nette** : quelle route, et pourquoi.
+
+La bonne façon de le coder avec l'Agent SDK, c'est une **sortie structurée** — tu le forces à rendre une décision typée, pas une phrase :
+
+```typescript
+import { query } from "@anthropic-ai/claude-agent-sdk";
+
+const ROUTE_SCHEMA = {
+  type: "object",
+  properties: {
+    route: { type: "string", enum: ["web", "interne"] },
+    reason: { type: "string" },
+    reformulated: { type: "string" }, // la question nettoyée pour le spécialiste
+  },
+  required: ["route", "reason", "reformulated"],
+};
+
+async function detecterIntention(question: string) {
+  const result = await query({
+    prompt: `Classe cette question. "web" = info externe et fraîche ;
+             "interne" = info qui porte sur mes notes / mon site. Question : ${question}`,
+    options: {
+      allowedTools: [],                                       // aucun outil : il décide, c'est tout
+      model: "claude-haiku-4-5-20251001",                     // classer coûte moins que répondre
+      outputFormat: { type: "json_schema", schema: ROUTE_SCHEMA },
+    },
+  });
+  return result.structured_output; // { route, reason, reformulated }
+}
+```
+
+Deux détails qui comptent :
+
+- **`allowedTools: []`** — l'orchestrateur n'a *aucun* outil. Il ne lit rien, ne cherche rien. Il classe. Lui donner des outils, ce serait l'inviter à faire le travail des spécialistes — exactement ce qu'on veut éviter.
+- **un modèle rapide** — classer une question, c'est trivial. Tu mets un Haiku sur l'aiguillage et tu réserves Opus à la réponse. C'est l'un des vrais gains du routeur : payer le bon modèle au bon endroit.
+
+## Les deux spécialistes : dehors vs chez moi
+
+Une fois la route choisie, chaque agent est lancé avec **le strict nécessaire** — et c'est là que le garde-fou devient concret :
+
+```typescript
+const SPECIALISTES = {
+  web: {
+    prompt: (q: string) => `Réponds en cherchant sur le web. Cite tes sources. ${q}`,
+    allowedTools: ["WebSearch"],            // il voit le web, pas mes fichiers
+  },
+  interne: {
+    prompt: (q: string) => `Réponds en fouillant mes notes dans ./content. ${q}`,
+    allowedTools: ["Read", "Glob", "Grep"], // il voit mes fichiers, pas le web
+  },
+};
+
+async function repondre(question: string) {
+  const { route, reformulated } = await detecterIntention(question);
+  const agent = SPECIALISTES[route];
+  return query({
+    prompt: agent.prompt(reformulated),
+    options: {
+      settingSources: ["project"],          // charge le CLAUDE.md : le ton, les règles
+      allowedTools: agent.allowedTools,     // garde-fou : chacun voit le strict nécessaire
+    },
+  });
+}
+```
+
+L'agent web ne peut pas lire mes fichiers ; l'agent interne ne peut pas toucher au réseau. Ce n'est pas qu'une question de propreté : c'est de la **sécurité par périmètre**. Un seul agent qui aurait tous les outils pourrait partir chercher sur le web alors que la réponse était dans mes notes — gaspillage de tokens, latence, et parfois fuite d'un contexte qui devait rester local.
+
+Et l'agent interne, **ne lui colle pas un RAG**. C'est la leçon que je répète depuis [l'article harness](/notes/2026-06-harness-agent-sdk) : pour mon corpus de notes, il fait de la **recherche agentique** — il fouille les fichiers lui-même avec `Read`, `Glob`, `Grep`. Pas de vector DB, pas d'embeddings, pas de chunking. Moins de code, et je valide le produit plus vite.
+
+## Pourquoi pas un seul agent avec tous les outils ?
+
+La question honnête, parce qu'elle a une vraie réponse — et parfois la réponse est « tu as raison, un seul suffit ».
+
+<Callout tone="warn">
+  Le routeur n'est pas gratuit : c'est un appel LLM de plus, donc de la latence et du coût en amont de chaque réponse. Si tes deux « routes » partagent le même prompt et les mêmes outils, tu n'as pas deux agents — tu as un agent et une illusion d'architecture.
+</Callout>
+
+Le routeur se justifie quand les spécialistes **divergent vraiment** :
+
+- **Outils différents** — `WebSearch` d'un côté, lecture de fichiers de l'autre. C'est mon cas, et c'est la meilleure raison.
+- **Prompts affûtés** — un agent « cite tes sources web », l'autre « reste fidèle à ce que j'ai écrit ». Deux postures incompatibles dans un seul prompt.
+- **Modèles différents** — Haiku pour classer, Opus pour analyser. Tu ne peux pas régler ça finement dans un agent monolithique.
+
+Si rien de tout ça n'est vrai, fais simple : un agent, les deux outils, un bon prompt. L'architecture, c'est une réponse à une complexité réelle — pas un trophée.
+
+## Ce que ça m'apprend
+
+J'ai écrit il y a peu que le métier de dev glissait vers le [pilotage](/notes/2026-06-developpeur-orchestrateur) : la valeur n'est plus dans la production, mais dans le cadrage et le jugement. Ce petit assistant en est la version miniature et littérale.
+
+Le code des deux spécialistes est presque banal — quelques lignes, des outils, un prompt. **Toute l'intelligence du système vit dans l'aiguillage.** Le composant qui ne répond jamais est celui qui décide de tout. Passer d'un agent à deux, ce n'est donc pas doubler le travail de réponse : c'est ajouter la seule question qui compte vraiment — *« qui est le mieux placé pour ça ? »*
+
+Et une fois que tu tiens un routeur à deux voies, en ajouter une troisième ne coûte presque rien : une entrée de plus dans l'`enum`, un spécialiste de plus dans la table. L'aiguilleur, lui, ne change pas. C'est exactement ce qui rend ce pattern aussi solide qu'il en a l'air simple.

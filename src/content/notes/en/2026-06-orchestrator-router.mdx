@@ -1,0 +1,128 @@
+---
+title: "Two agents, one dispatcher: the orchestrator that decides who answers"
+date: 2026-06-26
+locale: en
+translationKey: "2026-06-orchestrator-router"
+tags: ["ia", "claude", "process"]
+excerpt: "Going from one agent to two isn't about writing twice the code. It's about adding a third piece that never answers: the orchestrator that detects intent and routes to the right specialist."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+So far, my agent series revolved around **a single agent**: the [harness](/notes/2026-06-harness-agent-sdk) that turns an LLM into a doer, the [Claude Agent SDK](/notes/2026-06-harness-agent-sdk) that ships you the loop. One agent, one task, one answer.
+
+The real shift happens when you want **two**. And the surprise is that it doesn't play out inside the agents. It plays out in the piece that never answers: **the dispatcher**.
+
+The use case I wanted: a small assistant on my own site. You ask it a question, and depending on what you're after, it either **digs through my notes** or **goes searching the web for fresh info**. Two skills with nothing in common. The interesting question isn't *"how does each one answer"* — it's *"who decides which of the two works?"*
+
+## The pattern has a name: routing
+
+What I'm describing is a documented agent pattern: **routing**. A component classifies the request's intent, then dispatches it to the right specialist. No magic — it's exactly what a switchboard operator does: they don't solve your problem, they connect you to the right person.
+
+```
+Question
+   │
+   ▼
+Orchestrator ──► detects intent
+   │
+   ├─ "fresh / external info"  ──►  Web agent      (searches the internet)
+   └─ "info that lives with me" ──►  Internal agent (digs through my notes)
+```
+
+Three components, two agents. The orchestrator isn't a third agent that "does" something — it's a **sorter**. And it's the subject of this article, because it's what makes the whole thing smart.
+
+## The orchestrator doesn't answer — it classifies
+
+This is the mental trap to avoid: picturing the orchestrator as a boss who does a bit of everything. Wrong. Its only job is to turn a fuzzy question into **a clean decision**: which route, and why.
+
+The right way to code it with the Agent SDK is a **structured output** — you force it to return a typed decision, not a sentence:
+
+```typescript
+import { query } from "@anthropic-ai/claude-agent-sdk";
+
+const ROUTE_SCHEMA = {
+  type: "object",
+  properties: {
+    route: { type: "string", enum: ["web", "internal"] },
+    reason: { type: "string" },
+    reformulated: { type: "string" }, // the cleaned-up question for the specialist
+  },
+  required: ["route", "reason", "reformulated"],
+};
+
+async function detectIntent(question: string) {
+  const result = await query({
+    prompt: `Classify this question. "web" = fresh external info;
+             "internal" = info about my notes / my site. Question: ${question}`,
+    options: {
+      allowedTools: [],                                       // no tools: it decides, that's all
+      model: "claude-haiku-4-5-20251001",                     // classifying costs less than answering
+      outputFormat: { type: "json_schema", schema: ROUTE_SCHEMA },
+    },
+  });
+  return result.structured_output; // { route, reason, reformulated }
+}
+```
+
+Two details that matter:
+
+- **`allowedTools: []`** — the orchestrator has *no* tools. It reads nothing, searches nothing. It classifies. Giving it tools would invite it to do the specialists' job — exactly what we want to avoid.
+- **a fast model** — classifying a question is trivial. Put a Haiku on the routing and reserve Opus for the answer. That's one of routing's real wins: pay for the right model in the right place.
+
+## The two specialists: outside vs at home
+
+Once the route is picked, each agent runs with **only what it needs** — and that's where the guardrail gets concrete:
+
+```typescript
+const SPECIALISTS = {
+  web: {
+    prompt: (q: string) => `Answer by searching the web. Cite your sources. ${q}`,
+    allowedTools: ["WebSearch"],            // it sees the web, not my files
+  },
+  internal: {
+    prompt: (q: string) => `Answer by digging through my notes in ./content. ${q}`,
+    allowedTools: ["Read", "Glob", "Grep"], // it sees my files, not the web
+  },
+};
+
+async function answer(question: string) {
+  const { route, reformulated } = await detectIntent(question);
+  const agent = SPECIALISTS[route];
+  return query({
+    prompt: agent.prompt(reformulated),
+    options: {
+      settingSources: ["project"],          // loads CLAUDE.md: the tone, the rules
+      allowedTools: agent.allowedTools,     // guardrail: each one sees only what it needs
+    },
+  });
+}
+```
+
+The web agent can't read my files; the internal agent can't touch the network. This isn't just tidiness: it's **security by perimeter**. A single agent holding all the tools could wander off to the web when the answer was sitting in my notes — wasted tokens, latency, and sometimes a leak of context that was meant to stay local.
+
+And don't bolt a RAG onto the internal agent. That's the lesson I've been repeating since [the harness article](/notes/2026-06-harness-agent-sdk): for my notes corpus, it does **agentic search** — it digs through the files itself with `Read`, `Glob`, `Grep`. No vector DB, no embeddings, no chunking. Less code, and I validate the product faster.
+
+## Why not a single agent with all the tools?
+
+The honest question, because it has a real answer — and sometimes the answer is "you're right, one is enough."
+
+<Callout tone="warn">
+  The router isn't free: it's one more LLM call, so latency and cost in front of every answer. If your two "routes" share the same prompt and the same tools, you don't have two agents — you have one agent and the illusion of architecture.
+</Callout>
+
+The router earns its place when the specialists **genuinely diverge**:
+
+- **Different tools** — `WebSearch` on one side, file reads on the other. That's my case, and it's the best reason.
+- **Sharpened prompts** — one agent "cite your web sources," the other "stay faithful to what I wrote." Two incompatible stances in a single prompt.
+- **Different models** — Haiku to classify, Opus to analyze. You can't tune that finely inside one monolithic agent.
+
+If none of that is true, keep it simple: one agent, both tools, a good prompt. Architecture is an answer to real complexity — not a trophy.
+
+## What it teaches me
+
+I wrote recently that the dev job was sliding toward [steering](/notes/2026-06-developpeur-orchestrateur): the value is no longer in production, but in framing and judgment. This little assistant is the miniature, literal version of that.
+
+The two specialists' code is almost mundane — a few lines, some tools, a prompt. **All the system's intelligence lives in the routing.** The component that never answers is the one that decides everything. So going from one agent to two isn't about doubling the answering work: it's about adding the only question that truly matters — *"who's best placed for this?"*
+
+And once you have a two-way router, adding a third route costs almost nothing: one more entry in the `enum`, one more specialist in the table. The dispatcher itself doesn't change. That's exactly what makes this pattern as solid as it looks simple.
