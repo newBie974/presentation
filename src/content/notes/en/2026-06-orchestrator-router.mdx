@@ -171,6 +171,49 @@ const answer = await query({
 
 Notice what's *not* in the code: no hardcoded tool list, no giant system prompt. Each agent's behavior lives in its `SKILL.md`; the code just picks which one to load. That's what "you mostly write markdown" means.
 
+## By the way: how does the orchestrator "call" the agent?
+
+The question everyone glosses over. The answer fits in one sentence: **agents share no magic channel — "calling an agent" is a tool call.** And there are two ways to wire it.
+
+**Style A — orchestration lives in your code.** That's what the code above does: the orchestrator doesn't really call the specialist, it's *my* TypeScript chaining two `query()` calls and passing one's result to the other. The "communication" between the two agents is a JS variable — `reformulated`. The channel is the host program. Explicit, debuggable, you force everything.
+
+**Style B — the orchestrator delegates on its own.** Here the orchestrator is an agent that knows its subagents and holds the `Task` tool. During its own loop, it decides to emit a `Task(...)` call; the SDK runs the subagent and feeds the result back. You declare the subagents inline:
+
+```typescript
+const answer = await query({
+  prompt: question,
+  options: {
+    allowedTools: ["Task"],              // the orchestrator can delegate
+    agents: {                            // the subagents, defined inline
+      "web-search": {
+        description: "External, fresh info: news, prices, releases",
+        prompt: "Search the web and cite your sources.",
+        tools: ["WebSearch"],
+      },
+      "internal-search": {
+        description: "Questions about my notes / my site",
+        prompt: "Agentic search over ./content, no RAG.",
+        tools: ["Read", "Glob", "Grep"],
+      },
+    },
+  },
+});
+```
+
+(Same subagents can be defined as `.claude/agents/*.md` files, frontmatter `name / description / tools / model` — the *file* counterpart of skills.)
+
+Whatever the style, the **protocol** is identical and fits in three points:
+
+1. **Isolated context** — the subagent runs in its own blank context window. It doesn't see the parent's history.
+2. **Outbound** — the parent passes it *just a prompt*: the reworded task. Nothing else.
+3. **Inbound** — only the *final result* comes back, as a tool result in the parent's loop. The subagent's intermediate steps don't pollute it.
+
+<Callout tone="info">
+  It's still the harness's `call → observe → decide → repeat` loop — except here one of the "tools" is "run another agent." That's the whole magic of inter-agent communication.
+</Callout>
+
+Which to pick? For a **deterministic router** like mine — the orchestrator classifies with Haiku and a structured output — **Style A** keeps control: *you* force the decision. **Style B** is more autonomous, but you also hand the *choice to delegate* to the model; save it for open-ended delegation ("figure it out, subcontract what you need"), not for routing you want to control.
+
 ## Why not a single agent with all the tools?
 
 The honest question, because it has a real answer — and sometimes the answer is "you're right, one is enough."

@@ -171,6 +171,49 @@ const answer = await query({
 
 Remarque ce qui *n'est pas* dans le code : aucune liste d'outils en dur, aucun prompt système géant. Le comportement de chaque agent est dans son `SKILL.md` ; le code se contente de choisir lequel charger. C'est ça, « tu écris surtout du markdown ».
 
+## Au fait : comment l'orchestrateur « appelle » l'agent ?
+
+Question qu'on survole toujours. La réponse tient en une phrase : **les agents ne partagent aucun canal magique — « appeler un agent », c'est un appel d'outil.** Et il y a deux façons de l'organiser.
+
+**Style A — l'orchestration vit dans ton code.** C'est ce que fait le code ci-dessus : l'orchestrateur n'appelle pas vraiment le spécialiste, c'est *mon* TypeScript qui enchaîne deux `query()` et passe le résultat de l'un à l'autre. La « communication » entre les deux agents, c'est une variable JS — `reformulated`. Le canal, c'est le programme hôte. Explicite, débuggable, tu forces tout.
+
+**Style B — l'orchestrateur délègue lui-même.** Ici l'orchestrateur est un agent qui connaît ses sous-agents et possède l'outil `Task`. Pendant sa propre boucle, il décide d'émettre un appel `Task(...)` ; le SDK lance le sous-agent et lui réinjecte le résultat. Tu déclares les sous-agents inline :
+
+```typescript
+const answer = await query({
+  prompt: question,
+  options: {
+    allowedTools: ["Task"],              // l'orchestrateur peut déléguer
+    agents: {                            // les sous-agents, définis inline
+      "recherche-web": {
+        description: "Info externe et fraîche : actu, prix, sorties",
+        prompt: "Tu cherches sur le web et cites tes sources.",
+        tools: ["WebSearch"],
+      },
+      "recherche-interne": {
+        description: "Questions sur mes notes / mon site",
+        prompt: "Recherche agentique sur ./content, pas de RAG.",
+        tools: ["Read", "Glob", "Grep"],
+      },
+    },
+  },
+});
+```
+
+(Mêmes sous-agents définissables en fichiers `.claude/agents/*.md`, frontmatter `name / description / tools / model` — le pendant *fichier* des skills.)
+
+Quel que soit le style, le **protocole** est identique et tient en trois points :
+
+1. **Contexte isolé** — le sous-agent tourne dans sa propre fenêtre vierge. Il ne voit pas l'historique du parent.
+2. **Aller** — le parent lui passe *juste un prompt* : la tâche reformulée. Rien d'autre.
+3. **Retour** — seul le *résultat final* remonte, comme résultat d'outil dans la boucle du parent. Les étapes intermédiaires du sous-agent ne le polluent pas.
+
+<Callout tone="info">
+  C'est toujours la boucle `call → observe → decide → repeat` du harness — sauf qu'ici l'un des « outils » est « lance un autre agent ». Voilà toute la magie de la communication inter-agents.
+</Callout>
+
+Lequel choisir ? Pour un **routeur déterministe** comme le mien — l'orchestrateur classe avec Haiku et une sortie structurée — le **style A** garde la main : c'est *toi* qui forces la décision. Le **style B** est plus autonome, mais tu délègues aussi le *choix de déléguer* au modèle ; réserve-le aux cas de délégation ouverte (« débrouille-toi, sous-traite ce qu'il faut »), pas au routage que tu veux contrôler.
+
 ## Pourquoi pas un seul agent avec tous les outils ?
 
 La question honnête, parce qu'elle a une vraie réponse — et parfois la réponse est « tu as raison, un seul suffit ».
