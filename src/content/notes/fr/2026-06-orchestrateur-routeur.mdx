@@ -9,6 +9,7 @@ draft: false
 ---
 
 import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
 
 Jusqu'ici, ma série sur les agents tournait autour d'**un seul agent** : le [harness](/notes/2026-06-harness-agent-sdk) qui transforme un LLM en exécutant, le [Claude Agent SDK](/notes/2026-06-harness-agent-sdk) qui te livre la boucle. Un agent, une tâche, une réponse.
 
@@ -32,11 +33,105 @@ Orchestrateur ──► détecte l'intention
 
 Trois composants, deux agents. L'orchestrateur n'est pas un troisième agent qui « fait » quelque chose — c'est un **trieur**. Et c'est lui le sujet de l'article, parce que c'est lui qui rend l'ensemble intelligent.
 
-## L'orchestrateur ne répond pas — il classe
+## Trois agents, surtout du markdown
 
-C'est le piège mental à éviter : on imagine l'orchestrateur comme un chef qui ferait un peu de tout. Faux. Sa seule responsabilité, c'est de transformer une question floue en **une décision nette** : quelle route, et pourquoi.
+Avant le code, l'essentiel : chacun de ces trois agents n'est pas un bloc de TypeScript, c'est un **dossier**. Le pattern que je répète depuis [l'article harness](/notes/2026-06-harness-agent-sdk) — `agent.md` + `skill` + `tools` — s'applique tel quel. Voici l'arborescence complète du système :
 
-La bonne façon de le coder avec l'Agent SDK, c'est une **sortie structurée** — tu le forces à rendre une décision typée, pas une phrase :
+```
+.claude/
+├─ CLAUDE.md                          ← agent.md : le contrat commun aux 3
+└─ skills/
+   ├─ routeur-intention/SKILL.md      ← l'orchestrateur
+   ├─ recherche-web/SKILL.md          ← l'agent web
+   └─ recherche-interne/SKILL.md      ← l'agent interne
+```
+
+Trois `SKILL.md`, un `CLAUDE.md`, et un petit bout de code qui câble. Détaillons chaque pièce.
+
+### L'agent.md — le contrat que les trois partagent
+
+Le `CLAUDE.md`, c'est l'**agent.md** : le ton, la langue, les règles que *tous* les agents respectent. On l'écrit une fois, il s'applique à l'orchestrateur comme aux spécialistes.
+
+<FileBlock filename=".claude/CLAUDE.md">
+```markdown
+# Assistant du site — contrat commun
+
+- Réponds en français, ton direct, zéro blabla.
+- L'essentiel d'abord, le détail ensuite.
+- Tu ne sais pas ? Tu le dis. Tu n'inventes jamais une source.
+```
+</FileBlock>
+
+### L'orchestrateur — un skill sans aucun tool
+
+Sa seule responsabilité : transformer une question floue en **décision nette**. Son `SKILL.md` ne lui donne *aucun* outil — un orchestrateur qui peut chercher ou lire, c'est un orchestrateur qui va faire le travail des spécialistes au lieu de les aiguiller.
+
+<FileBlock filename=".claude/skills/routeur-intention/SKILL.md">
+```markdown
+---
+name: routeur-intention
+description: Classe une question entrante et choisit l'agent qui répond.
+allowed-tools: []          # aucun outil : il décide, c'est tout
+---
+
+Tu ne réponds JAMAIS à la question. Tu la classes.
+
+- "web"     → info externe et fraîche (actualité, prix, sorties).
+- "interne" → info qui vit dans mes notes / mon site.
+
+Rends { route, reason, reformulated }. Reformule la question
+pour le spécialiste — sans y répondre.
+```
+</FileBlock>
+
+### L'agent web — un skill, un seul tool : `WebSearch`
+
+<FileBlock filename=".claude/skills/recherche-web/SKILL.md">
+```markdown
+---
+name: recherche-web
+description: Répond aux questions qui demandent une info externe à jour.
+allowed-tools: WebSearch    # il voit le web, pas mes fichiers
+---
+
+Cherche sur le web avant de répondre. Cite tes sources (titre + lien).
+Si les sources se contredisent, dis-le plutôt que de trancher au hasard.
+```
+</FileBlock>
+
+### L'agent interne — un skill, des tools de lecture (et pas de RAG)
+
+<FileBlock filename=".claude/skills/recherche-interne/SKILL.md">
+```markdown
+---
+name: recherche-interne
+description: Répond aux questions sur mes notes, mon site, mes specs.
+allowed-tools: Read, Glob, Grep   # il voit mes fichiers, pas le web
+---
+
+Fouille ./content TOI-MÊME — recherche agentique, pas de RAG.
+Glob pour cibler, Grep pour trouver, Read pour lire en entier.
+Reste fidèle à ce que j'ai écrit ; ne complète pas avec du savoir général.
+```
+</FileBlock>
+
+Le point clé est dans le frontmatter `allowed-tools` : **les outils ne vivent pas dans le code, ils vivent dans le skill.** Charger un skill, c'est charger ses tools. L'agent web ne peut pas lire mes fichiers ; l'agent interne ne peut pas toucher au réseau. Ce n'est pas qu'une question de propreté — c'est de la **sécurité par périmètre**, déclarée en deux mots de markdown.
+
+## La carte complète
+
+Trois lignes, et tu vois tout le système — agent.md, skill, tools, modèle :
+
+| Composant | agent.md | skill | tools | modèle |
+|---|---|---|---|---|
+| **Orchestrateur** | `CLAUDE.md` | `routeur-intention` | *aucun* | Haiku (rapide) |
+| **Agent Web** | `CLAUDE.md` | `recherche-web` | `WebSearch` | Opus |
+| **Agent Interne** | `CLAUDE.md` | `recherche-interne` | `Read · Glob · Grep` | Opus |
+
+Le `CLAUDE.md` est commun ; ce qui distingue les trois, c'est **le skill et ses tools**. Et le modèle : classer une question est trivial, donc l'orchestrateur tourne sur un Haiku rapide et pas cher, pendant qu'Opus est réservé à la réponse. Payer le bon modèle au bon endroit, c'est l'un des vrais gains du routeur.
+
+## Le code ne fait que câbler
+
+Une fois les fichiers écrits, le TypeScript est mince : il charge le bon skill et passe le relais. La sortie structurée force l'orchestrateur à rendre une décision typée, pas une phrase.
 
 ```typescript
 import { query } from "@anthropic-ai/claude-agent-sdk";
@@ -46,83 +141,56 @@ const ROUTE_SCHEMA = {
   properties: {
     route: { type: "string", enum: ["web", "interne"] },
     reason: { type: "string" },
-    reformulated: { type: "string" }, // la question nettoyée pour le spécialiste
+    reformulated: { type: "string" },
   },
   required: ["route", "reason", "reformulated"],
 };
 
-async function detecterIntention(question: string) {
-  const result = await query({
-    prompt: `Classe cette question. "web" = info externe et fraîche ;
-             "interne" = info qui porte sur mes notes / mon site. Question : ${question}`,
-    options: {
-      allowedTools: [],                                       // aucun outil : il décide, c'est tout
-      model: "claude-haiku-4-5-20251001",                     // classer coûte moins que répondre
-      outputFormat: { type: "json_schema", schema: ROUTE_SCHEMA },
-    },
-  });
-  return result.structured_output; // { route, reason, reformulated }
-}
+// 1. L'orchestrateur classe — son skill, aucun tool, un modèle rapide.
+const decision = await query({
+  prompt: question,
+  options: {
+    settingSources: ["project"],            // charge CLAUDE.md
+    skills: ["routeur-intention"],          // → allowed-tools: [] vient du skill
+    model: "claude-haiku-4-5-20251001",
+    outputFormat: { type: "json_schema", schema: ROUTE_SCHEMA },
+  },
+});
+
+// 2. On dispatche vers le spécialiste — il charge SON skill, donc SES tools.
+const SKILL = { web: "recherche-web", interne: "recherche-interne" };
+const { route, reformulated } = decision.structured_output;
+const answer = await query({
+  prompt: reformulated,
+  options: {
+    settingSources: ["project"],
+    skills: [SKILL[route]],                 // le skill embarque ses allowed-tools
+  },
+});
 ```
 
-Deux détails qui comptent :
-
-- **`allowedTools: []`** — l'orchestrateur n'a *aucun* outil. Il ne lit rien, ne cherche rien. Il classe. Lui donner des outils, ce serait l'inviter à faire le travail des spécialistes — exactement ce qu'on veut éviter.
-- **un modèle rapide** — classer une question, c'est trivial. Tu mets un Haiku sur l'aiguillage et tu réserves Opus à la réponse. C'est l'un des vrais gains du routeur : payer le bon modèle au bon endroit.
-
-## Les deux spécialistes : dehors vs chez moi
-
-Une fois la route choisie, chaque agent est lancé avec **le strict nécessaire** — et c'est là que le garde-fou devient concret :
-
-```typescript
-const SPECIALISTES = {
-  web: {
-    prompt: (q: string) => `Réponds en cherchant sur le web. Cite tes sources. ${q}`,
-    allowedTools: ["WebSearch"],            // il voit le web, pas mes fichiers
-  },
-  interne: {
-    prompt: (q: string) => `Réponds en fouillant mes notes dans ./content. ${q}`,
-    allowedTools: ["Read", "Glob", "Grep"], // il voit mes fichiers, pas le web
-  },
-};
-
-async function repondre(question: string) {
-  const { route, reformulated } = await detecterIntention(question);
-  const agent = SPECIALISTES[route];
-  return query({
-    prompt: agent.prompt(reformulated),
-    options: {
-      settingSources: ["project"],          // charge le CLAUDE.md : le ton, les règles
-      allowedTools: agent.allowedTools,     // garde-fou : chacun voit le strict nécessaire
-    },
-  });
-}
-```
-
-L'agent web ne peut pas lire mes fichiers ; l'agent interne ne peut pas toucher au réseau. Ce n'est pas qu'une question de propreté : c'est de la **sécurité par périmètre**. Un seul agent qui aurait tous les outils pourrait partir chercher sur le web alors que la réponse était dans mes notes — gaspillage de tokens, latence, et parfois fuite d'un contexte qui devait rester local.
-
-Et l'agent interne, **ne lui colle pas un RAG**. C'est la leçon que je répète depuis [l'article harness](/notes/2026-06-harness-agent-sdk) : pour mon corpus de notes, il fait de la **recherche agentique** — il fouille les fichiers lui-même avec `Read`, `Glob`, `Grep`. Pas de vector DB, pas d'embeddings, pas de chunking. Moins de code, et je valide le produit plus vite.
+Remarque ce qui *n'est pas* dans le code : aucune liste d'outils en dur, aucun prompt système géant. Le comportement de chaque agent est dans son `SKILL.md` ; le code se contente de choisir lequel charger. C'est ça, « tu écris surtout du markdown ».
 
 ## Pourquoi pas un seul agent avec tous les outils ?
 
 La question honnête, parce qu'elle a une vraie réponse — et parfois la réponse est « tu as raison, un seul suffit ».
 
 <Callout tone="warn">
-  Le routeur n'est pas gratuit : c'est un appel LLM de plus, donc de la latence et du coût en amont de chaque réponse. Si tes deux « routes » partagent le même prompt et les mêmes outils, tu n'as pas deux agents — tu as un agent et une illusion d'architecture.
+  Le routeur n'est pas gratuit : c'est un appel LLM de plus, donc de la latence et du coût en amont de chaque réponse. Si tes deux « routes » partagent le même skill et les mêmes tools, tu n'as pas deux agents — tu as un agent et une illusion d'architecture.
 </Callout>
 
 Le routeur se justifie quand les spécialistes **divergent vraiment** :
 
-- **Outils différents** — `WebSearch` d'un côté, lecture de fichiers de l'autre. C'est mon cas, et c'est la meilleure raison.
-- **Prompts affûtés** — un agent « cite tes sources web », l'autre « reste fidèle à ce que j'ai écrit ». Deux postures incompatibles dans un seul prompt.
+- **Tools différents** — `WebSearch` d'un côté, lecture de fichiers de l'autre. C'est mon cas, et c'est la meilleure raison.
+- **Skills affûtés** — un agent « cite tes sources web », l'autre « reste fidèle à ce que j'ai écrit ». Deux postures incompatibles dans un seul prompt.
 - **Modèles différents** — Haiku pour classer, Opus pour analyser. Tu ne peux pas régler ça finement dans un agent monolithique.
 
-Si rien de tout ça n'est vrai, fais simple : un agent, les deux outils, un bon prompt. L'architecture, c'est une réponse à une complexité réelle — pas un trophée.
+Si rien de tout ça n'est vrai, fais simple : un agent, les deux tools, un bon skill. L'architecture, c'est une réponse à une complexité réelle — pas un trophée.
 
 ## Ce que ça m'apprend
 
 J'ai écrit il y a peu que le métier de dev glissait vers le [pilotage](/notes/2026-06-developpeur-orchestrateur) : la valeur n'est plus dans la production, mais dans le cadrage et le jugement. Ce petit assistant en est la version miniature et littérale.
 
-Le code des deux spécialistes est presque banal — quelques lignes, des outils, un prompt. **Toute l'intelligence du système vit dans l'aiguillage.** Le composant qui ne répond jamais est celui qui décide de tout. Passer d'un agent à deux, ce n'est donc pas doubler le travail de réponse : c'est ajouter la seule question qui compte vraiment — *« qui est le mieux placé pour ça ? »*
+Les trois `SKILL.md` sont presque banals — quelques lignes, un tool, une consigne. **Toute l'intelligence du système vit dans l'aiguillage.** Le composant qui ne répond jamais est celui qui décide de tout. Passer d'un agent à deux, ce n'est donc pas doubler le travail de réponse : c'est ajouter la seule question qui compte vraiment — *« qui est le mieux placé pour ça ? »*
 
-Et une fois que tu tiens un routeur à deux voies, en ajouter une troisième ne coûte presque rien : une entrée de plus dans l'`enum`, un spécialiste de plus dans la table. L'aiguilleur, lui, ne change pas. C'est exactement ce qui rend ce pattern aussi solide qu'il en a l'air simple.
+Et une fois que tu tiens un routeur à deux voies, en ajouter une troisième ne coûte presque rien : un dossier `SKILL.md` de plus, une entrée de plus dans l'`enum`. L'aiguilleur, lui, ne change pas. C'est exactement ce qui rend ce pattern aussi solide qu'il en a l'air simple.
