@@ -1,0 +1,91 @@
+---
+title: "J'ai généré les screenshots App Store de Ti Boug avec un skill Claude"
+date: 2026-07-02
+locale: fr
+translationKey: "2026-07-app-store-screenshots-skill"
+tags: ["claude", "tools", "app-store", "design"]
+excerpt: "Les screenshots sont le premier levier de conversion sur le store — et une plaie à produire. Voici comment un skill Claude + Nano Banana Pro m'a sorti un set complet, cohérent et honnête, en un après-midi."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import { Image } from "astro:assets";
+import appStoreSet from "@/assets/bazar/tiboug-appstore-set.png";
+
+Sur une fiche App Store, la première image fait plus pour ton taux d'install que la moitié de ta description. C'est le levier de conversion n°1. Et c'est, historiquement, une plaie : brief au designer, allers-retours Figma, ou une soirée à te battre avec des templates Canva qui rendent ton app générique.
+
+Pour [Ti Boug](https://tiboug.re) — mon app anti-vie-chère pour La Réunion — j'ai généré **le set complet en un après-midi**, avec un skill Claude et Nano Banana Pro. Voici la chaîne exacte, et surtout les pièges que personne ne te dit.
+
+<figure>
+  <Image src={appStoreSet} alt="Les 6 screenshots App Store de Ti Boug : BAT la vie chère, VOIS le vrai prix, COMPARE marché vs grande surface, ACHÈTE de saison, COMPOSE ton panier, PAIE moins cher — chacun avec sa mascotte péi" widths={[720, 1200, 2000]} sizes="(max-width: 900px) 100vw, 1100px" />
+  <figcaption>Le set complet : 6 écrans, un bénéfice par écran, une mascotte différente par écran.</figcaption>
+</figure>
+
+## Le skill : `aso-appstore-screenshots`
+
+Le point de départ, c'est un skill open-source d'Adam Lyttle : [claude-skill-aso-appstore-screenshots](https://github.com/adamlyttleapps/claude-skill-aso-appstore-screenshots). Un [Claude Skill](https://www.anthropic.com/news/agent-skills), c'est un prompt système structuré posé dans `~/.claude/skills/` que tu invoques quand tu en as besoin, au lieu de le recopier à chaque fois.
+
+Celui-ci ne te crache pas des images au pif. Il t'impose un **processus produit** en trois phases :
+
+1. **Discovery des bénéfices.** Il lit ton codebase, comprend ce que fait l'app, et te propose 3 à 6 bénéfices qui commencent tous par un verbe d'action. Pas de « Fonctionnalités » — des promesses.
+2. **Pairing.** Pour chaque bénéfice, quel screenshot réel de l'app le démontre le mieux. Il note tes captures « Great / Usable / Retake » et te dit quoi recapturer.
+3. **Génération.** Un pipeline en deux étapes (le cœur du truc, ci-dessous).
+
+Mes 6 bénéfices, dans l'ordre : **BAT** la vie chère · **VOIS** le vrai prix · **COMPARE** marché vs grande surface · **ACHÈTE** de saison · **COMPOSE** ton panier · **PAIE** moins cher. Un verbe, une promesse, un écran.
+
+## Le vrai truc : scaffold déterministe, PUIS enhance IA
+
+La tentation, c'est de balancer un prompt à une IA image et d'espérer. Ça ne marche pas : à chaque écran, la police bouge, la headline se recasse, le cadre du téléphone change. Six écrans côte à côte qui ne matchent pas = amateur.
+
+La solution du skill, que j'ai poussée à fond pour Ti Boug, c'est **deux étapes séparées** :
+
+**Étape 1 — un scaffold déterministe** en Python/Pillow. Je pose moi-même, au pixel près : le fond crème `#FFF8F2` de la marque, la headline en Bricolage Grotesque (verbe en mango `#FF8A3D`, descripteur en encre), le cadre iPhone, et le vrai screenshot dedans. Zéro IA à cette étape. C'est ce qui **garantit la cohérence** du set : même typo, même cadre, même fond partout.
+
+**Étape 2 — l'enhance** via Nano Banana Pro (`gemini-3-pro-image`). J'envoie le scaffold + la mascotte, et l'IA ajoute la profondeur : téléphone photoréaliste droit-face, ombre douce, et surtout le **breakout** — une carte clé (le prix, l'économie, le badge −22 %) sortie du téléphone, agrandie, qui flotte devant. C'est ça qui rend l'écran lisible en vignette.
+
+<Callout tone="info">
+Le partage des rôles est la clé : le **déterministe** tient tout ce qui doit être exact et cohérent (texte, marque, layout) ; l'**IA** ne fait que ce qu'elle fait mieux que moi (rendu photoréaliste, lumière, profondeur). On ne demande jamais à l'IA de reproduire du texte précis — c'est là qu'elle hallucine.
+</Callout>
+
+## Les trois pièges qui m'ont coûté le plus
+
+### 1. L'IA réinvente le texte dans le téléphone — floute-le
+
+Nano Banana re-render ce qu'il voit. Le petit texte français à l'intérieur de l'écran ? Il le « recopie » en inventant des mots (« Produts », « Bonñes »), perd les accents, transforme une aubergine en salade. Insupportable sur une app dont la promesse est *l'honnêteté du prix*.
+
+Deux parades qui marchent :
+
+- Une clause dans le prompt qui **force le flou** (depth-of-field) sur tout petit texte : un écran net-mais-faux est un échec, un écran doucement flou est correct.
+- Côté scaffold, je **coupe le bas de la capture** et je le remplace par du crème : la liste se termine proprement, il n'y a plus rien à inventer.
+
+<Callout tone="warn">
+C'est la limite honnête de l'approche : une IA image ne sait pas *préserver* du texte, elle le régénère. Ne compte jamais sur elle pour tes prix ou tes libellés. Le texte exact vient du scaffold déterministe ; l'IA ne touche qu'aux gros titres et au décor.
+</Callout>
+
+### 2. La mascotte, une par écran, jamais croppée
+
+Premier jet : la même mascotte qui salue sur les 6 écrans. Mou. Je l'ai fait **varier par écran**, en collant au bénéfice : à l'étal avec une tomate étiquetée pour « le vrai prix », tenant sa balance pour « comparer », les bras chargés de fruits + soleil pour « de saison », poing levé pour la victoire finale.
+
+Le piège technique : le recadrage final (9:16 → format Apple plus étroit) rogne ~10 % de chaque côté. Une mascotte à droite = une mascotte amputée. Fix : placement **en bas-à-gauche, chevauchant** le téléphone, avec une consigne ferme — *personnage entier, chapeau aux pieds, marge crème autour ; s'il ne rentre pas, réduis-le*. Un petit perso entier bat un gros perso coupé.
+
+### 3. Le badge de confiance sans mentir
+
+La grosse tentation ASO : « +1 000 utilisateurs », « n°1 à La Réunion ». Sauf que l'app **n'est pas lancée** — c'est un mensonge, et la [guideline Apple 2.3](https://developer.apple.com/app-store/review/guidelines/#accurate-metadata) interdit les métadonnées trompeuses.
+
+<Callout tone="ok">
+Mon badge de confiance ne repose pas sur du faux social proof mais sur mon vrai moat : **« 100 % PRIX OFFICIELS DAAF »**. C'est vérifiable, c'est différenciant, et c'est aligné avec la promesse produit. L'honnêteté n'est pas une contrainte marketing ici — c'est l'argument.
+</Callout>
+
+## Le détail qui évite un rejet : les dimensions
+
+App Store Connect est **strict** sur les tailles. J'ai généré en 6.7" (1290 × 2796), puis dérivé le slot 6.5" (1242 × 2688) par un simple resize LANCZOS — les ratios sont quasi identiques (0,4614 vs 0,4620), donc aucun étirement. Deux slots remplis, un seul set à maintenir.
+
+## Ce que ça m'apprend
+
+L'IA image seule ne fait pas un bon screenshot d'app — elle fait une jolie image incohérente. Ce qui fait le set, c'est la **discipline autour** d'elle : un bénéfice par écran, un scaffold déterministe qui verrouille la marque et le texte, et une IA cantonnée à ce qu'elle réussit. Le skill apporte le processus ; le reste, c'est du cadrage.
+
+Résultat : un après-midi, un set de 6 écrans cohérents, honnêtes, prêts pour les deux slots — au lieu d'une semaine de Figma ou d'un budget designer que je n'ai pas en phase de build.
+
+Le skill est [ici, open-source](https://github.com/adamlyttleapps/claude-skill-aso-appstore-screenshots). L'app, [Ti Boug](https://tiboug.re), c'est le [projet que je build en public](/notes/2026-06-ti-cok-mercuriales-app) : sortir le vrai prix du bazar des PDF officiels de la DAAF, et le mettre dans la poche des Réunionnais.
+
+*Sak i lé bon marché, kan, é ousa.* 🌶️
