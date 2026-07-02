@@ -1,0 +1,162 @@
+---
+title: "L'écran blanc au démarrage : anatomie de 4 bugs qui se ressemblent"
+date: 2026-06-29
+locale: fr
+translationKey: "2026-06-blank-screen-expo"
+tags: ["stack", "build", "mobile"]
+excerpt: "Ni crash, ni log, juste du blanc. Trois causes différentes, un seul symptôme — et le 4e bug qui rendait les trois autres indébogables : mon filet de sécurité était troué."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+Sur [Bazar Péi](/notes/2026-06-ti-cok-mercuriales-app), mon app Expo/React Native, j'ai passé une journée sur le pire bug mobile qui soit : l'app démarre sur un **écran blanc**. Pas un crash. Pas une stack trace. Pas une ligne de log. Juste du blanc.
+
+Et le plus vicieux : en dev, tout marchait. Le blanc n'apparaissait que sur **TestFlight**, sur le build de prod, là où je ne peux pas mettre un breakpoint.
+
+J'ai fini par comprendre que ce que je prenais pour un bug était en réalité **quatre bugs différents** — trois avec la même mécanique, plus un quatrième qui expliquait pourquoi je ne voyais rien. Les voici, dans l'ordre où je les ai déterrés.
+
+## La mécanique commune
+
+L'écran blanc, ce n'est presque jamais un bug de rendu. C'est un **état d'attente qui ne se résout jamais**. Le pattern coupable, tu l'écris toi-même, partout, sans y penser :
+
+```tsx
+if (!ready) return null // en attendant que quelque chose soit prêt…
+```
+
+Tu attends que les polices chargent, que le store s'hydrate, que le client soit prêt. Le temps que ce soit vrai, tu rends `null` — un écran vide, mais provisoire. Sauf le jour où `ready` **ne devient jamais `true`**. Là, `null` n'est plus provisoire : c'est ton écran final. Blanc, muet, définitif.
+
+Mes trois premières causes sont exactement ça : trois `return null` dont la condition n'arrivait jamais.
+
+## Bug 1 — la variable d'env gelée au build
+
+La racine la plus sournoise. Mon build de prod démarrait avec `EXPO_PUBLIC_CONVEX_URL` **vide**. Résultat :
+
+```tsx
+// lib/convex.ts — l'ancienne version
+export const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!)
+// URL vide → new ConvexReactClient('') throw… à l'IMPORT du module
+```
+
+Ce `throw` part au chargement du module, **avant le premier rendu**. Donc — retiens ça — il est **impossible à capturer par un ErrorBoundary** (on y revient au bug 4). Écran blanc.
+
+Pourquoi l'URL était vide ? Parce que **`EXPO_PUBLIC_*` sont gelées au BUILD, pas lues au runtime**. En dev, Expo lit ton `.env.local`. Dans un build EAS, il faut explicitement déclarer `environment` pour qu'EAS injecte les variables. Mon profil `production` ne le faisait pas :
+
+```json
+// eas.json — le fix
+"production": { "autoIncrement": true, "environment": "production" }
+```
+
+Côté code, deux garde-fous : `lib/convex` renvoie désormais `null` si l'URL est vide (au lieu de throw à l'import), et le `throw` explicite remonte **dans un composant**, là où on peut le rattraper :
+
+```tsx
+// app/_layout.tsx
+if (!convex) {
+  throw new Error(
+    "Configuration manquante : EXPO_PUBLIC_CONVEX_URL est vide dans ce build. " +
+      "Vérifie `environment` dans eas.json + les variables EAS, puis rebuild.",
+  )
+}
+```
+
+## Bug 2 — la police qui échoue en silence
+
+Même symptôme, autre coupable. Mon hook de polices ne lisait que `loaded` :
+
+```tsx
+// hooks/useAppFonts.ts — avant
+export function useAppFonts(): boolean {
+  const [loaded] = useFonts({ /* … */ })
+  return loaded
+}
+```
+
+`useFonts` renvoie aussi un `error`, que j'ignorais. Si une police échoue à charger (asset manquant, réseau capricieux en prod), `loaded` reste `false` **à vie**. Et `_layout` reste sagement sur son `return null`. Blanc.
+
+Le fix tient en un mot : rendre l'app dès que les polices sont chargées **ou** en erreur, avec la police système en fallback.
+
+```tsx
+export function useAppFonts(): boolean {
+  const [loaded, error] = useFonts({ /* … */ })
+  return loaded || error !== null
+}
+```
+
+Mieux vaut une typo dans la mauvaise police qu'un écran blanc.
+
+## Bug 3 — la race d'hydratation du store
+
+Le plus subtil, parce qu'il dépend du **timing** — donc il ne se reproduit que sur le build minifié de prod. Mon écran d'entrée attend que le store Zustand (persisté) soit hydraté avant de décider où router, pour éviter un flash d'onboarding :
+
+```tsx
+// app/index.tsx — avant
+const [hydrated, setHydrated] = useState(useOnboardingStore.persist.hasHydrated())
+
+useEffect(() => {
+  const unsub = useOnboardingStore.persist.onFinishHydration(() => setHydrated(true))
+  return unsub
+}, [])
+
+if (!hydrated) return null
+```
+
+Le piège : si l'hydratation se **termine avant** que le `useEffect` n'attache le listener — ce qui arrive en prod, où tout va plus vite — alors `onFinishHydration` ne se déclenche jamais. L'event est déjà passé. `hydrated` reste `false`. Blanc.
+
+Deux garde-fous : revérifier `hasHydrated()` tout de suite dans l'effet, et un filet `setTimeout` pour ne jamais bloquer le démarrage plus de 2 secondes sur le stockage.
+
+```tsx
+useEffect(() => {
+  if (useOnboardingStore.persist.hasHydrated()) return setHydrated(true)
+  const unsub = useOnboardingStore.persist.onFinishHydration(() => setHydrated(true))
+  const timer = setTimeout(() => setHydrated(true), 2000)
+  return () => { unsub(); clearTimeout(timer) }
+}, [])
+```
+
+## Bug 4 — le filet de sécurité était troué
+
+Voici le vrai quatrième bug, et le plus important : **je n'avais aucun moyen de voir les trois autres**.
+
+J'avais bien un `ErrorBoundary` autour de l'app. Il n'a jamais rien affiché. Parce que le `throw` du bug 1 partait **au top-level d'un module**, avant le premier rendu React — et un ErrorBoundary ne capture que les erreurs **pendant le rendu** de ses enfants. Tout ce qui casse à l'import lui est invisible.
+
+Mon diagnostic était aveugle. Le fix est en deux temps :
+
+1. **Garder le top-level des modules sans throw.** Le client Convex vaut `null` si l'URL manque ; le `throw` explicite vit dans un composant (donc capturable), pas à l'import.
+2. **Un ErrorBoundary qui _affiche_ l'erreur** — texte sélectionnable, pour que je puisse la lire (et la copier) directement sur TestFlight, au lieu d'un blanc muet.
+
+```tsx
+// components/ui/ErrorBoundary.tsx
+static getDerivedStateFromError(error: Error) {
+  return { error }
+}
+
+render() {
+  const { error } = this.state
+  if (!error) return this.props.children
+  return (
+    <ScrollView contentContainerStyle={styles.box}>
+      <Text style={styles.title}>Oups — l'app a planté au démarrage</Text>
+      <Text selectable style={styles.msg}>{error.message}</Text>
+      {error.stack ? <Text selectable style={styles.stack}>{error.stack}</Text> : null}
+    </ScrollView>
+  )
+}
+```
+
+<Callout tone="warn">
+  Ne débogue jamais un écran blanc avec `--no-dev --minify` : ce mode masque les erreurs
+  (justement en blanc). Utilise `npx expo start --dev-client`. Et rappelle-toi qu'une app à
+  modules natifs ne tourne pas dans Expo Go — il te faut un dev build EAS.
+</Callout>
+
+## La checklist « écran blanc »
+
+Quand ça m'arrive maintenant, je déroule ça dans l'ordre :
+
+1. **Les `EXPO_PUBLIC_*` sont-elles injectées dans le build ?** (`environment` dans `eas.json`, variables EAS présentes). C'est la cause n°1 des blancs qui n'existent qu'en prod.
+2. **Où sont mes `return null` qui attendent un état async ?** (police, hydratation, client, session).
+3. **Chacun a-t-il un chemin d'échec _et_ un timeout de secours ?** Un `error` ignoré ou un event manqué = blanc à vie.
+4. **Un module throw-t-il à l'import, avant le premier rendu ?** Si oui, aucun ErrorBoundary ne le verra.
+5. **Mon ErrorBoundary _affiche_-t-il l'erreur ?** Un filet qui ne montre rien n'est pas un filet.
+
+La leçon qui vaut plus que les trois fixes : **rends l'échec visible**. Un crash lisible se corrige en dix minutes. Un écran blanc muet, en une journée.

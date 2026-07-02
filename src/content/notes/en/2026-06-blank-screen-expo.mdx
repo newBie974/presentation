@@ -1,0 +1,162 @@
+---
+title: "The blank startup screen: anatomy of 4 bugs that look alike"
+date: 2026-06-29
+locale: en
+translationKey: "2026-06-blank-screen-expo"
+tags: ["stack", "build", "mobile"]
+excerpt: "No crash, no log, just white. Three different causes, one symptom — plus the 4th bug that made the other three impossible to debug: my safety net had a hole in it."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+On [Bazar Péi](/en/writing/2026-06-ti-cok-mercuriales-app), my Expo/React Native app, I spent a full day on the worst kind of mobile bug: the app boots to a **blank screen**. No crash. No stack trace. Not a single log line. Just white.
+
+And the nasty part: everything worked in dev. The blank only showed up on **TestFlight**, on the production build — exactly where I can't drop a breakpoint.
+
+I eventually realized that what I'd taken for one bug was actually **four different bugs** — three sharing the same mechanic, plus a fourth that explained why I couldn't see a thing. Here they are, in the order I dug them out.
+
+## The shared mechanic
+
+A blank screen is almost never a rendering bug. It's a **waiting state that never resolves**. And you write the guilty pattern yourself, everywhere, without thinking twice:
+
+```tsx
+if (!ready) return null // while we wait for something to be ready…
+```
+
+You wait for fonts to load, for the store to hydrate, for the client to be ready. Until then, you render `null` — an empty screen, but a temporary one. Except the day `ready` **never becomes `true`**. Now `null` isn't temporary anymore: it's your final screen. White, silent, permanent.
+
+My first three causes are exactly that: three `return null`s whose condition never came true.
+
+## Bug 1 — the env var frozen at build time
+
+The sneakiest root cause. My production build started up with `EXPO_PUBLIC_CONVEX_URL` **empty**. The result:
+
+```tsx
+// lib/convex.ts — the old version
+export const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!)
+// empty URL → new ConvexReactClient('') throws… at module IMPORT time
+```
+
+That `throw` fires when the module loads, **before the first render**. So — remember this — it's **impossible for an ErrorBoundary to catch** (more on that in bug 4). Blank screen.
+
+Why was the URL empty? Because **`EXPO_PUBLIC_*` are frozen at BUILD time, not read at runtime**. In dev, Expo reads your `.env.local`. In an EAS build, you have to explicitly declare `environment` so EAS injects the variables. My `production` profile didn't:
+
+```json
+// eas.json — the fix
+"production": { "autoIncrement": true, "environment": "production" }
+```
+
+On the code side, two guardrails: `lib/convex` now returns `null` when the URL is empty (instead of throwing at import), and the explicit `throw` moves **into a component**, where it can actually be caught:
+
+```tsx
+// app/_layout.tsx
+if (!convex) {
+  throw new Error(
+    "Missing config: EXPO_PUBLIC_CONVEX_URL is empty in this build. " +
+      "Check `environment` in eas.json + your EAS variables, then rebuild.",
+  )
+}
+```
+
+## Bug 2 — the font that fails silently
+
+Same symptom, different culprit. My font hook only read `loaded`:
+
+```tsx
+// hooks/useAppFonts.ts — before
+export function useAppFonts(): boolean {
+  const [loaded] = useFonts({ /* … */ })
+  return loaded
+}
+```
+
+`useFonts` also returns an `error`, which I was ignoring. If a font fails to load (missing asset, flaky network in prod), `loaded` stays `false` **forever**. And `_layout` sits politely on its `return null`. White.
+
+The fix is one word: render the app as soon as fonts are loaded **or** errored, with the system font as fallback.
+
+```tsx
+export function useAppFonts(): boolean {
+  const [loaded, error] = useFonts({ /* … */ })
+  return loaded || error !== null
+}
+```
+
+A typo in the wrong font beats a blank screen every time.
+
+## Bug 3 — the store hydration race
+
+The subtlest one, because it depends on **timing** — so it only reproduces on the minified production build. My entry screen waits for the persisted Zustand store to hydrate before deciding where to route, to avoid an onboarding flash:
+
+```tsx
+// app/index.tsx — before
+const [hydrated, setHydrated] = useState(useOnboardingStore.persist.hasHydrated())
+
+useEffect(() => {
+  const unsub = useOnboardingStore.persist.onFinishHydration(() => setHydrated(true))
+  return unsub
+}, [])
+
+if (!hydrated) return null
+```
+
+The trap: if hydration **finishes before** the `useEffect` attaches the listener — which happens in prod, where everything runs faster — then `onFinishHydration` never fires. The event has already passed. `hydrated` stays `false`. White.
+
+Two guardrails: re-check `hasHydrated()` immediately inside the effect, and a `setTimeout` net so startup never blocks on storage for more than 2 seconds.
+
+```tsx
+useEffect(() => {
+  if (useOnboardingStore.persist.hasHydrated()) return setHydrated(true)
+  const unsub = useOnboardingStore.persist.onFinishHydration(() => setHydrated(true))
+  const timer = setTimeout(() => setHydrated(true), 2000)
+  return () => { unsub(); clearTimeout(timer) }
+}, [])
+```
+
+## Bug 4 — the safety net had a hole in it
+
+Here's the real fourth bug, and the most important one: **I had no way to see the other three**.
+
+I did have an `ErrorBoundary` around the app. It never showed anything. Because bug 1's `throw` fired **at the top level of a module**, before the first React render — and an ErrorBoundary only catches errors **during the render** of its children. Anything that breaks at import time is invisible to it.
+
+My diagnosis was blind. The fix comes in two parts:
+
+1. **Keep module top-levels throw-free.** The Convex client is `null` when the URL is missing; the explicit `throw` lives inside a component (catchable), not at import.
+2. **An ErrorBoundary that _shows_ the error** — selectable text, so I can read (and copy) it straight off TestFlight, instead of a silent blank.
+
+```tsx
+// components/ui/ErrorBoundary.tsx
+static getDerivedStateFromError(error: Error) {
+  return { error }
+}
+
+render() {
+  const { error } = this.state
+  if (!error) return this.props.children
+  return (
+    <ScrollView contentContainerStyle={styles.box}>
+      <Text style={styles.title}>Oops — the app crashed on startup</Text>
+      <Text selectable style={styles.msg}>{error.message}</Text>
+      {error.stack ? <Text selectable style={styles.stack}>{error.stack}</Text> : null}
+    </ScrollView>
+  )
+}
+```
+
+<Callout tone="warn">
+  Never debug a blank screen with `--no-dev --minify`: that mode hides errors (as a blank,
+  naturally). Use `npx expo start --dev-client`. And remember that an app with native modules
+  won't run in Expo Go — you need an EAS dev build.
+</Callout>
+
+## The "blank screen" checklist
+
+When it happens now, I run through this in order:
+
+1. **Are the `EXPO_PUBLIC_*` injected into the build?** (`environment` in `eas.json`, EAS variables present). This is the number-one cause of blanks that only exist in prod.
+2. **Where are my `return null`s waiting on an async state?** (fonts, hydration, client, session).
+3. **Does each one have a failure path _and_ a timeout net?** An ignored `error` or a missed event = white forever.
+4. **Does any module throw at import, before the first render?** If so, no ErrorBoundary will ever see it.
+5. **Does my ErrorBoundary _show_ the error?** A net that shows nothing isn't a net.
+
+The lesson worth more than the three fixes: **make failure visible**. A readable crash is a ten-minute fix. A silent blank screen is a day.
