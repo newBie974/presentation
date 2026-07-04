@@ -37,3 +37,7 @@ playwright-report/
 
 # lighthouse ci local artifacts
 .lighthouseci/
+
+# commercial collateral — private (tarifs, SIRET, infos clients), ne pas committer
+docs/commercial/
+docs/superpowers/specs/2026-07-04-commercial-documents-design.md
