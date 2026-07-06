@@ -1,0 +1,188 @@
+---
+title: "J'ai confié mes relevés à un deep agent — et surtout, il s'en souvient"
+date: 2026-07-06
+locale: fr
+translationKey: "2026-07-deepagents-banking-companion"
+tags: ["ia", "stack", "build"]
+excerpt: "LangChain sort deepagents : les quatre briques que je répète depuis trois mois, nommées et emballées. Je les teste sur un vrai besoin perso — un compagnon de gestion bancaire — et je découvre que le pilier qui compte n'est pas celui que je croyais."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+
+Ma série sur les agents a suivi un arc simple : le [harness](/notes/2026-06-harness-agent-sdk) qui transforme un LLM en exécutant, puis [l'aiguilleur](/notes/2026-06-orchestrateur-routeur) qui fait travailler deux agents, puis [Flue](/notes/2026-06-flue-framework-agents) qui emballe le tout en framework — côté Astro, en TypeScript.
+
+Cette fois, c'est **LangChain** qui sort son framework : **deepagents**. Même idée, autre écosystème (Python, LangGraph). Et pour le tester, pas un jouet — un **vrai besoin perso** : un compagnon qui regarde mes relevés bancaires et me dit où part l'argent.
+
+## deepagents en une table
+
+deepagents se décrit comme un *« batteries-included agent harness »* posé sur LangGraph. Le truc marrant, c'est que ses quatre piliers sont *exactement* les briques que je décris depuis trois mois — mais nommées et livrées d'office :
+
+| Pilier deepagents | Ce que ça fait | Ce que j'en disais déjà |
+|---|---|---|
+| **Planning** (`write_todos`) | Un outil quasi no-op qui force l'agent à poser un plan avant d'agir | La boucle du harness, mais avec une todo-list explicite |
+| **Sous-agents** | Délégation à **contexte isolé** ; seul le résultat final remonte | Mon article routeur : « appeler un agent = un appel d'outil » |
+| **Système de fichiers** | Read/write/edit/search sur backends pluggables → **mémoire** + offload des gros outputs sur disque | Le pattern fichiers de Flue, le sandbox |
+| **System prompt** | Le persona et les garde-fous | Mon `agent.md` / `SKILL.md` |
+
+<Callout tone="info">
+  deepagents est à LangChain/Python ce que Flue est à Astro/TypeScript : le harness livré en framework. Deux versants, la même montagne.
+</Callout>
+
+## Pourquoi la banque justifie les quatre piliers
+
+Ma règle, répétée dans l'article routeur : *l'architecture est une réponse à une complexité réelle, pas un trophée.* Un bon use case, c'est celui où les quatre piliers ont **chacun** une vraie raison d'exister. La gestion bancaire les coche tous — et surtout le dernier, celui que je sous-estimais.
+
+Parce que gérer un budget, ce n'est pas une analyse **jetable**. C'est **longitudinal** : le mois prochain compte par rapport à ce mois-ci. Et c'est précisément ce que le système de fichiers apporte — **la mémoire**. C'est lui qui transforme une analyse one-shot en *compagnon* qui se souvient. Voilà la vraie découverte : le pilier qui fait la différence n'est ni le plan ni les sous-agents, c'est le disque.
+
+## 1. Le plan — l'agent pose sa todo avant d'exécuter
+
+Tu lui dis « fais le point sur juin ». Avant de foncer, il écrit son plan via `write_todos` :
+
+```
+todos:
+  ☐ charger le relevé depuis releves/2026-06.csv
+  ☐ catégoriser chaque transaction         → sous-agent categoriseur
+  ☐ repérer les abonnements récurrents      → sous-agent chasseur-abonnements
+  ☐ comparer au budget de référence         → sous-agent detecteur-anomalies
+  ☐ mettre à jour memoire/budget.md
+  ☐ synthétiser : où part l'argent + quoi couper
+```
+
+`write_todos` n'exécute rien. C'est un no-op qui **force la décomposition** : sur une tâche à six étapes, l'agent qui a écrit son plan dérive beaucoup moins que celui qui improvise.
+
+## 2. Les sous-agents — un gros CSV mâché en contexte isolé
+
+Trois spécialistes, chacun avec sa fenêtre vierge. Ils mâchent chacun un bout lourd du relevé (200 lignes) et ne remontent que leur **conclusion** — le thread principal ne se noie jamais dans le détail :
+
+| Sous-agent | Sa tâche | Ce qui remonte |
+|---|---|---|
+| **categoriseur** | Classe chaque ligne (courses, resto, transport…) | catégorie → montant |
+| **chasseur-abonnements** | Détecte les débits récurrents | nouveaux / disparus vs la mémoire |
+| **detecteur-anomalies** | Repère les écarts vs le budget | les débits inhabituels, chiffrés |
+
+En code, ça tient en un appel — et je pointe deepagents vers un modèle **Claude**, parce que le framework est agnostique du modèle :
+
+```python
+from deepagents import create_deep_agent
+
+subagents = [
+    {
+        "name": "categoriseur",
+        "description": "Classe chaque transaction du relevé.",
+        "prompt": "Classe les lignes. Rends un tableau catégorie → montant. "
+                  "N'invente aucune catégorie hors de la liste fournie.",
+    },
+    {
+        "name": "chasseur-abonnements",
+        "description": "Repère les débits récurrents mois après mois.",
+        "prompt": "Compare le relevé à memoire/abonnements.md. Signale les "
+                  "nouveaux prélèvements récurrents et ceux qui ont disparu.",
+    },
+    {
+        "name": "detecteur-anomalies",
+        "description": "Repère les débits inhabituels vs l'historique.",
+        "prompt": "Compare au budget de référence. Flag tout écart marquant, chiffré.",
+    },
+]
+
+agent = create_deep_agent(
+    model="anthropic:claude-opus-4-8",   # agnostique : Claude, open-weight ou local
+    system_prompt=CONSEILLER_BUDGET,
+    subagents=subagents,
+)
+
+result = agent.invoke({
+    "messages": "Fais le point sur juin : où part mon argent, "
+                "quels abonnements je paie encore, quoi couper.",
+})
+```
+
+Remarque ce que je n'écris **pas** : aucune boucle d'orchestration à la main. Là où mon article routeur câblait deux `query()` en TypeScript, ici c'est le framework qui lance `task(categoriseur)` quand l'agent le décide. C'est le **style B** de l'article routeur — la délégation autonome — livré d'office.
+
+## 3. Le système de fichiers — la mémoire, la vraie vedette
+
+Voici la pièce qui change tout. deepagents donne à l'agent des outils fichiers (`ls`, `read_file`, `write_file`, `edit_file`) sur un backend pluggable. Je m'en sers pour **trois rôles distincts** :
+
+```
+finances/
+├─ releves/
+│  └─ 2026-06.csv        ← données brutes, offloadées (hors contexte)
+└─ memoire/
+   ├─ budget.md          ← mémoire persistante : mon budget de référence
+   └─ abonnements.md     ← la liste connue, mise à jour à chaque passage
+```
+
+- `releves/*.csv` : les données lourdes vivent **sur le disque**, pas dans le contexte. L'agent lit ce dont il a besoin, quand il en a besoin.
+- `memoire/budget.md` : le mois prochain, l'agent **relit ce fichier** et compare. C'est ça, se souvenir.
+- `memoire/abonnements.md` : réécrit à chaque passage. La liste connue devient une base contre laquelle détecter les nouveautés.
+
+Et comme on parle de **données bancaires**, le point de sécurité n'est pas négociable. deepagents propose des **permissions déclaratives par chemin** — l'écho direct de la « sécurité par périmètre » de mon article routeur, sauf qu'ici le périmètre porte sur des fichiers, pas sur des tools :
+
+```python
+from deepagents.backends import FilesystemBackend
+
+backend = FilesystemBackend(
+    root_dir="./finances",
+    permissions={
+        "releves/**": "read",         # il lit les relevés, il n'y touche pas
+        "memoire/**": "read-write",   # il tient sa mémoire à jour
+    },
+)
+```
+
+<Callout tone="warn">
+  L'agent peut lire tes relevés et écrire sa mémoire — rien d'autre. Il ne peut pas modifier une donnée source ni sortir du dossier. Sur de la donnée sensible, le périmètre se déclare, il ne se souhaite pas.
+</Callout>
+
+## 4. Le persona — factuel, il ne moralise pas
+
+Le `system_prompt` tient le rôle de mon `agent.md`. Ici, une posture nette :
+
+<FileBlock filename="CONSEILLER_BUDGET">
+```markdown
+Tu es un conseiller budget factuel.
+- Chiffre tout. Aucun montant inventé : si tu n'as pas la donnée, tu le dis.
+- Tu ne moralises pas. « 340 € de resto » est un fait, pas un reproche.
+- L'essentiel d'abord : où part l'argent, puis ce qui est coupable.
+- Compare toujours au mois précédent via memoire/budget.md.
+```
+</FileBlock>
+
+## La carte complète
+
+```
+"Fais le point sur juin"
+        │
+        ▼
+   Deep agent ──► write_todos (pose le plan)
+        │
+        ├─ task(categoriseur)          ─► catégories → montants
+        ├─ task(chasseur-abonnements)  ─► récurrents : nouveaux / disparus
+        └─ task(detecteur-anomalies)   ─► écarts vs budget, chiffrés
+        │
+        ▼
+   filesystem   releves/2026-06.csv    (données, hors contexte)
+                memoire/budget.md      (mémoire, persistante)
+                memoire/abonnements.md
+        │
+        ▼
+   Synthèse : où part l'argent + quoi couper
+```
+
+## Honnête : où ça en est
+
+Deux réserves, dans l'esprit de ce que je disais sur Flue.
+
+**C'est du Python/LangGraph**, pas mon terrain TypeScript/Claude. Il existe `deepagentsjs` pour rester en TS, mais l'écosystème mûr (traces LangSmith, backends) reste côté Python. Choisis ton versant en connaissance de cause.
+
+**Tes relevés sont sensibles.** Ne les balance pas chez un cloud à l'aveugle sous prétexte que le code est joli. deepagents étant agnostique du modèle, c'est exactement le cas où tourner sur un **modèle open-weight ou local** prend tout son sens : la donnée ne quitte pas ta machine. Les permissions filesystem sont un garde-fou, pas une bénédiction.
+
+Et comme pour Flue : je l'ai porté pour voir, pas encore mis en prod. Prends ça comme une cartographie, pas comme un retour de combat.
+
+## Ce que ça m'apprend
+
+Toute ma série d'agents, jusqu'ici, était **sans mémoire**. Le harness, le routeur, Flue : à chaque fois, un contexte vierge, une tâche, une réponse, puis l'oubli. deepagents ajoute la pièce que je n'avais jamais vraiment exploitée — **le disque comme mémoire** — et c'est elle qui fait la bascule.
+
+Un agent qui analyse ton mois, c'est un outil. Un agent qui se **souvient** de ton mois dernier pour juger celui-ci, c'est un compagnon. La différence tient dans un dossier `memoire/` et deux fichiers markdown. Le plan et les sous-agents, je savais déjà les faire ; c'est la mémoire qui manquait pour que l'agent arrête de repartir de zéro à chaque fois — comme moi devant mes relevés, tous les mois, avant lui.

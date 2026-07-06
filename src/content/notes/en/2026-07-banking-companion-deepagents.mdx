@@ -1,0 +1,188 @@
+---
+title: "I handed my bank statements to a deep agent — and it actually remembers"
+date: 2026-07-06
+locale: en
+translationKey: "2026-07-deepagents-banking-companion"
+tags: ["ia", "stack", "build"]
+excerpt: "LangChain ships deepagents: the four building blocks I've been repeating for three months, named and packaged. I test them on a real personal need — a banking companion — and find out the pillar that matters isn't the one I expected."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+
+My agent series followed a simple arc: the [harness](/notes/2026-06-harness-agent-sdk) that turns an LLM into a doer, then [the dispatcher](/notes/2026-06-orchestrator-router) that puts two agents to work, then [Flue](/notes/2026-06-flue-agent-framework) that wraps the whole thing into a framework — on the Astro side, in TypeScript.
+
+This time it's **LangChain** shipping its framework: **deepagents**. Same idea, different ecosystem (Python, LangGraph). And to test it, not a toy — a **real personal need**: a companion that looks at my bank statements and tells me where the money goes.
+
+## deepagents in one table
+
+deepagents describes itself as a *"batteries-included agent harness"* built on LangGraph. The funny part is that its four pillars are *exactly* the blocks I've been describing for three months — only named and shipped out of the box:
+
+| deepagents pillar | What it does | What I already called it |
+|---|---|---|
+| **Planning** (`write_todos`) | A near no-op tool that forces the agent to lay out a plan before acting | The harness loop, but with an explicit todo list |
+| **Sub-agents** | Delegation with **isolated context**; only the final result bubbles up | My router article: "calling an agent = a tool call" |
+| **File system** | Read/write/edit/search over pluggable backends → **memory** + offloading big outputs to disk | Flue's file pattern, the sandbox |
+| **System prompt** | The persona and the guardrails | My `agent.md` / `SKILL.md` |
+
+<Callout tone="info">
+  deepagents is to LangChain/Python what Flue is to Astro/TypeScript: the harness delivered as a framework. Two slopes, the same mountain.
+</Callout>
+
+## Why banking justifies all four pillars
+
+My rule, repeated in the router article: *architecture is a response to real complexity, not a trophy.* A good use case is one where each of the four pillars has a genuine reason to exist. Personal finance ticks all of them — and especially the last one, the one I underrated.
+
+Because managing a budget isn't a **throwaway** analysis. It's **longitudinal**: next month only means something against this one. And that's exactly what the file system brings — **memory**. It's what turns a one-shot analysis into a *companion* that remembers. That's the real finding: the pillar that makes the difference isn't the plan or the sub-agents, it's the disk.
+
+## 1. The plan — the agent lays out its todo before executing
+
+You tell it "give me the rundown on June." Before charging ahead, it writes its plan via `write_todos`:
+
+```
+todos:
+  ☐ load the statement from statements/2026-06.csv
+  ☐ categorize every transaction        → sub-agent categorizer
+  ☐ spot recurring subscriptions         → sub-agent subscription-hunter
+  ☐ compare against the baseline budget  → sub-agent anomaly-detector
+  ☐ update memory/budget.md
+  ☐ synthesize: where the money goes + what to cut
+```
+
+`write_todos` executes nothing. It's a no-op that **forces decomposition**: on a six-step task, an agent that wrote its plan drifts far less than one that improvises.
+
+## 2. Sub-agents — a big CSV chewed in isolated context
+
+Three specialists, each with a blank window. They each chew a heavy slice of the statement (200 rows) and only bubble up their **conclusion** — the main thread never drowns in detail:
+
+| Sub-agent | Its task | What bubbles up |
+|---|---|---|
+| **categorizer** | Classifies each row (groceries, dining, transport…) | category → amount |
+| **subscription-hunter** | Detects recurring debits | new / gone vs memory |
+| **anomaly-detector** | Spots deviations vs the budget | unusual debits, quantified |
+
+In code, it's a single call — and I point deepagents at a **Claude** model, because the framework is model-agnostic:
+
+```python
+from deepagents import create_deep_agent
+
+subagents = [
+    {
+        "name": "categorizer",
+        "description": "Classifies each transaction in the statement.",
+        "prompt": "Classify the rows. Return a category → amount table. "
+                  "Invent no category outside the provided list.",
+    },
+    {
+        "name": "subscription-hunter",
+        "description": "Spots recurring debits month over month.",
+        "prompt": "Compare the statement to memory/subscriptions.md. Flag new "
+                  "recurring charges and ones that disappeared.",
+    },
+    {
+        "name": "anomaly-detector",
+        "description": "Spots unusual debits vs history.",
+        "prompt": "Compare against the baseline budget. Flag any notable gap, quantified.",
+    },
+]
+
+agent = create_deep_agent(
+    model="anthropic:claude-opus-4-8",   # model-agnostic: Claude, open-weight, or local
+    system_prompt=BUDGET_ADVISOR,
+    subagents=subagents,
+)
+
+result = agent.invoke({
+    "messages": "Give me the rundown on June: where does my money go, "
+                "which subscriptions am I still paying, what to cut.",
+})
+```
+
+Notice what I *don't* write: no hand-rolled orchestration loop. Where my router article wired two `query()` calls in TypeScript, here the framework fires `task(categorizer)` when the agent decides to. It's **style B** from the router article — autonomous delegation — shipped out of the box.
+
+## 3. The file system — memory, the real star
+
+Here's the piece that changes everything. deepagents gives the agent file tools (`ls`, `read_file`, `write_file`, `edit_file`) over a pluggable backend. I use it in **three distinct roles**:
+
+```
+finances/
+├─ statements/
+│  └─ 2026-06.csv        ← raw data, offloaded (out of context)
+└─ memory/
+   ├─ budget.md          ← persistent memory: my baseline budget
+   └─ subscriptions.md   ← the known list, updated each pass
+```
+
+- `statements/*.csv`: the heavy data lives **on disk**, not in context. The agent reads what it needs, when it needs it.
+- `memory/budget.md`: next month, the agent **re-reads this file** and compares. That's what remembering is.
+- `memory/subscriptions.md`: rewritten each pass. The known list becomes a baseline to detect new charges against.
+
+And since we're talking **bank data**, the security point isn't optional. deepagents offers **declarative per-path permissions** — the direct echo of the "perimeter security" from my router article, except here the perimeter is over files, not tools:
+
+```python
+from deepagents.backends import FilesystemBackend
+
+backend = FilesystemBackend(
+    root_dir="./finances",
+    permissions={
+        "statements/**": "read",      # it reads statements, never touches them
+        "memory/**": "read-write",    # it keeps its memory current
+    },
+)
+```
+
+<Callout tone="warn">
+  The agent can read your statements and write its memory — nothing else. It can't alter source data or step outside the folder. On sensitive data, the perimeter is declared, not wished for.
+</Callout>
+
+## 4. The persona — factual, no moralizing
+
+The `system_prompt` plays the role of my `agent.md`. Here, a clear stance:
+
+<FileBlock filename="BUDGET_ADVISOR">
+```markdown
+You are a factual budget advisor.
+- Quantify everything. No invented amounts: if you lack the data, say so.
+- No moralizing. "€340 on dining" is a fact, not a scolding.
+- Essentials first: where the money goes, then what's cuttable.
+- Always compare to the previous month via memory/budget.md.
+```
+</FileBlock>
+
+## The full map
+
+```
+"Give me the rundown on June"
+        │
+        ▼
+   Deep agent ──► write_todos (lays out the plan)
+        │
+        ├─ task(categorizer)          ─► categories → amounts
+        ├─ task(subscription-hunter)  ─► recurring: new / gone
+        └─ task(anomaly-detector)     ─► gaps vs budget, quantified
+        │
+        ▼
+   filesystem   statements/2026-06.csv  (data, out of context)
+                memory/budget.md        (memory, persistent)
+                memory/subscriptions.md
+        │
+        ▼
+   Synthesis: where the money goes + what to cut
+```
+
+## Honest: where it stands
+
+Two caveats, in the spirit of what I said about Flue.
+
+**It's Python/LangGraph**, not my TypeScript/Claude turf. There's `deepagentsjs` if you want to stay in TS, but the mature ecosystem (LangSmith traces, backends) lives on the Python side. Pick your slope with eyes open.
+
+**Your statements are sensitive.** Don't dump them into some cloud blindly just because the code is clean. Since deepagents is model-agnostic, this is exactly the case where running on an **open-weight or local model** earns its keep: the data never leaves your machine. Filesystem permissions are a guardrail, not a blessing.
+
+And like Flue: I ported it to see, not yet run it in production. Take this as a map, not a battle report.
+
+## What it teaches me
+
+My whole agent series, until now, was **memoryless**. The harness, the router, Flue: every time, a blank context, a task, an answer, then forgetting. deepagents adds the piece I'd never really used — **the disk as memory** — and that's what tips it over.
+
+An agent that analyzes your month is a tool. An agent that **remembers** last month to judge this one is a companion. The difference fits in a `memory/` folder and two markdown files. The plan and the sub-agents, I already knew how to build; memory was the missing piece that stops the agent from starting over every time — like me, staring at my statements, every month, before it.
