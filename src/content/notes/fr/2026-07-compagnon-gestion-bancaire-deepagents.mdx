@@ -4,7 +4,7 @@ date: 2026-07-06
 locale: fr
 translationKey: "2026-07-deepagents-banking-companion"
 tags: ["ia", "stack", "build"]
-excerpt: "LangChain sort deepagents : les quatre briques que je répète depuis trois mois, nommées et emballées. Je les teste sur un vrai besoin perso — un compagnon de gestion bancaire — et je découvre que le pilier qui compte n'est pas celui que je croyais."
+excerpt: "LangChain sort deepagents : les quatre briques que je répète depuis trois mois, nommées et emballées. Je les teste sur un vrai besoin perso — un compagnon de gestion bancaire, mes relevés PDF en local, une vraie UI de chat — et je découvre que le pilier qui compte n'est pas celui que je croyais."
 draft: false
 ---
 
@@ -13,7 +13,7 @@ import FileBlock from "@/components/prose/FileBlock.astro";
 
 Ma série sur les agents a suivi un arc simple : le [harness](/notes/2026-06-harness-agent-sdk) qui transforme un LLM en exécutant, puis [l'aiguilleur](/notes/2026-06-orchestrateur-routeur) qui fait travailler deux agents, puis [Flue](/notes/2026-06-flue-framework-agents) qui emballe le tout en framework — côté Astro, en TypeScript.
 
-Cette fois, c'est **LangChain** qui sort son framework : **deepagents**. Même idée, autre écosystème (Python, LangGraph). Et pour le tester, pas un jouet — un **vrai besoin perso** : un compagnon qui regarde mes relevés bancaires et me dit où part l'argent.
+Cette fois, c'est **LangChain** qui sort son framework : **deepagents**. Même idée, autre écosystème (Python, LangGraph). Et pour le tester, pas un jouet — un **vrai besoin perso** : un compagnon qui lit mes relevés bancaires (en PDF, sur ma machine) et me dit où part l'argent, dans une vraie fenêtre de chat.
 
 ## deepagents en une table
 
@@ -38,29 +38,30 @@ Parce que gérer un budget, ce n'est pas une analyse **jetable**. C'est **longit
 
 ## 1. Le plan — l'agent pose sa todo avant d'exécuter
 
-Tu lui dis « fais le point sur juin ». Avant de foncer, il écrit son plan via `write_todos` :
+Deux types de demandes arrivent dans le chat. Une **question ponctuelle** (« combien en resto ce mois ? ») : pas besoin de plan, le dispatcher délègue direct. Une **demande multi-étapes** (« génère le rapport de juin ») : là, l'agent écrit d'abord son plan via `write_todos` :
 
 ```
 todos:
-  ☐ charger le relevé depuis releves/2026-06.csv
-  ☐ catégoriser chaque transaction         → sous-agent categoriseur
-  ☐ repérer les abonnements récurrents      → sous-agent chasseur-abonnements
-  ☐ comparer au budget de référence         → sous-agent detecteur-anomalies
+  ☐ extraire le relevé depuis releves/2026-06.pdf (en local)
+  ☐ sortir la donnée structurée          → sous-agent extracteur
+  ☐ écrire l'extraction dans memoire/extraction-2026-06.md
+  ☐ générer le rapport + optimisations    → sous-agent rapporteur
   ☐ mettre à jour memoire/budget.md
-  ☐ synthétiser : où part l'argent + quoi couper
 ```
 
-`write_todos` n'exécute rien. C'est un no-op qui **force la décomposition** : sur une tâche à six étapes, l'agent qui a écrit son plan dérive beaucoup moins que celui qui improvise.
+`write_todos` n'exécute rien. C'est un no-op qui **force la décomposition** : sur une tâche à plusieurs étapes, l'agent qui a écrit son plan dérive beaucoup moins que celui qui improvise.
 
-## 2. Les sous-agents — un gros CSV mâché en contexte isolé
+## 2. Trois agents, un dispatcher — et ils collaborent par les fichiers
 
-Trois spécialistes, chacun avec sa fenêtre vierge. Ils mâchent chacun un bout lourd du relevé (200 lignes) et ne remontent que leur **conclusion** — le thread principal ne se noie jamais dans le détail :
+Le main deep agent ne répond pas lui-même : il **classe ta demande et délègue** au bon spécialiste. C'est le pattern de mon [article routeur](/notes/2026-06-orchestrateur-routeur), sauf qu'ici c'est le framework qui déclenche `task(...)` — le **style B**, la délégation autonome. Trois spécialistes, trois rôles nets :
 
-| Sous-agent | Sa tâche | Ce qui remonte |
+| Sous-agent | Sa tâche | Ce qu'il fait des fichiers |
 |---|---|---|
-| **categoriseur** | Classe chaque ligne (courses, resto, transport…) | catégorie → montant |
-| **chasseur-abonnements** | Détecte les débits récurrents | nouveaux / disparus vs la mémoire |
-| **detecteur-anomalies** | Repère les écarts vs le budget | les débits inhabituels, chiffrés |
+| **extracteur** | Sort la donnée structurée : abonnements, entrées/sorties, par catégorie | **écrit** `memoire/extraction-<mois>.md` |
+| **chat** | Répond à n'importe quelle question ponctuelle sur tes finances | **lit** l'extraction + la mémoire |
+| **rapporteur** | Génère le rapport synthétique : entrées, sorties, optimisations | **lit** l'extraction, **écrit** `memoire/rapport-<mois>.md` |
+
+Le point clé est dans la dernière colonne : **les trois ne se parlent pas directement.** L'extracteur écrit un fichier, le rapporteur et le chat le relisent. Leur canal de collaboration, c'est le **système de fichiers** — exactement l'atelier partagé que deepagents met au centre. (On y revient section 4 : le même disque sert de mémoire *entre les mois* et d'atelier *entre les agents*.)
 
 En code, ça tient en un appel — et je pointe deepagents vers un modèle **Claude**, parce que le framework est agnostique du modèle :
 
@@ -69,21 +70,25 @@ from deepagents import create_deep_agent
 
 subagents = [
     {
-        "name": "categoriseur",
-        "description": "Classe chaque transaction du relevé.",
-        "prompt": "Classe les lignes. Rends un tableau catégorie → montant. "
-                  "N'invente aucune catégorie hors de la liste fournie.",
+        "name": "extracteur",
+        "description": "Sort la donnée structurée d'un relevé : abonnements, entrées/sorties, par catégorie.",
+        "prompt": "Lis le texte du relevé. Rends un JSON { entrees, sorties, "
+                  "categories, abonnements[] }. Aucun montant inventé. "
+                  "Écris le résultat dans memoire/extraction-<mois>.md.",
     },
     {
-        "name": "chasseur-abonnements",
-        "description": "Repère les débits récurrents mois après mois.",
-        "prompt": "Compare le relevé à memoire/abonnements.md. Signale les "
-                  "nouveaux prélèvements récurrents et ceux qui ont disparu.",
+        "name": "chat",
+        "description": "Répond à n'importe quelle question ponctuelle sur mes finances.",
+        "prompt": "Réponds en t'appuyant sur memoire/. Chiffre, cite le mois. "
+                  "Donnée manquante → tu le dis, tu n'inventes pas.",
     },
     {
-        "name": "detecteur-anomalies",
-        "description": "Repère les débits inhabituels vs l'historique.",
-        "prompt": "Compare au budget de référence. Flag tout écart marquant, chiffré.",
+        "name": "rapporteur",
+        "description": "Génère un rapport synthétique du mois avec des optimisations.",
+        "prompt": "À partir de memoire/extraction-<mois>.md, écris un rapport : "
+                  "1) entrées vs sorties, 2) top postes, 3) évolution vs mois "
+                  "précédent, 4) trois optimisations concrètes et chiffrées. "
+                  "Pas de moralisation.",
     },
 ]
 
@@ -91,32 +96,46 @@ agent = create_deep_agent(
     model="anthropic:claude-opus-4-8",   # agnostique : Claude, open-weight ou local
     system_prompt=CONSEILLER_BUDGET,
     subagents=subagents,
+    tools=[extraire_releve],             # extraction PDF locale — défini juste en dessous
 )
-
-result = agent.invoke({
-    "messages": "Fais le point sur juin : où part mon argent, "
-                "quels abonnements je paie encore, quoi couper.",
-})
 ```
 
-Remarque ce que je n'écris **pas** : aucune boucle d'orchestration à la main. Là où mon article routeur câblait deux `query()` en TypeScript, ici c'est le framework qui lance `task(categoriseur)` quand l'agent le décide. C'est le **style B** de l'article routeur — la délégation autonome — livré d'office.
+Remarque ce que je n'écris **pas** : aucune boucle d'aiguillage à la main. Le dispatcher, c'est le main agent lui-même ; le code se contente de **déclarer les trois spécialistes** et de lui donner le tool d'extraction PDF. Il décide qui bosse.
 
-## 3. Le système de fichiers — la mémoire, la vraie vedette
+## 3. Les relevés arrivent en PDF — extraits en local
+
+Ma banque ne me donne pas un CSV propre : elle me donne un **PDF** par mois. C'est le format réel, et c'est aussi le plus sensible. Donc l'extraction se fait **sur ma machine**, hors-ligne, avant que quoi que ce soit n'atteigne le modèle. deepagents accepte des tools custom : j'en écris un qui lit le PDF en local.
+
+```python
+import pdfplumber  # extraction 100 % locale, aucune requête réseau
+
+def extraire_releve(chemin: str) -> str:
+    """Lit un relevé PDF sur le disque et rend son texte. Rien ne sort de la machine."""
+    with pdfplumber.open(chemin) as pdf:
+        return "\n".join(page.extract_text() or "" for page in pdf.pages)
+```
+
+L'agent appelle `extraire_releve("releves/2026-06.pdf")` quand son plan l'exige. Le PDF ne quitte jamais le dossier ; seul le texte extrait entre dans le raisonnement. C'est le premier maillon d'une **boucle 100 % locale** — j'y reviens plus bas.
+
+## 4. Le système de fichiers — la mémoire, la vraie vedette
 
 Voici la pièce qui change tout. deepagents donne à l'agent des outils fichiers (`ls`, `read_file`, `write_file`, `edit_file`) sur un backend pluggable. Je m'en sers pour **trois rôles distincts** :
 
 ```
 finances/
 ├─ releves/
-│  └─ 2026-06.csv        ← données brutes, offloadées (hors contexte)
+│  ├─ 2026-05.pdf              ← relevé mensuel brut (le PDF de la banque)
+│  └─ 2026-06.pdf              ← données lourdes, offloadées (hors contexte)
 └─ memoire/
-   ├─ budget.md          ← mémoire persistante : mon budget de référence
-   └─ abonnements.md     ← la liste connue, mise à jour à chaque passage
+   ├─ extraction-2026-06.md    ← donnée structurée, écrite par l'extracteur
+   ├─ budget.md                ← mémoire persistante : mon budget de référence
+   └─ rapport-2026-06.md       ← le rapport du mois, écrit par le rapporteur
 ```
 
-- `releves/*.csv` : les données lourdes vivent **sur le disque**, pas dans le contexte. L'agent lit ce dont il a besoin, quand il en a besoin.
-- `memoire/budget.md` : le mois prochain, l'agent **relit ce fichier** et compare. C'est ça, se souvenir.
-- `memoire/abonnements.md` : réécrit à chaque passage. La liste connue devient une base contre laquelle détecter les nouveautés.
+- `releves/*.pdf` : les données lourdes vivent **sur le disque**, pas dans le contexte. L'agent extrait ce dont il a besoin, quand il en a besoin.
+- `memoire/extraction-*.md` : écrite par l'extracteur, relue par le chat et le rapporteur. **C'est l'atelier partagé entre les trois agents** — leur seul canal de communication.
+- `memoire/budget.md` : le mois prochain, l'agent **relit ce fichier** et compare. C'est ça, se souvenir — la mémoire *entre les mois*.
+- `memoire/rapport-*.md` : le livrable, versionné mois après mois.
 
 Et comme on parle de **données bancaires**, le point de sécurité n'est pas négociable. deepagents propose des **permissions déclaratives par chemin** — l'écho direct de la « sécurité par périmètre » de mon article routeur, sauf qu'ici le périmètre porte sur des fichiers, pas sur des tools :
 
@@ -136,7 +155,7 @@ backend = FilesystemBackend(
   L'agent peut lire tes relevés et écrire sa mémoire — rien d'autre. Il ne peut pas modifier une donnée source ni sortir du dossier. Sur de la donnée sensible, le périmètre se déclare, il ne se souhaite pas.
 </Callout>
 
-## 4. Le persona — factuel, il ne moralise pas
+## 5. Le persona — factuel, il ne moralise pas
 
 Le `system_prompt` tient le rôle de mon `agent.md`. Ici, une posture nette :
 
@@ -150,39 +169,71 @@ Tu es un conseiller budget factuel.
 ```
 </FileBlock>
 
+## 6. L'UI — assistant-ui, parce que deepagents = LangGraph
+
+Un compagnon, ça se **parle**. Pas un `agent.invoke()` dans un terminal — une vraie fenêtre de chat. Et là, un heureux hasard technique : deepagents tourne sur **LangGraph**, et [assistant-ui](https://www.assistant-ui.com/) — la librairie React de chat IA — a justement un **runtime LangGraph de première classe**. Les deux se branchent sans colle.
+
+Tu sers ton deep agent avec `langgraph dev` (serveur local), et côté front, `useLangGraphRuntime` fait le pont :
+
+```tsx
+import { AssistantRuntimeProvider, Thread } from "@assistant-ui/react";
+import { useLangGraphRuntime } from "@assistant-ui/react-langgraph";
+import { Client } from "@langchain/langgraph-sdk";
+
+// serveur LangGraph LOCAL : `langgraph dev` sert le deep agent sur localhost
+const client = new Client({ apiUrl: "http://localhost:2024" });
+
+export function BudgetChat({ threadId }: { threadId: string }) {
+  const runtime = useLangGraphRuntime({
+    stream: async (messages, { command }) =>
+      client.runs.stream(threadId, "agent", { input: { messages }, command }),
+  });
+
+  return (
+    <AssistantRuntimeProvider runtime={runtime}>
+      <Thread />   {/* fil de conversation + composer, prêts à l'emploi */}
+    </AssistantRuntimeProvider>
+  );
+}
+```
+
+Le bonus, c'est les **interrupts**. deepagents sait demander une **validation humaine** avant une action sensible ; le runtime LangGraph d'assistant-ui gère ces interrupts nativement. Concrètement : avant de réécrire `memoire/budget.md`, l'agent s'arrête, l'UI affiche *« je mets à jour ton budget de référence ? »*, tu valides. Le human-in-the-loop est livré par le branchement, pas codé à la main.
+
 ## La carte complète
 
 ```
-"Fais le point sur juin"
+   assistant-ui (chat local)
+        │  useLangGraphRuntime  ←→  langgraph dev (serveur local)
+        ▼
+   Deep agent (dispatcher) ──► classe la demande, délègue
+        │        (write_todos si multi-étapes)
+        ├─ "combien en resto ?"      ─► chat        (répond direct)
+        ├─ "sors mes abonnements"    ─► extracteur  (→ memoire/extraction-06.md)
+        └─ "le rapport de juin"      ─► rapporteur  (lit l'extraction → rapport + optims)
+        │            ▲
+        │            └─ extraire_releve(2026-06.pdf) ─► texte, extrait en local
+        ▼
+   filesystem   releves/2026-06.pdf          (relevé brut, hors contexte)
+                memoire/extraction-06.md      (atelier partagé entre agents)
+                memoire/budget.md             (mémoire, persistante)
+                memoire/rapport-06.md         (livrable)
         │
         ▼
-   Deep agent ──► write_todos (pose le plan)
-        │
-        ├─ task(categoriseur)          ─► catégories → montants
-        ├─ task(chasseur-abonnements)  ─► récurrents : nouveaux / disparus
-        └─ task(detecteur-anomalies)   ─► écarts vs budget, chiffrés
-        │
-        ▼
-   filesystem   releves/2026-06.csv    (données, hors contexte)
-                memoire/budget.md      (mémoire, persistante)
-                memoire/abonnements.md
-        │
-        ▼
-   Synthèse : où part l'argent + quoi couper
+   Réponse / rapport streamé dans le chat
 ```
 
 ## Honnête : où ça en est
 
-Deux réserves, dans l'esprit de ce que je disais sur Flue.
+Trois réserves, dans l'esprit de ce que je disais sur Flue.
 
-**C'est du Python/LangGraph**, pas mon terrain TypeScript/Claude. Il existe `deepagentsjs` pour rester en TS, mais l'écosystème mûr (traces LangSmith, backends) reste côté Python. Choisis ton versant en connaissance de cause.
+**C'est du Python/LangGraph** pour l'agent, et du **React** pour l'UI — pas mon terrain Astro zéro-JS. Ce compagnon est donc un **petit outil à part**, pas un truc que je boulonne sur ce portfolio statique. Il existe `deepagentsjs` si tu veux tout garder en TS, mais l'écosystème mûr (traces LangSmith, backends) reste côté Python. Choisis ton versant en connaissance de cause.
 
-**Tes relevés sont sensibles.** Ne les balance pas chez un cloud à l'aveugle sous prétexte que le code est joli. deepagents étant agnostique du modèle, c'est exactement le cas où tourner sur un **modèle open-weight ou local** prend tout son sens : la donnée ne quitte pas ta machine. Les permissions filesystem sont un garde-fou, pas une bénédiction.
+**La boucle peut rester 100 % locale, et c'est tout l'intérêt.** PDF extrait sur ta machine (pdfplumber, hors-ligne) + modèle **open-weight ou local** (deepagents est agnostique) + serveur LangGraph auto-hébergé (`langgraph dev`) + UI servie en local : la donnée bancaire ne quitte **jamais** ta machine. Les permissions filesystem sont un garde-fou de plus, pas une bénédiction.
 
-Et comme pour Flue : je l'ai porté pour voir, pas encore mis en prod. Prends ça comme une cartographie, pas comme un retour de combat.
+Et comme pour Flue : je l'ai câblé pour voir, pas encore mis en prod. Prends ça comme une cartographie, pas comme un retour de combat.
 
 ## Ce que ça m'apprend
 
 Toute ma série d'agents, jusqu'ici, était **sans mémoire**. Le harness, le routeur, Flue : à chaque fois, un contexte vierge, une tâche, une réponse, puis l'oubli. deepagents ajoute la pièce que je n'avais jamais vraiment exploitée — **le disque comme mémoire** — et c'est elle qui fait la bascule.
 
-Un agent qui analyse ton mois, c'est un outil. Un agent qui se **souvient** de ton mois dernier pour juger celui-ci, c'est un compagnon. La différence tient dans un dossier `memoire/` et deux fichiers markdown. Le plan et les sous-agents, je savais déjà les faire ; c'est la mémoire qui manquait pour que l'agent arrête de repartir de zéro à chaque fois — comme moi devant mes relevés, tous les mois, avant lui.
+Un agent qui analyse ton mois, c'est un outil. Un agent qui se **souvient** de ton mois dernier pour juger celui-ci, à qui tu **parles** dans une vraie UI, et dont les relevés ne **quittent jamais** ta machine — ça, c'est un petit produit. La différence tient dans un dossier `memoire/`, deux fichiers markdown et un runtime qui se branche tout seul. Le plan et les sous-agents, je savais déjà les faire ; c'est la mémoire qui manquait pour que l'agent arrête de repartir de zéro à chaque fois — comme moi devant mes relevés, tous les mois, avant lui.
