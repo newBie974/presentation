@@ -10,6 +10,7 @@ draft: false
 
 import Callout from "@/components/prose/Callout.astro";
 import FileBlock from "@/components/prose/FileBlock.astro";
+import AgentArchDiagram from "@/components/prose/AgentArchDiagram.astro";
 
 My agent series followed a simple arc: the [harness](/notes/2026-06-harness-agent-sdk) that turns an LLM into a doer, then [the dispatcher](/notes/2026-06-orchestrator-router) that puts two agents to work, then [Flue](/notes/2026-06-flue-agent-framework) that wraps the whole thing into a framework — on the Astro side, in TypeScript.
 
@@ -201,26 +202,9 @@ The bonus is **interrupts**. deepagents can request a **human approval** before 
 
 ## The full map
 
-```
-   assistant-ui (local chat)
-        │  useLangGraphRuntime  ←→  langgraph dev (local server)
-        ▼
-   Deep agent (dispatcher) ──► classifies the request, delegates
-        │        (write_todos if multi-step)
-        ├─ "how much on dining?"    ─► chat       (answers directly)
-        ├─ "pull my subscriptions"  ─► extractor  (→ memory/extraction-06.md)
-        └─ "June's report"          ─► reporter   (reads extraction → report + optims)
-        │            ▲
-        │            └─ extract_statement(2026-06.pdf) ─► text, extracted locally
-        ▼
-   filesystem   statements/2026-06.pdf        (raw statement, out of context)
-                memory/extraction-06.md        (shared workspace across agents)
-                memory/budget.md               (memory, persistent)
-                memory/report-06.md            (deliverable)
-        │
-        ▼
-   Answer / report streamed into the chat
-```
+Four floors, one reading direction: the **view** talks to the **harness**, which **splits** the work across three agents that collaborate through the **documents** — and the answer streams back into the chat.
+
+<AgentArchDiagram lang="en" />
 
 ## Honest: where it stands
 

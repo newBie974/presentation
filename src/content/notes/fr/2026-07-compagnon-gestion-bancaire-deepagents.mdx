@@ -10,6 +10,7 @@ draft: false
 
 import Callout from "@/components/prose/Callout.astro";
 import FileBlock from "@/components/prose/FileBlock.astro";
+import AgentArchDiagram from "@/components/prose/AgentArchDiagram.astro";
 
 Ma série sur les agents a suivi un arc simple : le [harness](/notes/2026-06-harness-agent-sdk) qui transforme un LLM en exécutant, puis [l'aiguilleur](/notes/2026-06-orchestrateur-routeur) qui fait travailler deux agents, puis [Flue](/notes/2026-06-flue-framework-agents) qui emballe le tout en framework — côté Astro, en TypeScript.
 
@@ -201,26 +202,9 @@ Le bonus, c'est les **interrupts**. deepagents sait demander une **validation hu
 
 ## La carte complète
 
-```
-   assistant-ui (chat local)
-        │  useLangGraphRuntime  ←→  langgraph dev (serveur local)
-        ▼
-   Deep agent (dispatcher) ──► classe la demande, délègue
-        │        (write_todos si multi-étapes)
-        ├─ "combien en resto ?"      ─► chat        (répond direct)
-        ├─ "sors mes abonnements"    ─► extracteur  (→ memoire/extraction-06.md)
-        └─ "le rapport de juin"      ─► rapporteur  (lit l'extraction → rapport + optims)
-        │            ▲
-        │            └─ extraire_releve(2026-06.pdf) ─► texte, extrait en local
-        ▼
-   filesystem   releves/2026-06.pdf          (relevé brut, hors contexte)
-                memoire/extraction-06.md      (atelier partagé entre agents)
-                memoire/budget.md             (mémoire, persistante)
-                memoire/rapport-06.md         (livrable)
-        │
-        ▼
-   Réponse / rapport streamé dans le chat
-```
+Quatre étages, un seul sens de lecture : la **vue** parle au **harness**, qui **découpe** le travail entre trois agents, qui collaborent par les **documents** — et la réponse remonte dans le chat.
+
+<AgentArchDiagram lang="fr" />
 
 ## Honnête : où ça en est
 

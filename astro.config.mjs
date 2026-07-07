@@ -9,6 +9,28 @@ import rehypeExternalLinks from "rehype-external-links";
 
 const SITE = "https://aymeric.dijoux.dev";
 
+// Wrap each Markdown <table> in a scrollable div so wide tables scroll inside
+// their own box instead of pushing horizontal overflow onto the page body.
+function rehypeTableScroll() {
+  /** @param {any} node */
+  const walk = (node) => {
+    if (!node.children) return;
+    node.children = node.children.map((/** @type {any} */ child) => {
+      walk(child);
+      if (child.type === "element" && child.tagName === "table") {
+        return {
+          type: "element",
+          tagName: "div",
+          properties: { className: ["table-scroll"] },
+          children: [child],
+        };
+      }
+      return child;
+    });
+  };
+  return (/** @type {any} */ tree) => walk(tree);
+}
+
 // FR ↔ EN slugs differ, so the default prefix-based i18n sitemap can't pair
 // them. Declare the real translation pairs and inject reciprocal hreflang.
 const I18N_PAIRS = [
@@ -49,6 +71,7 @@ export default defineConfig({
           rehypeExternalLinks,
           { target: "_blank", rel: ["noopener", "noreferrer"] },
         ],
+        rehypeTableScroll,
       ],
     }),
     sitemap({

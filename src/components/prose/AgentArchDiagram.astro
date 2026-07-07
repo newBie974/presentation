@@ -1,0 +1,325 @@
+---
+// Schéma d'architecture "main levée" : Vue → Harness → découpage (3 agents) → Documents.
+interface Props {
+  lang?: "fr" | "en";
+}
+const { lang = "fr" } = Astro.props;
+
+const T = {
+  fr: {
+    view: "assistant-ui · chat local",
+    edge: "useLangGraphRuntime · stream + interrupts",
+    harness: "HARNESS · deep agent (LangGraph)",
+    harnessSub: "write_todos · dispatch · la boucle",
+    split: "LE DÉCOUPAGE",
+    splitSub: "— 3 agents, 1 dispatcher",
+    agents: [
+      {
+        name: "extracteur",
+        d: "abonnements · in/out",
+        io: "→ écrit extraction.md",
+        e: "écrit",
+      },
+      { name: "chat", d: "toute question", io: "lit la mémoire", e: "lit" },
+      {
+        name: "rapporteur",
+        d: "rapport + optims",
+        io: "→ écrit rapport.md",
+        e: "lit · écrit",
+      },
+    ],
+    docs: "DOCUMENTS · 100% local",
+    rows: [
+      ["releves/2026-06.pdf", "relevé brut (hors contexte)"],
+      ["memoire/extraction.md", "atelier partagé entre agents"],
+      ["memoire/budget.md", "mémoire persistante"],
+      ["memoire/rapport.md", "livrable du mois"],
+    ],
+    ret: "réponse / rapport streamé",
+    cap: "De la vue au disque : l'UI parle au harness, qui découpe le travail entre trois agents, qui collaborent par les documents.",
+    aria: "Architecture du compagnon bancaire : la vue assistant-ui parle au harness deep agent, qui délègue à trois agents (extracteur, chat, rapporteur), lesquels collaborent via des documents locaux.",
+  },
+  en: {
+    view: "assistant-ui · local chat",
+    edge: "useLangGraphRuntime · stream + interrupts",
+    harness: "HARNESS · deep agent (LangGraph)",
+    harnessSub: "write_todos · dispatch · the loop",
+    split: "THE SPLIT",
+    splitSub: "— 3 agents, 1 dispatcher",
+    agents: [
+      {
+        name: "extractor",
+        d: "subscriptions · in/out",
+        io: "→ writes extraction.md",
+        e: "writes",
+      },
+      { name: "chat", d: "any question", io: "reads memory", e: "reads" },
+      {
+        name: "reporter",
+        d: "report + optims",
+        io: "→ writes report.md",
+        e: "reads · writes",
+      },
+    ],
+    docs: "DOCUMENTS · 100% local",
+    rows: [
+      ["statements/2026-06.pdf", "raw statement (out of context)"],
+      ["memory/extraction.md", "shared workspace across agents"],
+      ["memory/budget.md", "persistent memory"],
+      ["memory/report.md", "the month's deliverable"],
+    ],
+    ret: "answer / report streamed",
+    cap: "From view to disk: the UI talks to the harness, which splits the work across three agents that collaborate through the documents.",
+    aria: "Banking companion architecture: the assistant-ui view talks to the deep-agent harness, which delegates to three agents (extractor, chat, reporter) that collaborate through local documents.",
+  },
+}[lang];
+
+const cols = [140, 335, 530]; // centres X des 3 agents
+---
+
+<figure class="da-fig">
+  <svg viewBox="0 0 760 600" role="img" aria-label={T.aria} class="da-svg">
+    <defs>
+      <filter id="daRough" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.009"
+          numOctaves="2"
+          seed="7"
+          result="n"></feTurbulence>
+        <feDisplacementMap
+          in="SourceGraphic"
+          in2="n"
+          scale="1.6"
+          xChannelSelector="R"
+          yChannelSelector="G"></feDisplacementMap>
+      </filter>
+      <marker
+        id="daHead"
+        markerWidth="9"
+        markerHeight="9"
+        refX="6"
+        refY="3"
+        orient="auto"
+      >
+        <path d="M0,0 L6,3 L0,6" class="da-head"></path>
+      </marker>
+    </defs>
+
+    {/* Boîtes (tracé roughen) */}
+    <rect
+      x="30"
+      y="24"
+      width="610"
+      height="58"
+      rx="6"
+      class="da-box"
+      filter="url(#daRough)"></rect>
+    <rect
+      x="30"
+      y="120"
+      width="610"
+      height="258"
+      rx="6"
+      class="da-box da-harness"
+      filter="url(#daRough)"></rect>
+    {
+      cols.map((cx) => (
+        <rect
+          x={cx - 85}
+          y="214"
+          width="170"
+          height="112"
+          rx="6"
+          class="da-box da-agent"
+          filter="url(#daRough)"
+        />
+      ))
+    }
+    <rect
+      x="30"
+      y="410"
+      width="610"
+      height="150"
+      rx="6"
+      class="da-box"
+      filter="url(#daRough)"></rect>
+    <rect
+      x="48"
+      y="184"
+      width="120"
+      height="18"
+      class="da-chip"
+      filter="url(#daRough)"></rect>
+
+    {/* Connecteurs */}
+    <path
+      d="M335,82 L335,120"
+      class="da-line"
+      filter="url(#daRough)"
+      marker-end="url(#daHead)"></path>
+    {
+      cols.map((cx) => (
+        <path
+          d={`M${cx},326 L${cx},410`}
+          class="da-line"
+          filter="url(#daRough)"
+          marker-end="url(#daHead)"
+        />
+      ))
+    }
+    <path
+      d="M640,470 L712,470 L712,53 L642,53"
+      class="da-line da-return"
+      filter="url(#daRough)"
+      marker-end="url(#daHead)"></path>
+
+    {/* Textes (nets) */}
+    <text x="48" y="47" class="da-kick">VUE</text>
+    <text x="335" y="63" class="da-lead" text-anchor="middle">{T.view}</text>
+    <text x="348" y="105" class="da-edge">{T.edge}</text>
+
+    <text x="48" y="146" class="da-kick">{T.harness}</text>
+    <text x="48" y="165" class="da-sub">{T.harnessSub}</text>
+    <text x="54" y="197" class="da-chip-t">{T.split}</text>
+    <text x="176" y="197" class="da-sub">{T.splitSub}</text>
+
+    {
+      T.agents.map((a, i) => (
+        <>
+          <text x={cols[i]} y="251" class="da-name" text-anchor="middle">
+            {a.name}
+          </text>
+          <text x={cols[i]} y="273" class="da-desc" text-anchor="middle">
+            {a.d}
+          </text>
+          <text x={cols[i]} y="292" class="da-desc" text-anchor="middle">
+            {a.io}
+          </text>
+          <text x={cols[i] + 10} y="372" class="da-edge">
+            {a.e}
+          </text>
+        </>
+      ))
+    }
+
+    <text x="48" y="436" class="da-kick">{T.docs}</text>
+    {
+      T.rows.map((r, i) => (
+        <>
+          <text x="55" y={466 + i * 25} class="da-name da-file">
+            {r[0]}
+          </text>
+          <text x="300" y={466 + i * 25} class="da-desc">
+            {r[1]}
+          </text>
+        </>
+      ))
+    }
+
+    <text
+      x="726"
+      y="300"
+      class="da-edge"
+      text-anchor="middle"
+      transform="rotate(90 726 300)">{T.ret}</text
+    >
+  </svg>
+  <figcaption class="da-cap">{T.cap}</figcaption>
+</figure>
+
+<style>
+  .da-fig {
+    margin: 1.8rem auto;
+    max-width: 46rem;
+  }
+  .da-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .da-box {
+    fill: var(--color-bg-soft);
+    stroke: var(--color-border);
+    stroke-width: 2;
+  }
+  .da-harness {
+    fill: var(--color-bg);
+  }
+  .da-agent {
+    fill: var(--color-bg-soft);
+  }
+  .da-line {
+    fill: none;
+    stroke: var(--color-text);
+    stroke-width: 2;
+  }
+  .da-return {
+    stroke: var(--color-text-muted);
+    stroke-dasharray: 5 4;
+  }
+  .da-head {
+    fill: none;
+    stroke: var(--color-text);
+    stroke-width: 1.6;
+  }
+  .da-chip {
+    fill: var(--color-accent);
+  }
+  .da-chip-t {
+    fill: var(--color-on-accent);
+    font-weight: 700;
+  }
+  text {
+    font-family: var(--font-mono);
+  }
+  .da-kick {
+    font-size: 11px;
+    fill: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .da-lead {
+    font-size: 14px;
+    font-weight: 700;
+    fill: var(--color-text);
+  }
+  .da-name {
+    font-size: 13px;
+    font-weight: 700;
+    fill: var(--color-text);
+  }
+  .da-file {
+    font-size: 11.5px;
+  }
+  .da-desc {
+    font-size: 10.5px;
+    fill: var(--color-text-muted);
+  }
+  .da-sub,
+  .da-chip-t {
+    font-size: 10.5px;
+  }
+  .da-sub {
+    fill: var(--color-text-muted);
+  }
+  .da-edge {
+    font-size: 10px;
+    fill: var(--color-text-muted);
+  }
+  .da-cap {
+    margin-top: 0.7rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    text-align: center;
+    line-height: 1.5;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .da-box,
+    .da-line,
+    .da-chip {
+      filter: none !important;
+    }
+  }
+</style>
