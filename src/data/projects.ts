@@ -3,6 +3,7 @@ import tooktaLogo from "@/assets/tookta.png";
 import carouboltLogo from "@/assets/caroubolt-logo.png";
 import voicejournalLogo from "@/assets/voicejournal-logo.png";
 import karibteckLogo from "@/assets/karibteck-logo.svg";
+import tibougLogo from "@/assets/tiboug-logo.png";
 
 export const projects: Project[] = [
   {
@@ -17,6 +18,26 @@ export const projects: Project[] = [
     techStack: ["Astro", "TypeScript", "Tailwind CSS", "MDX"],
     platform: ["web"],
     logo: karibteckLogo,
+  },
+  {
+    slug: "tiboug",
+    title: "Ti Boug",
+    tagline: {
+      fr: "Le vrai prix des fruits & légumes à La Réunion, contre la vie chère.",
+      en: "The real price of fruit & veg in Réunion — against the high cost of living.",
+    },
+    url: "https://tiboug.re",
+    status: "building",
+    techStack: [
+      "React Native",
+      "Expo",
+      "TypeScript",
+      "Convex",
+      "RevenueCat",
+      "Gemini AI",
+    ],
+    platform: ["ios"],
+    logo: tibougLogo,
   },
   {
     slug: "voicejournal",

@@ -1,0 +1,72 @@
+---
+title: "Ti Boug : le vrai prix du bazar dans la poche des Réunionnais"
+date: 2026-07-12
+locale: fr
+translationKey: "2026-07-ti-boug-presentation"
+tags: ["build", "indie", "ia"]
+excerpt: "Ti Boug, mon app iPhone contre la vie chère à La Réunion : les vrais prix des fruits & légumes du jour, leur saison, et un panier composé par IA — à partir des mercuriales officielles de la DAAF. Ce que ça fait, la stack, et où en est le build."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import { Image } from "astro:assets";
+import tiBoug from "@/assets/mascot/ti-boug.png";
+import appstoreSet from "@/assets/bazar/tiboug-appstore-set.png";
+
+**Ti Boug**, c'est mon app iPhone contre la vie chère à La Réunion. La promesse tient en une phrase créole : **« Sak lé bon marché, ousa é kansa »** — ce qui est bon marché, où, et quand.
+
+<figure>
+  <Image src={tiBoug} alt="Ti Boug, la mascotte : un boug péi avec chapeau bakoua, son cabas et un panier de fruits et légumes" widths={[240, 320, 480]} sizes="(max-width: 600px) 60vw, 320px" />
+  <figcaption>Ti Boug, le boug péi qui connaît les bons prix.</figcaption>
+</figure>
+
+J'ai déjà raconté [d'où part le projet](/notes/2026-06-ti-cok-mercuriales-app) : une donnée publique gâchée, coincée dans des PDF que personne ne lit. Ici, je présente **l'app elle-même** — ce qu'elle fait, avec quoi elle est construite, et où j'en suis.
+
+## Le problème : la vie chère, légume par légume
+
+À La Réunion, sur l'alimentaire, l'écart de prix avec l'Hexagone est réel et pèse sur le pouvoir d'achat. Et d'une semaine à l'autre, d'un marché à l'autre, le prix des fruits & légumes varie fort. La bonne info existe — les relevés officiels de la **DAAF** — mais personne ne l'a dans la poche au moment d'aller au marché.
+
+C'est exactement le trou que Ti Boug vient combler : sortir cette donnée du PDF et la rendre lisible d'un coup d'œil, avant de partir faire ses courses.
+
+## Ce que fait l'app
+
+Ti Boug répond à trois questions, en trois écrans.
+
+<figure>
+  <Image src={appstoreSet} alt="Aperçu de l'app Ti Boug : le Bazar du jour, la saisonnalité et l'assistant panier par IA" widths={[480, 800, 1200]} sizes="(max-width: 700px) 100vw, 700px" />
+  <figcaption>Le Bazar du jour, la saison, et le panier IA — les trois écrans clés.</figcaption>
+</figure>
+
+- **Qu'est-ce qui est bon marché aujourd'hui ?** Le **Bazar du jour** : chaque fruit & légume, son prix, sa tendance et sa date de relevé réelle. Sémantique inversée, côté acheteur : **le prix qui baisse s'affiche en vert.**
+- **Quand acheter ?** La **saisonnalité**, dérivée de l'historique des prix. Le letchi en décembre, pas en mars — jusqu'à 4× moins cher. Courbe 12 mois et badge « plein sézon » quand le prix s'effondre.
+- **Comment composer un panier malin ?** L'**assistant marché par IA** : tu lui donnes ton budget, il te compose un panier à partir des prix réels du jour et de la saison, et te suggère des recettes péi.
+
+<Callout tone="ok">
+Le cœur utile est **gratuit, sans même créer de compte** : le Bazar du jour, les prix, les tendances, la fraîcheur. Le Premium, c'est le confort — historique long, alertes prix, assistant IA illimité. On ne met pas le pouvoir d'achat derrière un mur.
+</Callout>
+
+## Honnête par design
+
+Un point non négociable : la donnée DAAF a plusieurs semaines de décalage, et c'est une **cotation officielle**, pas le prix exact à ta caisse ce soir. Alors la date du relevé est **toujours affichée**, sur le home comme sur chaque fiche. Une app de pouvoir d'achat qui ment sur sa data a déjà perdu. J'ai détaillé ce principe — et les objections que je me pose — dans [l'article d'origine](/notes/2026-06-ti-cok-mercuriales-app).
+
+## La stack
+
+Un seul dev, donc une stack qui va vite et ne me lâche pas :
+
+- **React Native + Expo** (SDK 54), TypeScript strict, Expo Router — iOS-first pour la vitesse de build.
+- **Convex** pour le backend : base réactive, fonctions serveur, auth (Apple / Google / email), storage et **crons**. C'est le cron quotidien qui va chercher les nouvelles mercuriales et déclenche le pipeline.
+- Le **pipeline de données** : le cron suit les liens PDF, les fait lire par un LLM qui crache un JSON strict validé Zod, normalise les libellés vers un produit canonique, et archive chaque cotation en append-only.
+- **Vercel AI SDK** en multi-provider (Gemini par défaut, Claude / OpenAI en option) pour le parsing PDF, l'assistant panier tool-calling et l'OCR des signalements.
+- **RevenueCat** pour l'abonnement Premium.
+
+<Callout tone="info">
+La vraie valeur n'est ni dans l'IA ni dans le design : elle est dans la chaîne, pas glamour, qui transforme un PDF officiel illisible en « le letchi est 4× moins cher en décembre ». C'est là que je passe le plus de temps.
+</Callout>
+
+## Où en est le build
+
+L'app est en phase de finition : les trois écrans tournent sur données réelles DAAF, le pipeline ingère les mercuriales chaque jour, et je prépare la soumission **App Store** (iOS-first — l'archi ne bloque pas Android ensuite). La landing est en ligne sur [tiboug.re](https://tiboug.re).
+
+Je continue de raconter la suite ici. Build in public.
+
+*Source de la donnée : mercuriales DAAF Réunion — licence etalab 2.0.*

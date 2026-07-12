@@ -1,25 +1,25 @@
 ---
-title: "Ti Cok : je transforme des PDF de prix en app anti-vie-chère"
+title: "Ti Boug : je transforme des PDF de prix en app anti-vie-chère"
 date: 2026-06-19
 locale: fr
 translationKey: "2026-06-ti-cok-mercuriales"
 tags: ["build", "ia", "data"]
-excerpt: "Je build une app pour La Réunion : le vrai prix des fruits et légumes existe déjà, public, coincé dans des PDF que personne ne lit. Ti Cok les libère — Sak i lé bon marché, kan, é ousa. Le build, et pourquoi je challenge l'idée avant d'y croire."
+excerpt: "Je build une app pour La Réunion : le vrai prix des fruits et légumes existe déjà, public, coincé dans des PDF que personne ne lit. Ti Boug les libère — Sak lé bon marché, ousa é kansa. Le build, et pourquoi je challenge l'idée avant d'y croire."
 draft: false
 ---
 
 import Callout from "@/components/prose/Callout.astro";
 import { Image } from "astro:assets";
-import tiCok from "@/assets/mascot/ti-cok.png";
-import tiCokPanier from "@/assets/mascot/ti-cok-panier.png";
+import tiBoug from "@/assets/mascot/ti-boug.png";
+import tiBougPanier from "@/assets/mascot/ti-boug-panier.png";
 
-Je build **Ti Cok** : une app mobile pour La Réunion contre la vie chère sur les fruits et légumes. La promesse, en créole : **« Sak i lé bon marché, kan, é ousa »** — ce qui est au bon prix, quand, et où.
+Je build **Ti Boug** : une app mobile pour La Réunion contre la vie chère sur les fruits et légumes. La promesse, en créole : **« Sak lé bon marché, ousa é kansa »** — ce qui est au bon prix, où, et quand.
 
-Ti Cok, c'est aussi le perso : le boug péi qui part au marché à l'aube et qui rate jamais une bonne affaire. 🐓
+Ti Boug, c'est aussi le perso : le boug péi qui part au marché à l'aube et qui rate jamais une bonne affaire. 🧺
 
 <figure>
-  <Image src={tiCok} alt="Ti Cok, la mascotte : un boug péi avec chapeau bakoua, son cabas et un panier de fruits et légumes" widths={[240, 320, 480]} sizes="(max-width: 600px) 60vw, 320px" />
-  <figcaption>Ti Cok, la mascotte — le boug péi qui connaît les bons prix.</figcaption>
+  <Image src={tiBoug} alt="Ti Boug, la mascotte : un boug péi avec chapeau bakoua, son cabas et un panier de fruits et légumes" widths={[240, 320, 480]} sizes="(max-width: 600px) 60vw, 320px" />
+  <figcaption>Ti Boug, la mascotte — le boug péi qui connaît les bons prix.</figcaption>
 </figure>
 
 Je raconte le build au fur et à mesure. Et ce projet ne part pas d'une idée d'app — il part d'une donnée que j'ai trouvée, et d'une question simple : *pourquoi personne ne s'en sert ?*
@@ -37,7 +37,7 @@ Pourquoi ? À cause de la forme :
 - **C'est incohérent.** Les noms de fichiers changent de format, les libellés produits aussi (« PIMENT VERT GROS » → « GROS PIMENT VERT »). Impossible de deviner une URL ou de matcher bêtement.
 
 <Callout tone="info">
-La donnée ouverte, c'est rarement un fichier propre qu'on branche. C'est de la matière brute, honnête mais hostile : à crawler, parser, normaliser, historiser avant qu'elle vaille quelque chose pour un humain. **Sur Ti Cok, le pipeline de données n'est pas un détail technique — c'est le produit.**
+La donnée ouverte, c'est rarement un fichier propre qu'on branche. C'est de la matière brute, honnête mais hostile : à crawler, parser, normaliser, historiser avant qu'elle vaille quelque chose pour un humain. **Sur Ti Boug, le pipeline de données n'est pas un détail technique — c'est le produit.**
 </Callout>
 
 C'est là qu'est le vrai taf. Un cron va chercher les nouvelles publications, suit les liens PDF, les fait lire par un LLM qui crache un JSON strict (validé Zod), repère les prix aberrants, normalise les libellés vers un produit canonique, et archive chaque cotation **en append-only** — l'historique ne s'écrase jamais. De cet historique, je dérive la **saisonnalité** : pour chaque produit, quel mois il est au plus bas, et de combien.
@@ -46,14 +46,14 @@ C'est là qu'est le vrai taf. Un cron va chercher les nouvelles publications, su
 
 La vie chère ici, c'est un sujet qui dure : sur l'alimentaire, l'écart de prix avec l'Hexagone est réel et pèse sur le pouvoir d'achat. La donnée DAAF est une ressource gâchée. Mon objectif tient en une phrase : **la sortir du PDF et la mettre dans une app que ma mère pourrait ouvrir avant d'aller au marché.**
 
-Ti Cok répond à trois questions :
+Ti Boug répond à trois questions :
 
 - **Qu'est-ce qui est bon marché aujourd'hui ?** Le « Bazar du jour » : les cotations du marché forain, lisibles d'un coup d'œil, variation de prix et date de relevé réelle toujours affichées.
 - **Quand acheter ?** La saisonnalité. Le letchi en décembre, pas en mars. Courbe 12 mois, badge « plein sézon » quand le prix s'effondre.
 - **Comment composer un panier malin ?** Un assistant IA : budget + nombre de personnes → un panier à partir des prix réels du jour et de la saison, avec l'économie estimée.
 
 <figure>
-  <Image src={tiCokPanier} alt="Ti Cok tenant un panier garni de fruits et légumes péi" widths={[240, 320, 480]} sizes="(max-width: 600px) 60vw, 280px" />
+  <Image src={tiBougPanier} alt="Ti Boug tenant un panier garni de fruits et légumes péi" widths={[240, 320, 480]} sizes="(max-width: 600px) 60vw, 280px" />
   <figcaption>Le panier IA, composé à partir des prix réels du jour.</figcaption>
 </figure>
 
@@ -71,7 +71,7 @@ La donnée DAAF a plusieurs semaines de décalage, et c'est une **cotation offic
 La facilité marketing, ce serait de cacher la fraîcheur pour faire plus « live ». Je fais l'inverse : la date de cotation réelle est **toujours visible**, sur le home comme sur chaque fiche. L'honnêteté sur la donnée est un principe produit. Une app de pouvoir d'achat qui ment sur sa data a déjà perdu.
 </Callout>
 
-Donc Ti Cok n'est pas un comparateur de caddies en direct. C'est un **outil de tendance et de saisonnalité** : il te dit quel produit est structurellement au bon prix en ce moment. Moins sexy, mais vrai — et suffisant pour mieux acheter.
+Donc Ti Boug n'est pas un comparateur de caddies en direct. C'est un **outil de tendance et de saisonnalité** : il te dit quel produit est structurellement au bon prix en ce moment. Moins sexy, mais vrai — et suffisant pour mieux acheter.
 
 ### Le marché forain, c'est « les courses » de tout le monde ?
 

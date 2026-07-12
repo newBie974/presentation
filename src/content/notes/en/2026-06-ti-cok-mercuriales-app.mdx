@@ -1,25 +1,25 @@
 ---
-title: "Ti Cok: turning price PDFs into an anti-cost-of-living app"
+title: "Ti Boug: turning price PDFs into an anti-cost-of-living app"
 date: 2026-06-19
 locale: en
 translationKey: "2026-06-ti-cok-mercuriales"
 tags: ["build", "ia", "data"]
-excerpt: "I'm building an app for Réunion: the real price of fruit and veg already exists, public, stuck in PDFs nobody reads. Ti Cok sets it free — what's cheap, when, and where. The build, and why I challenge the idea before believing it."
+excerpt: "I'm building an app for Réunion: the real price of fruit and veg already exists, public, stuck in PDFs nobody reads. Ti Boug sets it free — what's cheap, where, and when. The build, and why I challenge the idea before believing it."
 draft: false
 ---
 
 import Callout from "@/components/prose/Callout.astro";
 import { Image } from "astro:assets";
-import tiCok from "@/assets/mascot/ti-cok.png";
-import tiCokPanier from "@/assets/mascot/ti-cok-panier.png";
+import tiBoug from "@/assets/mascot/ti-boug.png";
+import tiBougPanier from "@/assets/mascot/ti-boug-panier.png";
 
-I'm building **Ti Cok**: a mobile app for Réunion Island fighting the high cost of living on fruit and vegetables. The promise, in Creole: **"Sak i lé bon marché, kan, é ousa"** — what's cheap, when, and where.
+I'm building **Ti Boug**: a mobile app for Réunion Island fighting the high cost of living on fruit and vegetables. The promise, in Creole: **"Sak lé bon marché, ousa é kansa"** — what's cheap, where, and when.
 
-Ti Cok is also the character: the local *boug* who heads to the market at dawn and never misses a good deal. 🐓
+Ti Boug is also the character: the local *boug* who heads to the market at dawn and never misses a good deal. 🧺
 
 <figure>
-  <Image src={tiCok} alt="Ti Cok, the mascot: a Réunion lad with a bakoua straw hat, his tote bag and a basket of fruit and vegetables" widths={[240, 320, 480]} sizes="(max-width: 600px) 60vw, 320px" />
-  <figcaption>Ti Cok, the mascot — the local lad who knows the good prices.</figcaption>
+  <Image src={tiBoug} alt="Ti Boug, the mascot: a Réunion lad with a bakoua straw hat, his tote bag and a basket of fruit and vegetables" widths={[240, 320, 480]} sizes="(max-width: 600px) 60vw, 320px" />
+  <figcaption>Ti Boug, the mascot — the local lad who knows the good prices.</figcaption>
 </figure>
 
 I'm sharing the build as it goes. And this project doesn't start from an app idea — it starts from a dataset I stumbled on, and one simple question: *why is nobody using this?*
@@ -37,7 +37,7 @@ Why? The format:
 - **It's inconsistent.** File names change format, and so do product labels ("PIMENT VERT GROS" → "GROS PIMENT VERT"). You can't guess a URL or naively match names.
 
 <Callout tone="info">
-Open data is rarely a clean file you just plug in. It's raw material — honest but hostile: you crawl it, parse it, normalise it, archive it before it means anything to a human. **On Ti Cok, the data pipeline isn't a technical detail — it's the product.**
+Open data is rarely a clean file you just plug in. It's raw material — honest but hostile: you crawl it, parse it, normalise it, archive it before it means anything to a human. **On Ti Boug, the data pipeline isn't a technical detail — it's the product.**
 </Callout>
 
 That's where the real work is. A cron job fetches new publications, follows the PDF links, has an LLM read them and emit strict JSON (Zod-validated), flags outlier prices, normalises labels onto a canonical product, and archives every quotation **append-only** — the history is never overwritten. From that history I derive **seasonality**: for each product, which month it bottoms out, and by how much.
@@ -46,14 +46,14 @@ That's where the real work is. A cron job fetches new publications, follows the 
 
 The high cost of living here is a long-running issue: on food, the price gap with mainland France is real and weighs on purchasing power. DAAF data is a wasted resource. My goal fits in one line: **get it out of the PDF and into an app my mother could open before heading to the market.**
 
-Ti Cok answers three questions:
+Ti Boug answers three questions:
 
 - **What's cheap today?** The "Bazar du jour": open-air market quotations, readable at a glance, price change and real reading date always shown.
 - **When to buy?** Seasonality. Lychee in December, not March. A 12-month curve, a "peak season" badge when the price collapses.
 - **How to build a smart basket?** An AI assistant: budget + number of people → a basket from the real prices of the day and the season, with the estimated saving.
 
 <figure>
-  <Image src={tiCokPanier} alt="Ti Cok holding a basket full of local fruit and vegetables" widths={[240, 320, 480]} sizes="(max-width: 600px) 60vw, 280px" />
+  <Image src={tiBougPanier} alt="Ti Boug holding a basket full of local fruit and vegetables" widths={[240, 320, 480]} sizes="(max-width: 600px) 60vw, 280px" />
   <figcaption>The AI basket, composed from the day's real prices.</figcaption>
 </figure>
 
@@ -71,7 +71,7 @@ DAAF data lags by several weeks, and it's an **official quotation**, not the exa
 The easy marketing move would be to hide freshness to look more "live". I do the opposite: the real reading date is **always visible**, on the home and every product sheet. Honesty about the data is a product principle. A purchasing-power app that lies about its data has already lost.
 </Callout>
 
-So Ti Cok isn't a live cart comparator. It's a **trend and seasonality tool**: it tells you which product is structurally well-priced right now. Less sexy, but true — and enough to buy better.
+So Ti Boug isn't a live cart comparator. It's a **trend and seasonality tool**: it tells you which product is structurally well-priced right now. Less sexy, but true — and enough to buy better.
 
 ### Is the open-air market "everyone's shopping"?
 

@@ -1,0 +1,72 @@
+---
+title: "Ti Boug: the real market price in every Réunion pocket"
+date: 2026-07-12
+locale: en
+translationKey: "2026-07-ti-boug-presentation"
+tags: ["build", "indie", "ia"]
+excerpt: "Ti Boug, my iPhone app against the cost of living in Réunion: the real daily prices of fruit & veg, their season, and an AI-composed basket — from the official DAAF price bulletins. What it does, the stack, and where the build stands."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import { Image } from "astro:assets";
+import tiBoug from "@/assets/mascot/ti-boug.png";
+import appstoreSet from "@/assets/bazar/tiboug-appstore-set.png";
+
+**Ti Boug** is my iPhone app against the high cost of living in Réunion Island. The promise fits in one Creole line: **"Sak lé bon marché, ousa é kansa"** — what's cheap, where, and when.
+
+<figure>
+  <Image src={tiBoug} alt="Ti Boug, the mascot: a Réunion lad with a bakoua straw hat, his tote bag and a basket of fruit and vegetables" widths={[240, 320, 480]} sizes="(max-width: 600px) 60vw, 320px" />
+  <figcaption>Ti Boug, the local lad who knows the good prices.</figcaption>
+</figure>
+
+I've already told the story of [where the project starts](/en/writing/2026-06-ti-cok-mercuriales-app): wasted public data, stuck in PDFs nobody reads. Here I'm presenting **the app itself** — what it does, what it's built with, and where I am.
+
+## The problem: the cost of living, one vegetable at a time
+
+In Réunion, the price gap with mainland France on food is real and weighs on purchasing power. And from one week to the next, one market to another, fruit & veg prices swing hard. The good info exists — the official **DAAF** bulletins — but nobody has it in their pocket when it's time to hit the market.
+
+That's exactly the gap Ti Boug fills: pull that data out of the PDF and make it readable at a glance, before you go shopping.
+
+## What the app does
+
+Ti Boug answers three questions, across three screens.
+
+<figure>
+  <Image src={appstoreSet} alt="A preview of the Ti Boug app: the daily price board, seasonality, and the AI basket assistant" widths={[480, 800, 1200]} sizes="(max-width: 700px) 100vw, 700px" />
+  <figcaption>The daily board, the season, and the AI basket — the three key screens.</figcaption>
+</figure>
+
+- **What's cheap today?** The **daily board** ("Bazar du jour"): each fruit & veg, its price, its trend and the real bulletin date. Buyer-side inverted semantics: **a falling price shows in green.**
+- **When should I buy?** **Seasonality**, derived from the price history. Lychee in December, not March — up to 4× cheaper. A 12-month curve and a "peak season" badge when the price collapses.
+- **How do I build a smart basket?** The **AI market assistant**: give it your budget, it composes a basket from the real prices of the day and the season, and suggests local recipes.
+
+<Callout tone="ok">
+The useful core is **free, without even creating an account**: the daily board, prices, trends, freshness. Premium is comfort — long history, price alerts, unlimited AI assistant. We don't put purchasing power behind a wall.
+</Callout>
+
+## Honest by design
+
+One non-negotiable: DAAF data lags by several weeks, and it's an **official quotation**, not the exact price at your till tonight. So the bulletin date is **always shown**, on the home and on every card. A purchasing-power app that lies about its data has already lost. I detailed that principle — and the objections I put to myself — in [the origin article](/en/writing/2026-06-ti-cok-mercuriales-app).
+
+## The stack
+
+One dev, so a stack that moves fast and doesn't let me down:
+
+- **React Native + Expo** (SDK 54), strict TypeScript, Expo Router — iOS-first for build speed.
+- **Convex** for the backend: reactive database, server functions, auth (Apple / Google / email), storage and **crons**. A daily cron fetches the new bulletins and kicks off the pipeline.
+- The **data pipeline**: the cron follows the PDF links, has an LLM read them into strict Zod-validated JSON, normalises labels to a canonical product, and archives every quotation append-only.
+- **Vercel AI SDK** in multi-provider mode (Gemini by default, Claude / OpenAI optional) for PDF parsing, the tool-calling basket assistant, and report OCR.
+- **RevenueCat** for the Premium subscription.
+
+<Callout tone="info">
+The real value is neither in the AI nor the design: it's in the unglamorous chain that turns an unreadable official PDF into "lychee is 4× cheaper in December." That's where I spend most of my time.
+</Callout>
+
+## Where the build stands
+
+The app is in the finishing stretch: the three screens run on real DAAF data, the pipeline ingests the bulletins every day, and I'm preparing the **App Store** submission (iOS-first — the architecture doesn't block Android later). The landing page is live at [tiboug.re](https://tiboug.re).
+
+I'll keep telling the rest here. Build in public.
+
+*Data source: DAAF Réunion price bulletins — etalab 2.0 licence.*
