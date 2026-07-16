@@ -49,7 +49,7 @@ hiérarchie ni pagination. Deux manques :
 | Page « tous les tags »        | Nouvelle `notes/tags/index.astro` + miroir EN, tags + compte          |
 | Pages de tags `<tag>`         | Inchangées                                                            |
 | Article en highlight (défaut) | Ti Boug (2026-07), FR + EN                                            |
-| `PRIMARY_TAGS` (défaut)       | `["indie", "build", "process", "mobile", "ia"]` (ajustable)           |
+| `PRIMARY_TAGS` (défaut)       | `["indie", "build", "process", "claude", "ia"]`                       |
 | Structure                     | Organism partagé `NotesArchive.astro` (pages minces, DRY)             |
 
 ---
@@ -154,7 +154,7 @@ c'est le rendu qui décide, en fonction de `currentPage`, de l'afficher ou non. 
 ### Barre de filtre (allégée)
 
 ```
-[ tous ]  indie  build  process  mobile  ia          tous les tags →     RSS ↗
+[ tous ]  indie  build  process  claude  ia          tous les tags →     RSS ↗
 ```
 
 - `[tous]` : pill actif pointant vers la page d'archive (`t.path("notes")`).
@@ -171,7 +171,7 @@ export const PRIMARY_TAGS = [
   "indie",
   "build",
   "process",
-  "mobile",
+  "claude",
   "ia",
 ] as const;
 ```
