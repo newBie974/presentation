@@ -1,0 +1,71 @@
+---
+import type { Page } from "astro";
+import { useTranslations } from "@/i18n/utils";
+import type { Locale } from "@/types";
+
+interface Props {
+  page: Page;
+  locale: Locale;
+}
+
+const { page, locale } = Astro.props;
+const t = useTranslations(locale);
+const label = `${t("pagination.page")} ${page.currentPage} / ${page.lastPage}`;
+---
+
+{
+  page.lastPage > 1 && (
+    <nav class="pager" aria-label={t("pagination.label")}>
+      {page.url.prev ? (
+        <a class="link" href={page.url.prev} rel="prev">
+          ← {t("pagination.prev")}
+        </a>
+      ) : (
+        <span class="link is-disabled" aria-disabled="true">
+          ← {t("pagination.prev")}
+        </span>
+      )}
+      <span class="count">{label}</span>
+      {page.url.next ? (
+        <a class="link" href={page.url.next} rel="next">
+          {t("pagination.next")} →
+        </a>
+      ) : (
+        <span class="link is-disabled" aria-disabled="true">
+          {t("pagination.next")} →
+        </span>
+      )}
+    </nav>
+  )
+}
+
+<style>
+  .pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px 0;
+    border-top: var(--border-w) solid var(--color-border);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .link {
+    color: var(--color-text);
+    text-decoration: none;
+    padding: 4px 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-soft);
+  }
+  .link:hover {
+    background: var(--color-strong-bg);
+    color: var(--color-strong-fg);
+  }
+  .is-disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .count {
+    color: var(--color-text-muted);
+  }
+</style>
