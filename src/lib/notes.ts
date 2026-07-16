@@ -55,3 +55,40 @@ export function buildNoteUrl(entry: NoteEntry): string {
   const slug = getNoteSlug(entry);
   return entry.data.locale === "fr" ? `/notes/${slug}` : `/en/writing/${slug}`;
 }
+
+export function partitionFeatured(notes: NoteEntry[]): {
+  featured: NoteEntry | null;
+  rest: NoteEntry[];
+} {
+  // notes are pre-sorted newest→oldest, so .find picks the most recent featured
+  const featured = notes.find((note) => note.data.featured) ?? null;
+  const rest = featured ? notes.filter((note) => note !== featured) : notes;
+  return { featured, rest };
+}
+
+export interface TagCount {
+  tag: string;
+  count: number;
+}
+
+export async function listTagsWithCount(locale: Locale): Promise<TagCount[]> {
+  const notes = await loadPublishedNotes(locale);
+  const counts = new Map<string, number>();
+  notes.forEach((note) =>
+    note.data.tags.forEach((tag) =>
+      counts.set(tag, (counts.get(tag) ?? 0) + 1),
+    ),
+  );
+  return Array.from(counts, ([tag, count]) => ({ tag, count })).sort(
+    (a, b) => b.count - a.count || a.tag.localeCompare(b.tag),
+  );
+}
+
+export async function loadHomeNotes(
+  locale: Locale,
+  limit: number,
+): Promise<{ featured: NoteEntry | null; latest: NoteEntry[] }> {
+  const all = await loadPublishedNotes(locale);
+  const { featured, rest } = partitionFeatured(all);
+  return { featured, latest: rest.slice(0, limit) };
+}
