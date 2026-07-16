@@ -1,8 +1,9 @@
 ---
 import NoteRow from "@/components/molecules/NoteRow.astro";
+import NoteHighlight from "@/components/molecules/NoteHighlight.astro";
 import Highlight from "@/components/atoms/Highlight.astro";
 import { useTranslations } from "@/i18n/utils";
-import { loadLatestNotes } from "@/lib/notes";
+import { loadHomeNotes } from "@/lib/notes";
 import { NOTES_ON_HOME } from "@/lib/constants";
 import type { Locale } from "@/types";
 
@@ -11,7 +12,8 @@ interface Props {
 }
 const { locale } = Astro.props;
 const t = useTranslations(locale);
-const notes = await loadLatestNotes(locale, NOTES_ON_HOME);
+const { featured, latest } = await loadHomeNotes(locale, NOTES_ON_HOME);
+const hasContent = featured !== null || latest.length > 0;
 
 const headingFR = { pre: "Dernières ", hl: "notes" };
 const headingEN = { pre: "Latest ", hl: "writing" };
@@ -19,7 +21,7 @@ const heading = locale === "fr" ? headingFR : headingEN;
 ---
 
 {
-  notes.length > 0 && (
+  hasContent && (
     <section class="notes" data-reveal>
       <header class="head">
         <h2>
@@ -30,8 +32,9 @@ const heading = locale === "fr" ? headingFR : headingEN;
           {t("section.allNotes").toUpperCase()} →
         </a>
       </header>
+      {featured && <NoteHighlight note={featured} locale={locale} />}
       <div class="list">
-        {notes.map((note) => (
+        {latest.map((note) => (
           <NoteRow note={note} locale={locale} showExcerpt={false} />
         ))}
       </div>
