@@ -12,6 +12,7 @@ const notes = defineCollection({
     translationKey: z.string(),
     excerpt: z.string().min(20),
     draft: z.boolean().default(false),
+    featured: z.boolean().default(false),
     cover: z.string().optional(),
   }),
 });

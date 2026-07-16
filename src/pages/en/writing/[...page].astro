@@ -1,0 +1,85 @@
+---
+import type { Page, PaginateFunction } from "astro";
+import MainLayout from "@/layouts/MainLayout.astro";
+import Nav from "@/components/organisms/Nav.astro";
+import Footer from "@/components/organisms/Footer.astro";
+import NotesArchive from "@/components/organisms/NotesArchive.astro";
+import JsonLd from "@/components/atoms/JsonLd.astro";
+import {
+  loadPublishedNotes,
+  partitionFeatured,
+  buildNoteUrl,
+  type NoteEntry,
+} from "@/lib/notes";
+import { buildPersonJsonLd, buildBlogJsonLd } from "@/lib/jsonLd";
+import { NOTES_PER_PAGE, SITE_URL } from "@/lib/constants";
+import { useTranslations } from "@/i18n/utils";
+
+const locale = "en" as const;
+
+export async function getStaticPaths({
+  paginate,
+}: {
+  paginate: PaginateFunction;
+}) {
+  const all = await loadPublishedNotes("en");
+  const { featured, rest } = partitionFeatured(all);
+  return paginate(rest, { pageSize: NOTES_PER_PAGE, props: { featured } });
+}
+
+interface Props {
+  page: Page<NoteEntry>;
+  featured: NoteEntry | null;
+}
+const { page, featured } = Astro.props;
+const t = useTranslations(locale);
+
+const isFirst = page.currentPage === 1;
+const title = isFirst
+  ? t("notes.metaTitle")
+  : `${t("notes.metaTitle")} · ${t("pagination.page")} ${page.currentPage}`;
+const description = t("notes.deck");
+const otherRest = partitionFeatured(await loadPublishedNotes("fr")).rest;
+const otherLastPage = Math.max(1, Math.ceil(otherRest.length / NOTES_PER_PAGE));
+const alternatePath = isFirst
+  ? undefined
+  : page.currentPage <= otherLastPage
+    ? `/notes/${page.currentPage}`
+    : null;
+
+const allNotes = isFirst ? await loadPublishedNotes("en") : [];
+const blogPosts = allNotes.map((note) => ({
+  title: note.data.title,
+  url: `${SITE_URL}${buildNoteUrl(note)}`,
+  datePublished: note.data.date,
+  description: note.data.excerpt,
+}));
+const jsonLd = isFirst
+  ? [
+      buildPersonJsonLd(),
+      buildBlogJsonLd(blogPosts, locale, `${SITE_URL}/en/writing`),
+    ]
+  : [buildPersonJsonLd()];
+
+const prevHref = page.url.prev ? new URL(page.url.prev, SITE_URL).href : null;
+const nextHref = page.url.next ? new URL(page.url.next, SITE_URL).href : null;
+---
+
+<MainLayout
+  title={title}
+  description={description}
+  locale={locale}
+  routeKey={isFirst ? "notes" : undefined}
+  alternatePath={alternatePath}
+>
+  <Fragment slot="head">
+    <JsonLd data={jsonLd} />
+    {prevHref && <link rel="prev" href={prevHref} />}
+    {nextHref && <link rel="next" href={nextHref} />}
+  </Fragment>
+  <Nav slot="nav" locale={locale} current="notes" />
+
+  <NotesArchive locale={locale} page={page} featured={featured} />
+
+  <Footer slot="footer" locale={locale} />
+</MainLayout>
