@@ -1,0 +1,26 @@
+---
+import MainLayout from "@/layouts/MainLayout.astro";
+import Nav from "@/components/organisms/Nav.astro";
+import Footer from "@/components/organisms/Footer.astro";
+import TagIndex from "@/components/organisms/TagIndex.astro";
+import JsonLd from "@/components/atoms/JsonLd.astro";
+import { listTagsWithCount } from "@/lib/notes";
+import { buildPersonJsonLd } from "@/lib/jsonLd";
+import { useTranslations } from "@/i18n/utils";
+
+const locale = "fr" as const;
+const t = useTranslations(locale);
+const tags = await listTagsWithCount(locale);
+---
+
+<MainLayout
+  title={t("tags.metaTitle")}
+  description={t("tags.deck")}
+  locale={locale}
+  alternatePath="/en/writing/tags"
+>
+  <Fragment slot="head"><JsonLd data={buildPersonJsonLd()} /></Fragment>
+  <Nav slot="nav" locale={locale} current="notes" />
+  <TagIndex locale={locale} tags={tags} />
+  <Footer slot="footer" locale={locale} />
+</MainLayout>

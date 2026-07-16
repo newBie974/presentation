@@ -1,0 +1,101 @@
+---
+import SectionLabel from "@/components/atoms/SectionLabel.astro";
+import { useTranslations, localizePath } from "@/i18n/utils";
+import type { TagCount } from "@/lib/notes";
+import type { Locale } from "@/types";
+
+interface Props {
+  locale: Locale;
+  tags: TagCount[];
+}
+
+const { locale, tags } = Astro.props;
+const t = useTranslations(locale);
+const tagsBase = localizePath("tags", locale);
+const notesPath = localizePath("notes", locale);
+---
+
+<section class="hero">
+  <SectionLabel>{t("tags.sectionLabel")}</SectionLabel>
+  <h1>{t("tags.title")}</h1>
+  <p class="deck">{t("tags.deck")}</p>
+  <a href={notesPath} class="back">{t("tags.back")}</a>
+</section>
+
+<ul class="grid">
+  {
+    tags.map(({ tag, count }) => (
+      <li>
+        <a href={`${tagsBase}/${tag}`}>
+          <span class="name">#{tag}</span>
+          <span class="count">{count}</span>
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .hero {
+    padding: 56px 48px 24px;
+    border-bottom: var(--border-w) solid var(--color-border);
+    max-width: var(--container-narrow);
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    margin: 12px 0 8px;
+    font-family: var(--font-mono);
+  }
+  .deck {
+    font-size: 15px;
+    color: var(--color-text-muted);
+    margin: 0 0 12px;
+  }
+  .back {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+  .grid {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 24px 48px 48px;
+    margin: 0;
+    max-width: var(--container-narrow);
+  }
+  .grid a {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 6px 12px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    text-decoration: none;
+    color: var(--color-text);
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+  }
+  .grid a:hover {
+    background: var(--color-strong-bg);
+    color: var(--color-strong-fg);
+  }
+  .count {
+    color: var(--color-text-muted);
+  }
+  .grid a:hover .count {
+    color: var(--color-strong-fg);
+  }
+  @media (max-width: 720px) {
+    .hero,
+    .grid {
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+  }
+</style>
