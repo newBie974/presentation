@@ -39,7 +39,13 @@ const title = isFirst
   ? t("notes.metaTitle")
   : `${t("notes.metaTitle")} · ${t("pagination.page")} ${page.currentPage}`;
 const description = t("notes.deck");
-const alternatePath = isFirst ? undefined : `/notes/${page.currentPage}`;
+const otherRest = partitionFeatured(await loadPublishedNotes("fr")).rest;
+const otherLastPage = Math.max(1, Math.ceil(otherRest.length / NOTES_PER_PAGE));
+const alternatePath = isFirst
+  ? undefined
+  : page.currentPage <= otherLastPage
+    ? `/notes/${page.currentPage}`
+    : null;
 
 const allNotes = isFirst ? await loadPublishedNotes("en") : [];
 const blogPosts = allNotes.map((note) => ({

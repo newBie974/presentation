@@ -18,14 +18,6 @@ export async function loadPublishedNotes(locale: Locale): Promise<NoteEntry[]> {
   return all.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 }
 
-export async function loadLatestNotes(
-  locale: Locale,
-  limit: number,
-): Promise<NoteEntry[]> {
-  const notes = await loadPublishedNotes(locale);
-  return notes.slice(0, limit);
-}
-
 export async function findTranslation(
   translationKey: string,
   targetLocale: Locale,

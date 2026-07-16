@@ -20,7 +20,7 @@ const { locale, page, featured } = Astro.props;
 const t = useTranslations(locale);
 const notesPath = localizePath("notes", locale);
 const tagsBase = localizePath("tags", locale);
-const showHighlight = page.currentPage === 1 && featured;
+const showHighlight = page.currentPage === 1 && featured !== null;
 ---
 
 <section class="page-hero">
