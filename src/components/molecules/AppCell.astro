@@ -12,8 +12,13 @@ interface Props {
 const { project, locale } = Astro.props;
 const t = useTranslations(locale);
 
-const statusLabel =
-  project.status === "live" ? t("status.live") : t("status.building");
+const statusLabel = t(
+  project.status === "archived"
+    ? "status.archived"
+    : project.status === "live"
+      ? "status.live"
+      : "status.building",
+);
 const isMobileApp = project.platform.some(
   (p) => p === "ios" || p === "android",
 );
@@ -194,6 +199,9 @@ const playStoreHint = locale === "fr" ? "Disponible sur" : "Get it on";
   }
   .status[data-status="building"] {
     color: var(--color-building);
+  }
+  .status[data-status="archived"] {
+    color: var(--color-text-muted);
   }
   .status .dot {
     width: 7px;

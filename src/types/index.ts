@@ -12,7 +12,7 @@ export interface Profile {
   email?: string;
 }
 
-export type AppStatus = "live" | "building" | "coming-soon";
+export type AppStatus = "live" | "building" | "coming-soon" | "archived";
 
 export interface Project {
   slug: string;

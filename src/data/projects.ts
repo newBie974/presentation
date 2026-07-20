@@ -7,19 +7,6 @@ import tibougLogo from "@/assets/tiboug-logo.png";
 
 export const projects: Project[] = [
   {
-    slug: "karibteck",
-    title: "KaribTeck",
-    tagline: {
-      fr: "L'agence web qu'on bâtit aux Antilles : sites, apps mobiles et agents IA.",
-      en: "The web agency we're building in the French West Indies: sites, mobile apps and AI agents.",
-    },
-    url: "https://karibteck.com",
-    status: "building",
-    techStack: ["Astro", "TypeScript", "Tailwind CSS", "MDX"],
-    platform: ["web"],
-    logo: karibteckLogo,
-  },
-  {
     slug: "tiboug",
     title: "Ti Boug",
     tagline: {
@@ -27,7 +14,7 @@ export const projects: Project[] = [
       en: "The real price of fruit & veg in Réunion — against the high cost of living.",
     },
     url: "https://tiboug.re",
-    status: "building",
+    status: "live",
     techStack: [
       "React Native",
       "Expo",
@@ -37,7 +24,22 @@ export const projects: Project[] = [
       "Gemini AI",
     ],
     platform: ["ios"],
+    appStoreUrl:
+      "https://apps.apple.com/fr/app/ti-boug-prix-march%C3%A9-974/id6782078868",
     logo: tibougLogo,
+  },
+  {
+    slug: "karibteck",
+    title: "KaribTeck",
+    tagline: {
+      fr: "L'agence web qu'on bâtit aux Antilles : sites, apps mobiles et agents IA.",
+      en: "The web agency we're building in the French West Indies: sites, mobile apps and AI agents.",
+    },
+    url: "https://karibteck.com",
+    status: "live",
+    techStack: ["Astro", "TypeScript", "Tailwind CSS", "MDX"],
+    platform: ["web"],
+    logo: karibteckLogo,
   },
   {
     slug: "voicejournal",
@@ -69,7 +71,7 @@ export const projects: Project[] = [
       en: "AI helps you create the best carousels for TikTok and Instagram.",
     },
     url: "https://caroubolt.com",
-    status: "live",
+    status: "archived",
     techStack: ["Next.js", "TypeScript", "Supabase", "Stripe", "Gemini AI"],
     platform: ["web"],
     logo: carouboltLogo,
