@@ -33,8 +33,18 @@ const t = useTranslations(locale);
 </section>
 
 <style>
+  .section {
+    padding: 40px 48px;
+    border-bottom: var(--border-w) solid var(--color-border);
+    max-width: var(--container-content);
+    margin: 0 auto;
+  }
   .support .sub {
     font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 12px 0 0;
+    line-height: 1.1;
   }
   .rows {
     list-style: none;
@@ -64,6 +74,12 @@ const t = useTranslations(locale);
     font-size: 13px;
     font-weight: 700;
     white-space: nowrap;
+  }
+  @media (max-width: 720px) {
+    .section {
+      padding-left: 20px;
+      padding-right: 20px;
+    }
   }
   @media (max-width: 640px) {
     .row {

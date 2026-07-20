@@ -23,6 +23,19 @@ const t = useTranslations(locale);
 </section>
 
 <style>
+  .section {
+    padding: 40px 48px;
+    border-bottom: var(--border-w) solid var(--color-border);
+    max-width: var(--container-content);
+    margin: 0 auto;
+  }
+  .section h2 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 12px 0 18px;
+    line-height: 1;
+  }
   .tiers {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -33,6 +46,12 @@ const t = useTranslations(locale);
   @media (max-width: 860px) {
     .tiers {
       grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 720px) {
+    .section {
+      padding-left: 20px;
+      padding-right: 20px;
     }
   }
 </style>
