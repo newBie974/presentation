@@ -38,12 +38,14 @@ export function buildPersonJsonLd() {
     image: `${SITE_URL}/avatar.png`,
     address: {
       "@type": "PostalAddress",
-      addressRegion: "La Réunion",
+      addressLocality: "Épinay-sur-Orge",
+      addressRegion: "Essonne",
       addressCountry: "FR",
     },
     homeLocation: [
-      { "@type": "Place", name: "La Réunion, France" },
+      { "@type": "Place", name: "Épinay-sur-Orge, Essonne, France" },
       { "@type": "Place", name: "Paris, France" },
+      { "@type": "Place", name: "La Réunion, France" },
     ],
     workLocation: { "@type": "Place", name: "Remote (worldwide)" },
     worksFor: { "@type": "Organization", name: "Decider.ai" },

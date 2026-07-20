@@ -42,6 +42,7 @@ export const ui = {
     "notes.heroPost": " en buildant.",
     "notes.deck":
       "Notes de build, retours d'expérience, et essais techniques d'Aymeric Dijoux. Pas un blog régulier — j'écris quand j'ai quelque chose qui vaut le coup d'être partagé.",
+    "notes.basedIn": "Basé à Paris · Épinay-sur-Orge (Essonne) & La Réunion",
     "notes.metaTitle": "Notes — Aymeric Dijoux",
     "notes.featured": "À la une",
     "notes.allTags": "tous les tags",
@@ -94,6 +95,8 @@ export const ui = {
     "notes.heroPost": " while building.",
     "notes.deck":
       "Build notes, lessons learned, and technical essays by Aymeric Dijoux. Not a regular blog — I write when I have something worth sharing.",
+    "notes.basedIn":
+      "Based in Paris · Épinay-sur-Orge (Essonne) & Réunion Island",
     "notes.metaTitle": "Writing — Aymeric Dijoux",
     "notes.featured": "Featured",
     "notes.allTags": "all tags",
