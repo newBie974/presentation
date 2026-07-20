@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import icon from "astro-icon";
-import remarkGfm from "remark-gfm";
+import { unified } from "@astrojs/markdown-remark";
 import rehypeExternalLinks from "rehype-external-links";
 
 const SITE = "https://aymeric.dijoux.dev";
@@ -64,16 +64,7 @@ export default defineConfig({
     routing: { prefixDefaultLocale: false },
   },
   integrations: [
-    mdx({
-      remarkPlugins: [remarkGfm],
-      rehypePlugins: [
-        [
-          rehypeExternalLinks,
-          { target: "_blank", rel: ["noopener", "noreferrer"] },
-        ],
-        rehypeTableScroll,
-      ],
-    }),
+    mdx(),
     sitemap({
       serialize(item) {
         const links = i18nLinksFor(new URL(item.url).pathname);
@@ -84,6 +75,18 @@ export default defineConfig({
     icon({ include: { lucide: ["*"], "simple-icons": ["*"] } }),
   ],
   markdown: {
+    // Astro 6 deprecated markdown.remarkPlugins / mdx({ remarkPlugins }) in favour
+    // of a unified() processor from @astrojs/markdown-remark. gfm defaults to true,
+    // so remark-gfm is no longer passed explicitly. shikiConfig still applies.
+    processor: unified({
+      rehypePlugins: [
+        [
+          rehypeExternalLinks,
+          { target: "_blank", rel: ["noopener", "noreferrer"] },
+        ],
+        rehypeTableScroll,
+      ],
+    }),
     shikiConfig: {
       themes: { light: "github-light", dark: "github-dark" },
       wrap: true,

@@ -12,7 +12,7 @@ Spec de design source : `docs/superpowers/specs/2026-05-21-portfolio-design.md`.
 ## Stack & versions
 
 ```
-Framework        : Astro 5 (output static)
+Framework        : Astro 6 (output static)
 Language         : TypeScript strict
 Styling          : Tailwind 4 (@theme + CSS vars), pas de framework UI
 Content          : Astro Content Collections + MDX
@@ -98,6 +98,7 @@ Si un fichier dépasse, c'est le signal qu'il fait trop de choses. **Action imm�
 ```
 
 **Comment découper quand c'est trop long :**
+
 - Une section de la page → un nouvel organism dans `components/organisms/`
 - Une cellule répétée → une molecule dans `components/molecules/`
 - Un calcul ou un mapping → un util dans `lib/`
@@ -116,11 +117,15 @@ Une fonction fait **une chose**. Si tu dois écrire "et" pour décrire ce qu'ell
 function getNoteMeta(entry: CollectionEntry<"notes">) {
   const readingTime = Math.ceil(entry.body.split(/\s+/).length / 200);
   const date = new Date(entry.data.date).toLocaleDateString("fr-FR");
-  const url = entry.data.locale === "fr"
-    ? `/notes/${entry.slug}`
-    : `/en/writing/${entry.slug}`;
+  const url =
+    entry.data.locale === "fr"
+      ? `/notes/${entry.slug}`
+      : `/en/writing/${entry.slug}`;
   const altUrl = entry.data.translationKey
-    ? findTranslation(entry.data.translationKey, entry.data.locale === "fr" ? "en" : "fr")?.url
+    ? findTranslation(
+        entry.data.translationKey,
+        entry.data.locale === "fr" ? "en" : "fr",
+      )?.url
     : null;
   return { readingTime, date, url, altUrl };
 }
@@ -142,35 +147,35 @@ function getNoteMeta(entry: CollectionEntry<"notes">) {
 
 ```typescript
 // ❌ Flou
-const d = new Date()
-const fn = (e) => e.data.locale === "fr"
-const tt = entries.filter(fn).length
+const d = new Date();
+const fn = (e) => e.data.locale === "fr";
+const tt = entries.filter(fn).length;
 
 // ✅ Explicite
-const publishedAt = new Date()
-const isFrenchEntry = (entry: NoteEntry) => entry.data.locale === "fr"
-const frenchNoteCount = entries.filter(isFrenchEntry).length
+const publishedAt = new Date();
+const isFrenchEntry = (entry: NoteEntry) => entry.data.locale === "fr";
+const frenchNoteCount = entries.filter(isFrenchEntry).length;
 ```
 
 **Conventions par type :**
 
 ```typescript
 // Booléens → préfixe is / has / can / should
-const isDraft = entry.data.draft
-const hasTranslation = !!entry.data.translationKey
-const canShowLangToggle = hasTranslation && translationExists
+const isDraft = entry.data.draft;
+const hasTranslation = !!entry.data.translationKey;
+const canShowLangToggle = hasTranslation && translationExists;
 
 // Handlers → préfixe handle (côté client uniquement, rare ici)
-const handleThemeToggle = () => {}
+const handleThemeToggle = () => {};
 
 // Async / build-time → verbe d'action clair
 async function loadPublishedNotes(locale: Locale) {}
 function buildOgImageUrl(slug: string): string {}
 
 // Constantes → SCREAMING_SNAKE_CASE
-const NOTES_PER_PAGE = 10
-const DEFAULT_LOCALE = "fr"
-const SUPPORTED_LOCALES = ["fr", "en"] as const
+const NOTES_PER_PAGE = 10;
+const DEFAULT_LOCALE = "fr";
+const SUPPORTED_LOCALES = ["fr", "en"] as const;
 ```
 
 ---
@@ -212,7 +217,9 @@ const techList = project.techStack.join(" · ");
   <p class="status">{statusLabel}</p>
 </article>
 
-{/* 5. Styles scoped Astro OU classes Tailwind — choisir un seul style par composant */}
+{
+  /* 5. Styles scoped Astro OU classes Tailwind — choisir un seul style par composant */
+}
 <style>
   .app-cell {
     border-right: var(--border-w) solid var(--color-border);
@@ -223,6 +230,7 @@ const techList = project.techStack.join(" · ");
 ```
 
 **Règles complémentaires** :
+
 - Une seule export default implicite par fichier (le composant Astro lui-même).
 - Pas de `<script>` client si on peut éviter — préférer CSS-only et Astro server.
 - Si un `<script>` client est nécessaire, utiliser `<script>` avec TypeScript et l'importer en module.
@@ -233,33 +241,35 @@ const techList = project.techStack.join(" · ");
 
 ```typescript
 // ❌ Interdits
-const data: any = await getCollection("notes")
-const entry = somethingUnknown as NoteEntry
+const data: any = await getCollection("notes");
+const entry = somethingUnknown as NoteEntry;
 function process(input: any) {}
 
 // ✅ Requis
 // Types explicites sur toutes les fonctions exportées
-export async function loadPublishedNotes(locale: Locale): Promise<NoteEntry[]> {}
+export async function loadPublishedNotes(
+  locale: Locale,
+): Promise<NoteEntry[]> {}
 
 // Union types plutôt que string libre
-export type Locale = "fr" | "en"
-export type NoteTag = "indie" | "build" | "stack" | "launch" | "ia"
-export type AppStatus = "live" | "wip" | "archived"
+export type Locale = "fr" | "en";
+export type NoteTag = "indie" | "build" | "stack" | "launch" | "ia";
+export type AppStatus = "live" | "wip" | "archived";
 
 // Types globaux dans src/types/ — jamais inline dans les composants
 export interface Project {
-  title: string
-  tagline: string
-  url: string
-  status: AppStatus
-  techStack: string[]
-  appStoreUrl?: string
-  playStoreUrl?: string
-  logo: ImageMetadata
+  title: string;
+  tagline: string;
+  url: string;
+  status: AppStatus;
+  techStack: string[];
+  appStoreUrl?: string;
+  playStoreUrl?: string;
+  logo: ImageMetadata;
 }
 
 // Schemas Zod dans content/config.ts — Astro génère les types automatiquement
-import { defineCollection, z } from "astro:content"
+import { defineCollection, z } from "astro:content";
 const notes = defineCollection({
   type: "content",
   schema: z.object({
@@ -271,7 +281,7 @@ const notes = defineCollection({
     excerpt: z.string(),
     draft: z.boolean().default(false),
   }),
-})
+});
 ```
 
 `astro check` doit passer 0 erreur, 0 warning avant tout commit.
@@ -288,7 +298,7 @@ Le D1 Swiss Brutalist vit dans `src/styles/theme.css` via `@theme`. Toute valeur
 <div class="bg-[#ccff00] p-[16px] text-[#0a0a0a]">…</div>
 
 {/* ✅ Tokens */}
-<div class="bg-accent text-text p-4">…</div>
+<div class="bg-accent p-4 text-text">…</div>
 
 {/* Cas où on touche au CSS scoped */}
 <style>
@@ -309,25 +319,22 @@ Si tu écris un nouveau composant et qu'il n'a pas accès à un token, c'est pro
 
 ```astro
 {/* ❌ Logique dans le render */}
----
-import { getCollection } from "astro:content";
-const notes = await getCollection("notes");
----
+import { getCollection } from "astro:content"; const notes = await getCollection("notes");
 <section>
-  {notes
-    .filter(n => n.data.locale === Astro.currentLocale && !n.data.draft)
-    .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-    .slice(0, 3)
-    .map(note => <NoteRow note={note} />)}
+  {
+    notes
+      .filter((n) => n.data.locale === Astro.currentLocale && !n.data.draft)
+      .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+      .slice(0, 3)
+      .map((note) => <NoteRow note={note} />)
+  }
 </section>
 
 {/* ✅ Logique extraite, markup lisible */}
----
-import { loadLatestNotes } from "@/lib/notes";
-const latestNotes = await loadLatestNotes(Astro.currentLocale, 3);
----
+--- import {loadLatestNotes} from "@/lib/notes"; const latestNotes = await loadLatestNotes(Astro.currentLocale,
+3); ---
 <section>
-  {latestNotes.map(note => <NoteRow note={note} />)}
+  {latestNotes.map((note) => <NoteRow note={note} />)}
 </section>
 ```
 
@@ -372,14 +379,15 @@ Configurer l'alias dans `tsconfig.json` :
 
 ```typescript
 // ❌ Sortis de nulle part
-const recent = notes.slice(0, 3)
-if (entry.body.split(" ").length > 800) {}
-setTimeout(reveal, 250)
+const recent = notes.slice(0, 3);
+if (entry.body.split(" ").length > 800) {
+}
+setTimeout(reveal, 250);
 
 // ✅ Constantes nommées dans lib/constants.ts ou en haut du fichier
-export const NOTES_ON_HOME = 3
-export const LONG_ARTICLE_WORD_THRESHOLD = 800
-export const SCROLL_REVEAL_DELAY_MS = 250
+export const NOTES_ON_HOME = 3;
+export const LONG_ARTICLE_WORD_THRESHOLD = 800;
+export const SCROLL_REVEAL_DELAY_MS = 250;
 ```
 
 ---
@@ -401,6 +409,7 @@ export const SCROLL_REVEAL_DELAY_MS = 250
 ### 11. Pas de regression dans `npm run build`
 
 Le build doit toujours passer 0 erreur, 0 warning. Si un warning apparaît :
+
 1. Le comprendre.
 2. Le corriger (ne pas l'ignorer).
 3. Sinon, le documenter explicitement dans un commentaire avec un TODO daté.
@@ -414,12 +423,13 @@ Le build doit toujours passer 0 erreur, 0 warning. Si un warning apparaît :
 ```astro
 ---
 // ❌ Hardcoder du texte UI dans un composant
-<a href="/collaborer">Réserver un call</a>
+<a href="/collaborer">Réserver un call</a>;
 
 // ✅ Toujours passer par i18n/ui.ts
 import { useTranslations } from "@/i18n/utils";
 const t = useTranslations(Astro.currentLocale);
 ---
+
 <a href={t.path("work")}>{t("cta.bookCall")}</a>
 ```
 
@@ -445,7 +455,7 @@ Frontmatter requis :
 title: "Pourquoi je code mes apps tout seul"
 date: 2026-05-12
 locale: fr
-translationKey: 2026-05-coding-alone   # ← identique dans les 2 fichiers
+translationKey: 2026-05-coding-alone # ← identique dans les 2 fichiers
 tags: [indie, build]
 excerpt: "Spoiler : c'est plus long que tu crois, et c'est moins grave que tu crois."
 draft: false
@@ -473,11 +483,14 @@ Le plugin `rehype-external-links` configuré dans Astro applique ça automatique
 <img src="/avatar.png" alt="Avatar" />
 
 {/* ✅ */}
+--- import {Image} from "astro:assets"; import avatar from "@/assets/avatar.png";
 ---
-import { Image } from "astro:assets";
-import avatar from "@/assets/avatar.png";
----
-<Image src={avatar} alt="Avatar d'Aymeric" widths={[200, 400, 800]} sizes="200px" />
+<Image
+  src={avatar}
+  alt="Avatar d'Aymeric"
+  widths={[200, 400, 800]}
+  sizes="200px"
+/>
 ```
 
 Astro génère AVIF + WebP + fallback, calcule width/height pour éviter CLS, et applique `loading="lazy"` par défaut (sauf images au-dessus du pli — explicitement `loading="eager"` + `fetchpriority="high"`).
@@ -487,6 +500,7 @@ Astro génère AVIF + WebP + fallback, calcule width/height pour éviter CLS, et
 ### E. SEO/GEO — toujours déclarer les métadonnées
 
 Chaque page doit appeler le composant `<SeoHead>` (à créer) qui injecte :
+
 - title, description, canonical
 - OpenGraph + Twitter Card
 - hreflang (FR ↔ EN)
@@ -507,7 +521,9 @@ Une page publique sans `<SeoHead>` n'est pas mergeable. Un test CI (script Node 
 
 /* Toute animation doit respecter prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
@@ -515,6 +531,7 @@ Une page publique sans `<SeoHead>` n'est pas mergeable. Un test CI (script Node 
 ```
 
 Chaque page :
+
 - `<html lang>` correct (`fr` ou `en`)
 - `<main id="main">` avec skip-link `<a href="#main" class="skip-link">`
 - Landmarks ARIA si plusieurs `<nav>` (`aria-label="Primary"`, etc.)
@@ -551,14 +568,14 @@ Avant chaque commit, vérifier :
 
 Site marketing statique → pas de tests unitaires sur les composants. On teste **ce qui peut casser silencieusement en prod** :
 
-| Niveau | Quoi | Comment |
-|---|---|---|
-| 1 | Build & types | `astro check` + `astro build` au CI |
-| 2 | Accessibilité | `@axe-core/playwright` sur les routes critiques (`/`, `/a-propos`, `/notes`, `/notes/<latest>`, `/collaborer` + miroir EN) |
-| 3 | Performance | Lighthouse CI (`@lhci/cli`) — budget Perf ≥ 95, A11y = 100, BP ≥ 95, SEO = 100 |
-| 4 | JSON-LD | Script Node qui parse `dist/`, extrait les `<script type="application/ld+json">` et valide la présence de Person/WebSite sur chaque page publique |
-| 5 | Contraste | `scripts/validate-contrast.mjs` (`npm run validate:contrast`) — résout les tokens de `theme.css` (y compris les `color-mix(... transparent)` sur leur fond) et vérifie WCAG AA ≥ 4.5:1 en clair + sombre, sans navigateur. Tourne au pre-commit (si `theme.css` change) et en CI avant le build, pour attraper un souci de contraste avant axe-core |
-| 6 | Liens cassés | (Optionnel V1.1) `linkinator` sur `dist/` |
+| Niveau | Quoi          | Comment                                                                                                                                                                                                                                                                                                                                             |
+| ------ | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1      | Build & types | `astro check` + `astro build` au CI                                                                                                                                                                                                                                                                                                                 |
+| 2      | Accessibilité | `@axe-core/playwright` sur les routes critiques (`/`, `/a-propos`, `/notes`, `/notes/<latest>`, `/collaborer` + miroir EN)                                                                                                                                                                                                                          |
+| 3      | Performance   | Lighthouse CI (`@lhci/cli`) — budget Perf ≥ 95, A11y = 100, BP ≥ 95, SEO = 100                                                                                                                                                                                                                                                                      |
+| 4      | JSON-LD       | Script Node qui parse `dist/`, extrait les `<script type="application/ld+json">` et valide la présence de Person/WebSite sur chaque page publique                                                                                                                                                                                                   |
+| 5      | Contraste     | `scripts/validate-contrast.mjs` (`npm run validate:contrast`) — résout les tokens de `theme.css` (y compris les `color-mix(... transparent)` sur leur fond) et vérifie WCAG AA ≥ 4.5:1 en clair + sombre, sans navigateur. Tourne au pre-commit (si `theme.css` change) et en CI avant le build, pour attraper un souci de contraste avant axe-core |
+| 6      | Liens cassés  | (Optionnel V1.1) `linkinator` sur `dist/`                                                                                                                                                                                                                                                                                                           |
 
 Pas de tests unitaires Vitest sur les composants Astro — la TS strict + le rendu statique attrapent l'essentiel. Si du jour 1 on a une logique métier réelle (ex: filtre complexe), on teste cette logique pure isolée dans `lib/` avec Vitest.
 
@@ -574,17 +591,17 @@ src/i18n/utils.ts                 → src/i18n/utils.test.ts
 
 ## Performance — budgets
 
-| Métrique | Budget |
-|---|---|
-| Lighthouse Performance | ≥ 95 (mobile + desktop) |
-| Lighthouse Accessibility | 100 |
-| Lighthouse Best Practices | ≥ 95 |
-| Lighthouse SEO | 100 |
-| LCP | < 2.5s |
-| INP | < 200ms |
-| CLS | < 0.1 |
-| JS shipped (homepage) | < 30 KB (gzip) |
-| CSS shipped (homepage) | < 25 KB (gzip) |
+| Métrique                  | Budget                  |
+| ------------------------- | ----------------------- |
+| Lighthouse Performance    | ≥ 95 (mobile + desktop) |
+| Lighthouse Accessibility  | 100                     |
+| Lighthouse Best Practices | ≥ 95                    |
+| Lighthouse SEO            | 100                     |
+| LCP                       | < 2.5s                  |
+| INP                       | < 200ms                 |
+| CLS                       | < 0.1                   |
+| JS shipped (homepage)     | < 30 KB (gzip)          |
+| CSS shipped (homepage)    | < 25 KB (gzip)          |
 
 Si une PR fait descendre une métrique sous son budget : c'est un blocker, pas une discussion.
 
@@ -593,11 +610,13 @@ Si une PR fait descendre une métrique sous son budget : c'est un blocker, pas u
 ## Conventions Git
 
 ### Branches
+
 - `main` — production, déployée auto sur `aymeric.dijoux.dev`
 - `feat/...` — feature branches
 - `fix/...`, `chore/...`, `docs/...`, `refactor/...` — selon le type
 
 ### Commits (conventional commits)
+
 ```
 feat(notes): add filterable tags index page
 fix(i18n): handle missing translation gracefully
@@ -610,6 +629,7 @@ seo(home): add SoftwareApplication JSON-LD per project
 ```
 
 ### PRs
+
 - Branche → PR vers `main`
 - CI doit passer (build, lint, lighthouse, axe, jsonld-validate)
 - Squash & merge

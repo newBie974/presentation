@@ -13,7 +13,7 @@ export async function GET() {
     "",
     "## About",
     "- Aymeric Dijoux — freelance AI app builder & software engineer based in Réunion Island (974) and Paris, France",
-    "- Builds consumer apps: VoiceJournal, Caroubolt, Tookta",
+    "- Builds consumer apps: VoiceJournal, Ti Boug, Tookta",
     "- Backend Engineer at Decider.ai (AI agents, RAG, local-first anonymisation)",
     "- Available for select freelance projects (mobile, web, AI prototypes) — remote worldwide",
     "",

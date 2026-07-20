@@ -33,7 +33,7 @@ export function buildPersonJsonLd() {
     familyName: "Dijoux",
     jobTitle: "AI app builder & software engineer",
     description:
-      "Aymeric Dijoux is a freelance AI app builder and software engineer based in Réunion Island (France) and Paris. He ships consumer apps (VoiceJournal, Caroubolt, Tookta), builds AI agents and RAG systems, and helps select teams as a freelancer — remote worldwide.",
+      "Aymeric Dijoux is a freelance AI app builder and software engineer based in Réunion Island (France) and Paris. He ships consumer apps (VoiceJournal, Ti Boug, Tookta), builds AI agents and RAG systems, and helps select teams as a freelancer — remote worldwide.",
     url: SITE_URL,
     image: `${SITE_URL}/avatar.png`,
     address: {
