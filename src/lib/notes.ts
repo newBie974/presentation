@@ -76,6 +76,31 @@ export async function listTagsWithCount(locale: Locale): Promise<TagCount[]> {
   );
 }
 
+function countSharedTags(note: NoteEntry, tagSet: Set<string>): number {
+  return note.data.tags.filter((tag) => tagSet.has(tag)).length;
+}
+
+export async function loadRelatedNotes(
+  locale: Locale,
+  currentSlug: string,
+  tags: string[],
+  limit: number,
+): Promise<NoteEntry[]> {
+  const notes = await loadPublishedNotes(locale);
+  const tagSet = new Set(tags);
+  return notes
+    .filter((note) => getNoteSlug(note) !== currentSlug)
+    .map((note) => ({ note, score: countSharedTags(note, tagSet) }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score || cmpDateDesc(a.note, b.note))
+    .slice(0, limit)
+    .map(({ note }) => note);
+}
+
+function cmpDateDesc(a: NoteEntry, b: NoteEntry): number {
+  return b.data.date.getTime() - a.data.date.getTime();
+}
+
 export async function loadHomeNotes(
   locale: Locale,
   limit: number,

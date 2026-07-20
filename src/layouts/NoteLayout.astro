@@ -2,6 +2,7 @@
 import MainLayout from "./MainLayout.astro";
 import Nav from "@/components/organisms/Nav.astro";
 import Footer from "@/components/organisms/Footer.astro";
+import NoteEnd from "@/components/organisms/NoteEnd.astro";
 import JsonLd from "@/components/atoms/JsonLd.astro";
 import { useTranslations, alternateLocale } from "@/i18n/utils";
 import { formatDate } from "@/lib/dates";
@@ -10,7 +11,8 @@ import {
   buildBlogPostingJsonLd,
   buildBreadcrumbJsonLd,
 } from "@/lib/jsonLd";
-import { SITE_URL } from "@/lib/constants";
+import { loadRelatedNotes } from "@/lib/notes";
+import { SITE_URL, RELATED_NOTES_COUNT } from "@/lib/constants";
 import type { Locale } from "@/types";
 
 interface Props {
@@ -37,6 +39,8 @@ const notesRoot =
 const homeUrl = locale === "fr" ? `${SITE_URL}/` : `${SITE_URL}/en/`;
 const homeLabel = locale === "fr" ? "Accueil" : "Home";
 const notesLabel = locale === "fr" ? "Notes" : "Writing";
+
+const related = await loadRelatedNotes(locale, slug, tags, RELATED_NOTES_COUNT);
 
 const jsonLd = [
   buildPersonJsonLd(),
@@ -94,6 +98,8 @@ const jsonLd = [
       <slot />
     </div>
   </article>
+
+  <NoteEnd locale={locale} related={related} />
 
   <Footer slot="footer" locale={locale} />
 </MainLayout>
