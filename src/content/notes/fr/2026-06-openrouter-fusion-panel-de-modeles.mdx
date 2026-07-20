@@ -1,0 +1,147 @@
+---
+title: "OpenRouter Fusion : un panel de modèles bat le modèle frontière"
+date: 2026-06-15
+locale: fr
+translationKey: "2026-06-openrouter-fusion"
+tags: ["ia", "stack", "indie"]
+excerpt: "OpenRouter vient de sortir Fusion : au lieu d'interroger un seul modèle, tu en interroges plusieurs en parallèle et un juge synthétise. Résultat : trois modèles pas chers frôlent le niveau de Fable 5 à moitié prix. Pour un indie, c'est de la value maintenant."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+Quand tu construis seul, le choix d'un modèle, c'est toujours le même arbitrage : le meilleur modèle coûte cher, le pas cher est moins bon. Tu paies la qualité ou tu paies en bugs. [OpenRouter](https://openrouter.ai/blog/announcements/fusion-beats-frontier/) vient de casser cet arbitrage avec **Fusion**, et le titre de leur annonce est gonflé mais factuel : *un panel de modèles bat le modèle frontière*.
+
+L'idée tient en une phrase : **arrête de demander à un seul modèle.**
+
+## C'est quoi Fusion
+
+Au lieu d'envoyer ton prompt à un modèle, Fusion l'envoie **en parallèle à un panel de modèles**, chacun équipé des mêmes trois outils serveur — recherche web, web fetch et bash. Puis :
+
+1. un **juge** lit toutes les réponses et cartographie où les modèles sont d'accord, où ils se contredisent, ce que chacun a couvert ou raté ;
+2. un **synthétiseur** écrit la réponse finale à partir de cette analyse — consensus, contradictions, angles morts, intuitions uniques.
+
+C'est un modèle composite, côté serveur. Toi tu vois un seul appel.
+
+<Callout tone="info">
+  Le détail qui m'a fait tiquer : Opus 4.8 mis en panel **avec lui-même** (le même modèle en double, Opus comme synthétiseur) fait un bond de **+6,7 points** — 58,8 % en solo → 65,5 %. Autrement dit, une grosse part du gain vient de l'**étape de synthèse** elle-même, pas de la diversité des modèles. Ce n'est pas « plus de modèles = mieux » ; c'est *la synthèse* qui crée la valeur.
+</Callout>
+
+## Les chiffres
+
+Ils ont testé Fusion sur **DRACO**, le benchmark de deep research de Perplexity : 100 tâches sur dix domaines (droit, médecine, finance, comparaison de produits…). Deux résultats qui comptent :
+
+- **Fable 5 + GPT-5.5 fusionnés → 69,0 %**, devant chaque modèle pris seul, y compris Fable 5 seul à **65,3 %**. C'est le « beyond-frontier » : un panel de modèles frontière dépasse le meilleur modèle frontière.
+- **Le panel low-cost** — Gemini 3 Flash + Kimi K2.6 + DeepSeek V4 Pro — atteint **64,7 %**. À **0,6 point** de Fable 5, pour environ **la moitié du coût**.
+
+C'est cette deuxième ligne qui est de la value pour un indie. Trois modèles pas chers, fusionnés, font quasiment jeu égal avec le modèle premium sur des tâches de recherche profonde, à moitié prix.
+
+## Comment on s'en sert
+
+C'est le point fort : un seul slug. Tu remplaces ton modèle par `openrouter/fusion` et c'est tout.
+
+```bash
+curl https://openrouter.ai/api/v1/chat/completions \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openrouter/fusion",
+    "messages": [
+      { "role": "user",
+        "content": "Compare les solutions de paiement pour une app indie en 2026." }
+    ]
+  }'
+```
+
+Tu peux choisir un preset **Quality** ou **Budget** (le panel low-cost ci-dessus), passer ton propre panel de modèles et ton propre synthétiseur, ou laisser Fusion s'activer comme un *outil* que le modèle décide d'appeler quand la question le mérite.
+
+## Le piège : tu paies tout le panel
+
+Pas de magie sur la facture. **Tu paies le cumul des complétions sous-jacentes.** Quatre modèles dans le panel = quatre complétions facturées. Avec le panel par défaut à 3 modèles, compte grosso modo **4 à 5× le coût** d'une complétion unique sur le même prompt, et ça scale linéairement avec la taille du panel.
+
+Donc « moitié prix de Fable 5 » veut dire : *à qualité de recherche équivalente*, le panel budget revient moins cher que le premium — pas que Fusion est gratuit. Sur un simple appel de chat, ça reste plus cher qu'un petit modèle solo. La latence aussi monte : tu attends le plus lent du panel, plus la synthèse.
+
+<Callout tone="warn">
+  Fusion n'est pas un remplaçant universel de ton modèle par défaut. C'est un outil pour les **tâches à enjeu** : recherche profonde, comparaison, synthèse documentaire, décisions où une erreur coûte cher. Pour le chat courant ou l'autocomplétion, le surcoût et la latence ne valent pas le coup.
+</Callout>
+
+## Le refaire à la maison, sans OpenRouter
+
+Ce constat — une grosse part du gain vient de la synthèse, pas de la diversité — a un corollaire : tu n'as pas besoin de Fusion pour en profiter, ni même d'une API unifiée. Le pattern, c'est deux étapes — un *fan-out* sur un panel, puis une synthèse — et tu peux le câbler toi-même en TypeScript, chaque modèle derrière sa propre interface, la synthèse confiée à Claude :
+
+```typescript
+// fusion-maison.ts — un panel de modèles + une synthèse Claude, à la main
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic(); // lit ANTHROPIC_API_KEY
+
+type PanelMember = { name: string; ask: (prompt: string) => Promise<string> };
+
+function textOf(message: Anthropic.Message): string {
+  return message.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("");
+}
+
+// Un membre adossé à un modèle Claude. N'importe quel provider tient
+// derrière la même interface `ask` — il suffit de renvoyer du texte.
+function claudeMember(name: string, model: string): PanelMember {
+  return {
+    name,
+    async ask(prompt) {
+      const res = await client.messages.create({
+        model,
+        max_tokens: 4096,
+        messages: [{ role: "user", content: prompt }],
+      });
+      return textOf(res);
+    },
+  };
+}
+
+// Le panel : 3 modèles qui répondent indépendamment.
+const PANEL: PanelMember[] = [
+  claudeMember("opus", "claude-opus-4-8"),
+  claudeMember("sonnet", "claude-sonnet-4-6"),
+  claudeMember("haiku", "claude-haiku-4-5"),
+  // gptMember(...), geminiMember(...) — la vraie diversité vient d'autres
+  // providers, branchés derrière la même interface `ask`.
+];
+
+// Le synthétiseur : un modèle à part qui lit les réponses et rédige la finale.
+const SYNTHESIZER = "claude-opus-4-8";
+
+export async function fusionMaison(question: string): Promise<string> {
+  // 1. fan-out : la même question sur les 3 modèles, en parallèle
+  const answers = await Promise.all(
+    PANEL.map(async (m) => ({ name: m.name, text: await m.ask(question) })),
+  );
+
+  // 2. synthèse : le synthétiseur compare les 3 réponses puis rédige la finale
+  const brief = answers.map((a) => `### Réponse de ${a.name}\n${a.text}`).join("\n\n");
+  const synthesis = await client.messages.create({
+    model: SYNTHESIZER,
+    max_tokens: 16000,
+    thinking: { type: "adaptive" },
+    system:
+      "Tu reçois plusieurs réponses indépendantes à une même question. " +
+      "Repère consensus, contradictions et angles morts, puis rédige la " +
+      "meilleure réponse finale, ancrée sur ce qui fait consensus.",
+    messages: [{ role: "user", content: `Question : ${question}\n\n${brief}` }],
+  });
+
+  return textOf(synthesis);
+}
+```
+
+C'est la version naïve : pas de juge dans un contexte séparé, pas d'outils web sur chaque membre, pas de sortie structurée. Mais le cœur est là — fan-out puis synthèse — et il capte déjà l'essentiel du gain, sans dépendance externe : tes clés providers, ton code. Ce que Fusion t'apporte en plus, c'est le packaging — l'étape de juge dédiée, web search + bash branchés sur chaque modèle, les presets, un seul appel facturé d'un bloc. À toi de voir si ça vaut le slug clé en main ou les cinquante lignes maison.
+
+## Pourquoi c'est de la value maintenant
+
+Pour un indie qui ship des features IA, deux choses changent dès aujourd'hui :
+
+- **Le rapport qualité/prix sur la recherche profonde.** Un panel budget à 64,7 % sur DRACO, à moitié prix d'un modèle premium, c'est exactement le genre de tâche (un agent qui compile un dossier, compare des options, recoupe des sources) où je payais le premium « par sécurité ». Je peux tester le panel budget et garder la différence.
+- **L'insight transférable.** Même sans utiliser Fusion, le pattern est à toi — la fonction `fusionMaison` plus haut le montre. Fusion te le vend clé en main et l'optimise ; le réflexe « plusieurs modèles + une synthèse plutôt qu'un seul gros modèle », lui, est gratuit.
+
+Je ne vais pas brancher Fusion sur tous mes appels — ce serait absurde sur la facture. Mais pour la prochaine feature de type « recherche » dans une de mes apps, je commence par le panel budget plutôt que par le réflexe « prends le plus gros modèle ». C'est le genre d'arbitrage qui, multiplié sur un mois d'usage, fait la différence entre une marge et une perte sur un produit solo.
