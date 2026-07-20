@@ -9,7 +9,7 @@ interface Props {
 const { locale } = Astro.props;
 const t = useTranslations(locale);
 
-const rssHref = locale === "fr" ? "/rss.xml" : "/en/rss.xml";
+const rssHref = t.path("rss");
 ---
 
 <footer class="footer">

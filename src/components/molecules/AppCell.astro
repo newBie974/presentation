@@ -25,8 +25,8 @@ const isMobileApp = project.platform.some(
 const projectType = isMobileApp ? "app" : "web";
 const platformLabel = project.platform.map((p) => p.toUpperCase()).join("+");
 const visitLabel = t("cta.visitSite");
-const appStoreHint = locale === "fr" ? "Télécharger sur" : "Download on";
-const playStoreHint = locale === "fr" ? "Disponible sur" : "Get it on";
+const appStoreHint = t("apps.downloadOn");
+const playStoreHint = t("apps.getItOn");
 ---
 
 <article class="cell" data-type={projectType}>
