@@ -54,10 +54,26 @@ function i18nLinksFor(pathname) {
   ];
 }
 
+// 2026-07 tag taxonomy cleanup: merged `ai`→`ia` and dropped the thin long-tail.
+// Redirect the removed tag URLs so any indexed/linked ones don't 404.
+const REMOVED_TAGS = [
+  "app-store", "astro", "backend", "data", "design",
+  "freelance", "geo", "launch", "remote", "web",
+];
+const TAG_REDIRECTS = Object.fromEntries([
+  ["/notes/tags/ai", "/notes/tags/ia"],
+  ["/en/writing/tags/ai", "/en/writing/tags/ia"],
+  ...REMOVED_TAGS.flatMap((t) => [
+    [`/notes/tags/${t}`, "/notes/tags"],
+    [`/en/writing/tags/${t}`, "/en/writing/tags"],
+  ]),
+]);
+
 export default defineConfig({
   output: "static",
   site: "https://aymeric.dijoux.dev",
   base: "/",
+  redirects: TAG_REDIRECTS,
   i18n: {
     defaultLocale: "fr",
     locales: ["fr", "en"],
