@@ -16,8 +16,11 @@ let failed = 0;
 let checked = 0;
 
 for await (const file of walk(DIST)) {
-  checked++;
   const html = await readFile(file, "utf8");
+  // Astro redirect stubs are minimal `<meta http-equiv="refresh">` pages with
+  // no content of their own — they carry no JSON-LD by design, so skip them.
+  if (/<meta[^>]+http-equiv="refresh"/i.test(html)) continue;
+  checked++;
   const blocks = [
     ...html.matchAll(
       /<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g,
