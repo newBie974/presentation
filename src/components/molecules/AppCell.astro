@@ -2,7 +2,8 @@
 import { Image } from "astro:assets";
 import Icon from "@/components/atoms/Icon.astro";
 import type { Project, Locale } from "@/types";
-import { useTranslations } from "@/i18n/utils";
+import { useTranslations, localizePath } from "@/i18n/utils";
+import { appDetails } from "@/data/appDetails";
 
 interface Props {
   project: Project;
@@ -11,6 +12,14 @@ interface Props {
 
 const { project, locale } = Astro.props;
 const t = useTranslations(locale);
+
+// Apps with an on-site detail page get an internal link (SEO + funnel); others
+// fall back to their external site.
+const detailPath = appDetails[project.slug]
+  ? `${localizePath("apps", locale)}/${project.slug}`
+  : null;
+const primaryHref = detailPath ?? project.url;
+const isExternal = detailPath === null;
 
 const statusLabel = t(
   project.status === "archived"
@@ -32,9 +41,9 @@ const playStoreHint = t("apps.getItOn");
 <article class="cell" data-type={projectType}>
   <a
     class="logo-link"
-    href={project.url}
-    target="_blank"
-    rel="noopener noreferrer"
+    href={primaryHref}
+    target={isExternal ? "_blank" : undefined}
+    rel={isExternal ? "noopener noreferrer" : undefined}
     aria-label={`${project.title} — ${visitLabel}`}
   >
     <div class="logo">
@@ -51,7 +60,11 @@ const playStoreHint = t("apps.getItOn");
     </div>
   </a>
   <h3 class="name">
-    <a href={project.url} target="_blank" rel="noopener noreferrer">
+    <a
+      href={primaryHref}
+      target={isExternal ? "_blank" : undefined}
+      rel={isExternal ? "noopener noreferrer" : undefined}
+    >
       {project.title}
     </a>
   </h3>

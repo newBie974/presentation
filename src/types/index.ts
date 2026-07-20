@@ -67,6 +67,14 @@ export interface Service {
   description: { fr: string; en: string };
 }
 
+export interface AppDetail {
+  oneLiner: { fr: string; en: string };
+  whatItIs: { fr: string; en: string };
+  keyFeatures: { fr: string; en: string }[];
+  targetUser: { fr: string; en: string };
+  notable: { fr: string; en: string };
+}
+
 export interface OfferTier {
   id: string;
   name: { fr: string; en: string };

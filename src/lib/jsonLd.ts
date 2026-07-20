@@ -1,4 +1,4 @@
-import type { Locale } from "@/types";
+import type { Locale, Project, AppDetail } from "@/types";
 import { SITE_URL, SITE_NAME, PERSON_ID, WEBSITE_ID } from "./constants";
 import { socialLinks } from "@/data/socialLinks";
 import { projects } from "@/data/projects";
@@ -118,6 +118,29 @@ export function buildSoftwareAppJsonLd() {
     applicationCategory: "Productivity",
     creator: { "@id": PERSON_ID },
   }));
+}
+
+export function buildAppDetailJsonLd(
+  project: Project,
+  detail: AppDetail,
+  locale: Locale,
+  pageUrl: string,
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "@id": `${SITE_URL}/#app-${project.slug}`,
+    name: project.title,
+    description: detail.oneLiner[locale],
+    url: pageUrl,
+    sameAs: [project.url, project.appStoreUrl, project.playStoreUrl].filter(
+      Boolean,
+    ),
+    operatingSystem: project.platform.join(", "),
+    applicationCategory: "Productivity",
+    creator: { "@id": PERSON_ID },
+    inLanguage: locale === "fr" ? "fr-FR" : "en-US",
+  };
 }
 
 interface BlogPostingArgs {

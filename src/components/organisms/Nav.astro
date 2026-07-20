@@ -7,9 +7,10 @@ import type { Locale } from "@/types";
 interface Props {
   locale: Locale;
   current?: "home" | "about" | "notes" | "work";
+  altPath?: string;
 }
 
-const { locale, current } = Astro.props;
+const { locale, current, altPath: altPathProp } = Astro.props;
 const t = useTranslations(locale);
 
 const links = [
@@ -19,11 +20,9 @@ const links = [
   { id: "work" as const, label: t("nav.work"), href: t.path("work") },
 ];
 
-const altPath = current
-  ? alternateUrl(current, locale)
-  : locale === "fr"
-    ? "/en/"
-    : "/";
+const altPath =
+  altPathProp ??
+  (current ? alternateUrl(current, locale) : locale === "fr" ? "/en/" : "/");
 ---
 
 <nav class="nav" aria-label={t("nav.ariaPrimary")}>

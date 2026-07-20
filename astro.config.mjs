@@ -44,6 +44,15 @@ const I18N_PAIRS = [
 
 /** @param {string} pathname */
 function i18nLinksFor(pathname) {
+  // Dynamic app detail pages: /apps/<slug>/ ↔ /en/apps/<slug>/
+  const appMatch = pathname.match(/^\/(?:en\/)?apps\/([^/]+)\/?$/);
+  if (appMatch) {
+    const slug = appMatch[1];
+    return [
+      { lang: "fr-FR", url: `${SITE}/apps/${slug}/` },
+      { lang: "en-US", url: `${SITE}/en/apps/${slug}/` },
+    ];
+  }
   const pair = I18N_PAIRS.find(
     ([fr, en]) => fr === pathname || en === pathname,
   );

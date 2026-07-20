@@ -1,0 +1,54 @@
+---
+import MainLayout from "@/layouts/MainLayout.astro";
+import Nav from "@/components/organisms/Nav.astro";
+import Footer from "@/components/organisms/Footer.astro";
+import AppDetail from "@/components/organisms/AppDetail.astro";
+import JsonLd from "@/components/atoms/JsonLd.astro";
+import { projects } from "@/data/projects";
+import { appDetails } from "@/data/appDetails";
+import { buildPersonJsonLd, buildAppDetailJsonLd } from "@/lib/jsonLd";
+import { SITE_URL } from "@/lib/constants";
+import type { Project, AppDetail as AppDetailType } from "@/types";
+
+const locale = "fr" as const;
+
+export function getStaticPaths() {
+  return projects
+    .filter((project) => appDetails[project.slug])
+    .map((project) => ({
+      params: { slug: project.slug },
+      props: { project, detail: appDetails[project.slug] },
+    }));
+}
+
+interface Props {
+  project: Project;
+  detail: AppDetailType;
+}
+
+const { project, detail } = Astro.props;
+const pageUrl = `${SITE_URL}/apps/${project.slug}`;
+const title = `${project.title} — ${project.tagline[locale]}`;
+const description = detail.whatItIs[locale];
+const jsonLd = [
+  buildPersonJsonLd(),
+  buildAppDetailJsonLd(project, detail, locale, pageUrl),
+];
+---
+
+<MainLayout
+  title={title}
+  description={description}
+  locale={locale}
+  alternatePath={`/en/apps/${project.slug}`}
+>
+  <Fragment slot="head"><JsonLd data={jsonLd} /></Fragment>
+  <Nav
+    slot="nav"
+    locale={locale}
+    current="home"
+    altPath={`/en/apps/${project.slug}`}
+  />
+  <AppDetail project={project} detail={detail} locale={locale} />
+  <Footer slot="footer" locale={locale} />
+</MainLayout>

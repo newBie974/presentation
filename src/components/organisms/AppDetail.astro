@@ -1,0 +1,279 @@
+---
+import { Image } from "astro:assets";
+import SectionLabel from "@/components/atoms/SectionLabel.astro";
+import Icon from "@/components/atoms/Icon.astro";
+import { useTranslations, localizePath } from "@/i18n/utils";
+import type { Project, AppDetail, Locale } from "@/types";
+
+interface Props {
+  project: Project;
+  detail: AppDetail;
+  locale: Locale;
+}
+
+const { project, detail, locale } = Astro.props;
+const t = useTranslations(locale);
+const statusLabel =
+  project.status === "archived"
+    ? t("status.archived")
+    : project.status === "live"
+      ? t("status.live")
+      : t("status.building");
+const platformLabel = project.platform.map((p) => p.toUpperCase()).join(" · ");
+---
+
+<article class="app-detail">
+  <a class="back" href={localizePath("home", locale)}>{t("app.backHome")}</a>
+
+  <header class="hero">
+    <div class="logo">
+      {
+        project.logo && (
+          <Image
+            src={project.logo}
+            alt={`${project.title} logo`}
+            width={72}
+            height={72}
+          />
+        )
+      }
+    </div>
+    <div class="intro">
+      <p class="status" data-status={project.status}>
+        <span class="dot" aria-hidden="true"></span>{statusLabel.toUpperCase()} ·
+        {platformLabel}
+      </p>
+      <h1>{project.title}</h1>
+      <p class="oneliner">{detail.oneLiner[locale]}</p>
+    </div>
+  </header>
+
+  <div class="ctas">
+    {
+      project.appStoreUrl && (
+        <a
+          class="badge"
+          href={project.appStoreUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Icon name="simple-icons:apple" size={16} /> App Store
+        </a>
+      )
+    }
+    {
+      project.playStoreUrl && (
+        <a
+          class="badge"
+          href={project.playStoreUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Icon name="simple-icons:googleplay" size={14} /> Google Play
+        </a>
+      )
+    }
+    <a
+      class="badge ghost"
+      href={project.url}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {t("cta.visitSite")} →
+    </a>
+  </div>
+
+  <section class="block">
+    <SectionLabel>— {t("app.about")}</SectionLabel>
+    <p class="body">{detail.whatItIs[locale]}</p>
+  </section>
+
+  <section class="block">
+    <SectionLabel>— {t("app.features")}</SectionLabel>
+    <ul class="features" role="list">
+      {detail.keyFeatures.map((f) => <li>{f[locale]}</li>)}
+    </ul>
+  </section>
+
+  <section class="meta block">
+    <div>
+      <SectionLabel>— {t("app.forWho")}</SectionLabel>
+      <p class="body">{detail.targetUser[locale]}</p>
+    </div>
+    <div>
+      <SectionLabel>— Stack</SectionLabel>
+      <ul class="tech" role="list">
+        {project.techStack.map((tech) => <li>{tech}</li>)}
+      </ul>
+    </div>
+  </section>
+
+  <p class="notable">{detail.notable[locale]}</p>
+</article>
+
+<style>
+  .app-detail {
+    max-width: var(--container-content);
+    margin: 0 auto;
+    padding: 48px;
+  }
+  .back {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+  .back:hover {
+    color: var(--color-text);
+  }
+  .hero {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    margin: 24px 0 20px;
+  }
+  .logo {
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+    border: var(--border-w) solid var(--color-border);
+    overflow: hidden;
+  }
+  .logo :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  h1 {
+    font-size: clamp(28px, 5vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    margin: 4px 0 8px;
+  }
+  .oneliner {
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+    margin: 0;
+    max-width: 560px;
+  }
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--color-success);
+  }
+  .status[data-status="building"] {
+    color: var(--color-building);
+  }
+  .status[data-status="archived"] {
+    color: var(--color-text-muted);
+  }
+  .status .dot {
+    width: 7px;
+    height: 7px;
+    background: currentColor;
+  }
+  .ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 13px;
+    background: var(--color-inverse-bg);
+    color: var(--color-inverse-fg);
+    border: var(--border-w) solid var(--color-inverse-bg);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .badge.ghost {
+    background: transparent;
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+  .badge:hover {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    border-color: var(--color-accent);
+  }
+  .block {
+    padding: 24px 0;
+    border-top: var(--border-w) solid var(--color-border);
+  }
+  .body {
+    font-size: 15px;
+    line-height: 1.65;
+    margin: 12px 0 0;
+    max-width: 640px;
+  }
+  .features {
+    list-style: none;
+    margin: 14px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .features li {
+    position: relative;
+    padding-left: 20px;
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+  .features li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: var(--color-text-muted);
+  }
+  .meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .tech {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .tech li {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-text-muted);
+    padding: 4px 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-soft);
+  }
+  .notable {
+    margin-top: 24px;
+    padding: 16px;
+    background: var(--color-bg-soft);
+    border: var(--border-w) solid var(--color-border);
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+  }
+  @media (max-width: 640px) {
+    .app-detail {
+      padding: 32px 20px;
+    }
+    .meta {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
