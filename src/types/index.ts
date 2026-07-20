@@ -67,6 +67,24 @@ export interface Service {
   description: { fr: string; en: string };
 }
 
+export interface OfferTier {
+  id: string;
+  name: { fr: string; en: string };
+  pitch: { fr: string; en: string };
+  priceFrom: number;
+  duration: { fr: string; en: string };
+  includes: { fr: string; en: string }[];
+  featured?: boolean;
+}
+
+export interface SupportOffer {
+  id: string;
+  icon: string;
+  name: { fr: string; en: string };
+  price: { fr: string; en: string };
+  note: { fr: string; en: string };
+}
+
 export interface FaqEntry {
   q: { fr: string; en: string };
   a: { fr: string; en: string };

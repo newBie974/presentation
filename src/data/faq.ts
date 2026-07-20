@@ -2,6 +2,27 @@ import type { FaqEntry } from "@/types";
 
 export const faq: FaqEntry[] = [
   {
+    q: { fr: "Combien ça coûte ?", en: "How much does it cost?" },
+    a: {
+      fr: "Au forfait fixe selon le palier : Prototype IA dès 6 000 €, MVP Web dès 14 000 €, MVP Mobile dès 22 000 €. Devis ferme établi après le call découverte, sans dépassement caché.",
+      en: "Fixed price by tier: AI prototype from €6,000, Web MVP from €14,000, Mobile MVP from €22,000. Firm quote set after the intro call, no hidden overruns.",
+    },
+  },
+  {
+    q: { fr: "En combien de temps ?", en: "How long does it take?" },
+    a: {
+      fr: "Prototype IA en 2 semaines, MVP web en 6 à 8, MVP mobile en 8 à 12. Une démo à chaque étape — tu vois le produit avancer.",
+      en: "AI prototype in 2 weeks, web MVP in 6-8, mobile MVP in 8-12. A demo at every step — you watch the product take shape.",
+    },
+  },
+  {
+    q: { fr: "À qui appartient le code ?", en: "Who owns the code?" },
+    a: {
+      fr: "À toi, dès le premier jour. Code, accès et comptes sont les tiens — zéro dépendance, tu peux reprendre ou faire reprendre à tout moment.",
+      en: "You, from day one. Code, access and accounts are yours — zero lock-in, you can take over or hand off anytime.",
+    },
+  },
+  {
     q: {
       fr: "Tu es basé où ?",
       en: "Where are you based?",

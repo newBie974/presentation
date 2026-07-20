@@ -1,0 +1,53 @@
+---
+import SectionLabel from "@/components/atoms/SectionLabel.astro";
+import { trustPoints } from "@/data/offer";
+import { useTranslations } from "@/i18n/utils";
+import type { Locale } from "@/types";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+---
+
+<section class="trust">
+  <SectionLabel>{t("offer.trustLabel")}</SectionLabel>
+  <ul class="points" role="list">
+    {trustPoints.map((point) => <li>{point[locale]}</li>)}
+  </ul>
+</section>
+
+<style>
+  .trust {
+    max-width: var(--container-narrow);
+    margin: 8px auto 0;
+    padding: 24px 48px;
+  }
+  .points {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+  }
+  .points li {
+    position: relative;
+    padding-left: 26px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .points li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    font-weight: 700;
+    color: var(--color-success);
+  }
+  @media (max-width: 720px) {
+    .trust {
+      padding: 20px 20px;
+    }
+  }
+</style>

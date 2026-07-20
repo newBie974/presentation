@@ -1,0 +1,38 @@
+---
+import SectionLabel from "@/components/atoms/SectionLabel.astro";
+import Highlight from "@/components/atoms/Highlight.astro";
+import OfferTierCard from "@/components/molecules/OfferTierCard.astro";
+import { offerTiers } from "@/data/offer";
+import { useTranslations } from "@/i18n/utils";
+import type { Locale } from "@/types";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+---
+
+<section class="section">
+  <SectionLabel number="01">{t("offer.label")}</SectionLabel>
+  <h2><Highlight>{t("offer.heading")}</Highlight></h2>
+  <div class="tiers">
+    {offerTiers.map((tier) => <OfferTierCard tier={tier} locale={locale} />)}
+  </div>
+</section>
+
+<style>
+  .tiers {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 20px;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .tiers {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

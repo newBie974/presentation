@@ -1,0 +1,96 @@
+---
+import { useTranslations } from "@/i18n/utils";
+import type { OfferTier, Locale } from "@/types";
+
+interface Props {
+  tier: OfferTier;
+  locale: Locale;
+}
+
+const { tier, locale } = Astro.props;
+const t = useTranslations(locale);
+const amount = tier.priceFrom.toLocaleString(
+  locale === "fr" ? "fr-FR" : "en-US",
+);
+const price = locale === "fr" ? `dès ${amount} €` : `from €${amount}`;
+---
+
+<article class:list={["tier", tier.featured && "is-featured"]}>
+  {tier.featured && <span class="badge">{t("offer.featured")}</span>}
+  <h3>{tier.name[locale]}</h3>
+  <p class="pitch">{tier.pitch[locale]}</p>
+  <p class="price">{price}</p>
+  <p class="duration">{tier.duration[locale]}</p>
+  <ul class="includes" role="list">
+    {tier.includes.map((item) => <li>{item[locale]}</li>)}
+  </ul>
+</article>
+
+<style>
+  .tier {
+    display: flex;
+    flex-direction: column;
+    padding: 22px;
+    background: var(--color-bg-soft);
+    border: var(--border-w) solid var(--color-border);
+  }
+  .is-featured {
+    border-color: var(--color-text);
+    box-shadow: 4px 4px 0 0 var(--color-accent);
+  }
+  .badge {
+    align-self: flex-start;
+    margin-bottom: 10px;
+    padding: 3px 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+  h3 {
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .pitch {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin: 4px 0 14px;
+  }
+  .price {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin: 0;
+  }
+  .duration {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-text-muted);
+    margin: 4px 0 16px;
+  }
+  .includes {
+    list-style: none;
+    margin: 0;
+    padding: 16px 0 0;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .includes li {
+    position: relative;
+    padding-left: 18px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .includes li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: var(--color-text-muted);
+  }
+</style>

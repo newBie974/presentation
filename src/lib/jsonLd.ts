@@ -3,6 +3,7 @@ import { SITE_URL, SITE_NAME, PERSON_ID, WEBSITE_ID } from "./constants";
 import { socialLinks } from "@/data/socialLinks";
 import { projects } from "@/data/projects";
 import { experiments } from "@/data/experiments";
+import { offerTiers } from "@/data/offer";
 
 const KNOWS_ABOUT = [
   "AI app development",
@@ -75,6 +76,20 @@ export function buildProfessionalServiceJsonLd(locale: Locale) {
       "AI prototyping",
       "Freelance software engineering",
     ],
+    hasOfferCatalog: {
+      "@type": "OfferCatalog",
+      name: locale === "fr" ? "Produit sur mesure" : "Custom product",
+      itemListElement: offerTiers.map((tier) => ({
+        "@type": "Offer",
+        name: tier.name[locale],
+        description: tier.pitch[locale],
+        priceSpecification: {
+          "@type": "PriceSpecification",
+          minPrice: tier.priceFrom,
+          priceCurrency: "EUR",
+        },
+      })),
+    },
     inLanguage: locale === "fr" ? "fr-FR" : "en-US",
   };
 }
