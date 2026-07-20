@@ -1,0 +1,176 @@
+---
+title: "Perplexity is pulling back from MCP internally. Here's the POC that dodges the same wall."
+date: 2026-07-20
+locale: en
+translationKey: "2026-07-mcp-tools-per-agent"
+tags: ["ia", "tools", "build"]
+excerpt: "Perplexity is pulling back from MCP internally, and their reasons are real. But token bloat and weak permissions are a wiring problem, not a protocol one. Here's a POC that exposes my tools once and grants each agent only its slice."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+
+A [piece made the rounds](https://www.agent-engineering.dev/article/why-perplexity-is-stepping-back-from-the-model-context-protocol-mcp-internally): Perplexity is reportedly stepping back from the **Model Context Protocol** internally, for production workloads. Three complaints:
+
+1. **Token bloat.** MCP loads every tool schema and description into the model's context on each call — tens of thousands of extra tokens, every turn.
+2. **Weak permissions.** No built-in OAuth, granular permissions, rate limiting, or audit logs.
+3. **Production reliability.** The default transport (stdio) is fine locally but turns unpredictable and hard to monitor in distributed setups.
+
+Their answer: go back to **REST APIs + CLIs**, with a managed Agent API on top.
+
+I read this in the middle of a POC doing the exact opposite — wiring several agents onto a shared tool pool **over MCP** — and my reaction was: all three pains are real, but none of them come from the protocol. They come from a **naïve** way of wiring it: expose every tool, to every agent, over stdio. Here's the POC, and what it actually proves.
+
+## The problem isn't MCP, it's the wiring
+
+The trap always shows up the same way. You have one agent and three tools, wired straight into the agent's code: it works, you ship. Then you add a second agent. Then a fifth tool. Then a tool that's useful to one agent but **dangerous** for another. And the direct wiring becomes the very thing that hurts:
+
+- **Coupling.** The tool lives _inside_ the agent's code. Adding a tool means a new signature, an SDK import, a redeploy. I want the opposite: _drop a file_ = a new tool.
+- **Over-exposure.** If every agent sees every tool, I pay twice: on **security** (an agent can call things it shouldn't) and on **quality** (the model drowns in 40 irrelevant tools → worse selection, more errors, more tokens). That's Perplexity's complaint #1 word for word — except the culprit is the "every tool", not MCP.
+- **Opacity.** Nothing single-sources the answer to "what is this agent allowed to touch?". Permission is scattered across code, impossible to audit at a glance.
+
+So the POC's question: how do I expose my tools **once**, in one place, and grant each agent only **its slice** — declaratively, legibly, and changeable without a redeploy?
+
+Two moving parts: **A**, a server that exposes scripts. **B**, a filter that decides who sees what.
+
+## A — A script is all you need to make an MCP tool
+
+The POC's bet: **a script is just a script.** No SDK, no handler signature, no framework import. A tool is a folder with an `openapi.json` and one script per operation. The convention: `operationId` === filename.
+
+<FileBlock filename="tools/ (layout)">
+
+```
+tools/
+  weather/
+    openapi.json        # operationId: current
+    current.py          # <- the endpoint, in Python
+  search-notes/
+    openapi.json        # operationId: query
+    query.js            # <- the endpoint, in JS
+```
+
+</FileBlock>
+
+A script's whole contract is four channels, nothing else:
+
+- **stdin** — the merged parameter object (path + query + body), as JSON.
+- **stdout** — the result, as JSON.
+- **stderr** — logs, **handed back to the caller on failure**, so the model reads the error and retries.
+- **exit code** — `0` is success, anything else is failure.
+
+The language is the script's own business. Weather in Python:
+
+<FileBlock filename="tools/weather/current.py">
+
+```python
+#!/usr/bin/env python3
+import sys, json
+
+args = json.load(sys.stdin)            # {"city": "Saint-Denis"}
+city = args["city"]
+# ... call a weather API ...
+print(json.dumps({"city": city, "tempC": 27, "sky": "clear"}))
+```
+
+</FileBlock>
+
+A search over my notes in JavaScript, sitting right next to it, served by the same process:
+
+<FileBlock filename="tools/search-notes/query.js">
+
+```js
+#!/usr/bin/env node
+const args = JSON.parse(require("fs").readFileSync(0, "utf8")); // {"q":"mcp","limit":2}
+const hits = search(args.q).slice(0, args.limit ?? 5);
+process.stdout.write(JSON.stringify({ hits }));
+```
+
+</FileBlock>
+
+The server scans the folder and serves each operation **both** as a typed HTTP endpoint **and** as an MCP tool, the name namespaced by folder (`weather__current`, `search__query`):
+
+<FileBlock filename="console">
+
+```console
+$ toolserver ./tools
+listening on http://127.0.0.1:8787
+  2 tool(s)
+  POST /weather/current       (mcp: weather__current)
+  POST /search-notes/query    (mcp: search__query)
+  MCP: http://127.0.0.1:8787/mcp
+
+$ curl -s localhost:8787/weather/current -d '{"city":"Saint-Denis"}' -H content-type:application/json
+{"city":"Saint-Denis","tempC":27,"sky":"clear"}
+```
+
+</FileBlock>
+
+The same script is a `weather__current` tool to any MCP client pointed at `/mcp`. **One script, two protocols, one schema.** And this is my first disagreement with "just go back to REST": my tools **already are** REST. MCP is only a second projection of the same script. I'm not picking REST _over_ MCP — I get both, for free, without duplicating a line.
+
+## B — The server serves everything, the agent sees only its slice
+
+Here's the heart of it, and the answer to token bloat. The server serves the **whole** pool to everyone. But **serving is not granting.**
+
+An agent, in my setup, isn't code — it's config. An `agent.md` file with YAML frontmatter that declares which tool groups it's allowed to see.
+
+<FileBlock filename="agents/assistant/agent.md">
+
+```yaml
+---
+tools: [search] # will ONLY see search__* tools
+---
+```
+
+</FileBlock>
+
+<FileBlock filename="agents/weatherbot/agent.md">
+
+```yaml
+---
+tools: [weather] # will ONLY see weather__* tools
+---
+```
+
+</FileBlock>
+
+Between the pool and the model sits a _live-pull_ middleware: **on every model turn**, it fetches the full pool and filters it down to the tools whose name starts with a granted prefix. The entire filter is two lines:
+
+<FileBlock filename="middleware (the filter)">
+
+```python
+prefixes = tuple(f"{g}__" for g in groups)     # ("search__",)
+visible = [t for t in pool if t.name.startswith(prefixes)]
+```
+
+</FileBlock>
+
+The `assistant` gets `search__query`. The `weatherbot` gets `weather__current`. Neither sees the whole pool. **The model sees 2 tools, not 40** — Perplexity's token bloat has nowhere to happen, because I never inject schemas the agent won't use.
+
+Two properties I like, and they're exactly what Perplexity faults MCP for lacking:
+
+- **Granting = adding a word.** Want to share `weather` with the `assistant`? I add `weather` to _its_ frontmatter. Zero code. The permission is declarative and **auditable in one line**.
+- **Live-pull.** The filter re-pulls the pool every turn. I add or remove a tool without redeploying the agent, and permission reflects the frontmatter live.
+
+## What the POC proves — and what it doesn't claim
+
+Let's be honest about scope: **this is a POC.** It proves one thing, but it proves it well — that you defuse token bloat by exposing each agent only its slice, without leaving MCP. It does **not** claim to be a production architecture. Take Perplexity's three complaints again, no cheating:
+
+<Callout tone="ok">
+**#1 Token bloat — fixed.** That's the whole point of per-agent filtering: the model only ever receives the schemas of the tools it was granted. Cost per turn scales with the agent's _job_, not with the size of the pool.
+</Callout>
+
+<Callout tone="warn">
+**#2 Permissions — only partly.** My declarative grant _is_ granular permission, and that already beats "everyone sees everything". But there's **no OAuth, no audit log, no rate limiting**. And above all: **zero isolation.** Scripts run as child processes with _my_ privileges — they can read my files, hit the network, delete things. The POC's only boundary is the **loopback (127.0.0.1)** bind. It isn't a sandbox; it's a way to publish scripts I already trust. On this one, Perplexity is right: at enterprise scale you need the real security plumbing. My POC is indie-scale and owns it.
+</Callout>
+
+<Callout tone="info">
+**#3 Reliability — I sidestep it, I don't solve it.** The complaint targets **stdio**. My POC speaks **HTTP over loopback**, not stdio, so I dodge that specific failure mode. But I run on _one_ machine, not a distributed fleet — I simply don't have the problem Perplexity has. That's not a win, it's a difference of scale.
+</Callout>
+
+And one last trap, specific to the prefix filter: **forgetting is silent.** A misspelled group in the frontmatter (`serch` instead of `search`) raises no error — `startswith` just rejects its tools, and the agent ends up with zero tools, no warning. It's the pattern's #1 failure mode. An honest POC says so.
+
+## The takeaway
+
+MCP isn't dead. Wiring it naïvely is. Perplexity names real pains, but two of them — token bloat and over-exposure — vanish the moment you stop injecting the whole pool into every agent.
+
+What this POC leaves me, concretely: a shared tool pool where **adding a tool = dropping a file**, **granting = adding a word**, and where an agent's permission fits on **one legible line**. My tools stay REST; MCP is just a projection of them. It isn't enterprise-ready, and that's not the goal — it's the proof, done small, that you can hand your tools to an agent without handing over everything.

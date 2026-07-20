@@ -16,6 +16,14 @@ permissions faibles) est réel — mais c'est un problème de **câblage**, pas 
 protocole. N'expose pas tout ; projette tes tools REST dans MCP, et n'accorde à
 chaque agent que sa part.
 
+**Cadrage POC — à mettre en avant partout.** Ce n'est pas un produit ni une archi
+enterprise : c'est un **proof-of-concept** monté vite, qui prouve **une** chose —
+qu'on esquive le mur du token bloat à l'échelle indie, sans renoncer à MCP. Cadre
+l'article comme « voici mon POC et ce qu'il démontre / ce qu'il ne prétend pas
+résoudre », pas comme une solution clé en main. Ça rend les limites honnêtes
+(zéro isolation, loopback only, pas d'OAuth) cohérentes plutôt que gênantes : un
+POC assume son périmètre.
+
 Public : devs qui branchent des agents LLM sur des tools (MCP, function-calling).
 Tags : `["ia", "tools", "build"]`.
 

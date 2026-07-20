@@ -1,0 +1,176 @@
+---
+title: "Perplexity recule sur MCP en interne. Voici le POC qui m'évite le même mur."
+date: 2026-07-20
+locale: fr
+translationKey: "2026-07-mcp-tools-per-agent"
+tags: ["ia", "tools", "build"]
+excerpt: "Perplexity recule sur MCP en interne, et leurs raisons sont réelles. Mais le token bloat et les permissions faibles, c'est un problème de câblage — pas de protocole. Voici un POC qui expose mes tools une seule fois et n'accorde à chaque agent que sa part."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+
+Un [papier a bien tourné](https://www.agent-engineering.dev/article/why-perplexity-is-stepping-back-from-the-model-context-protocol-mcp-internally) : Perplexity prendrait ses distances avec le **Model Context Protocol** en interne, pour les workloads de prod. Trois reproches :
+
+1. **Token bloat.** MCP charge tous les schémas et descriptions de tools dans le contexte du modèle à chaque appel — des dizaines de milliers de tokens en trop, à chaque tour.
+2. **Permissions faibles.** Pas d'OAuth, de permissions granulaires, de rate-limit ni d'audit natifs.
+3. **Fiabilité en prod.** Le transport par défaut (stdio) passe en local, mais devient imprévisible et difficile à monitorer en distribué.
+
+Leur réponse : revenir aux **REST APIs + CLIs**, avec une Agent API managée par-dessus.
+
+J'ai lu ça en plein milieu d'un POC qui fait exactement l'inverse — brancher plusieurs agents sur un pool de tools **via MCP** — et ma réaction a été : ces trois douleurs sont réelles, mais aucune ne vient du protocole. Elles viennent d'une façon **naïve** de le câbler : exposer tous les tools, à tous les agents, sur stdio. Voici le POC, et ce qu'il prouve.
+
+## Le problème n'est pas MCP, c'est le câblage
+
+Le piège arrive toujours pareil. Tu as un agent et trois tools, tu les branches en dur dans le code de l'agent : ça marche, tu shippes. Puis tu ajoutes un deuxième agent. Puis un cinquième tool. Puis un tool utile à un agent mais **dangereux** pour un autre. Et le branchement en direct devient précisément ce qui te fait mal :
+
+- **Couplage.** Le tool vit _dans_ le code de l'agent. Ajouter un tool = une nouvelle signature, un import de SDK, un redéploiement. Je veux l'inverse : _déposer un fichier_ = un nouveau tool.
+- **Sur-exposition.** Si chaque agent voit tous les tools, je paie deux fois : côté **sécurité** (un agent peut appeler ce qu'il ne devrait pas) et côté **qualité** (le modèle se noie dans 40 tools non pertinents → mauvaise sélection, plus d'erreurs, plus de tokens). C'est mot pour mot le reproche n°1 de Perplexity — sauf que le coupable, c'est le « tous les tools », pas MCP.
+- **Opacité.** Aucune source unique ne répond à « qu'est-ce que cet agent a le droit de toucher ? ». La permission est éparpillée dans le code, inauditable d'un coup d'œil.
+
+La question du POC, donc : comment exposer mes tools **une seule fois**, à un endroit, et n'accorder à chaque agent que **sa part** — de façon déclarative, lisible, modifiable sans redéployer ?
+
+Deux morceaux : **A**, un serveur qui expose des scripts. **B**, un filtre qui décide qui voit quoi.
+
+## A — Un script suffit pour faire un tool MCP
+
+Le pari du POC : **un script n'est qu'un script.** Pas de SDK, pas de signature de handler, pas d'import de framework. Un tool = un dossier avec un `openapi.json` et un script par opération. La convention : `operationId` === nom de fichier.
+
+<FileBlock filename="tools/ (arborescence)">
+
+```
+tools/
+  weather/
+    openapi.json        # operationId: current
+    current.py          # <- le endpoint, en Python
+  search-notes/
+    openapi.json        # operationId: query
+    query.js            # <- le endpoint, en JS
+```
+
+</FileBlock>
+
+Le contrat d'un script tient en quatre canaux, et rien d'autre :
+
+- **stdin** : l'objet de paramètres fusionné (path + query + body), en JSON.
+- **stdout** : le résultat, en JSON.
+- **stderr** : les logs — **renvoyés à l'appelant en cas d'échec**, pour que le modèle lise l'erreur et retente.
+- **exit code** : `0` = succès, tout le reste = échec.
+
+Le langage est l'affaire du script. Une météo en Python :
+
+<FileBlock filename="tools/weather/current.py">
+
+```python
+#!/usr/bin/env python3
+import sys, json
+
+args = json.load(sys.stdin)            # {"city": "Saint-Denis"}
+city = args["city"]
+# ... appel API météo ...
+print(json.dumps({"city": city, "tempC": 27, "sky": "clear"}))
+```
+
+</FileBlock>
+
+Une recherche dans mes notes en JavaScript, juste à côté, servie par le même process :
+
+<FileBlock filename="tools/search-notes/query.js">
+
+```js
+#!/usr/bin/env node
+const args = JSON.parse(require("fs").readFileSync(0, "utf8")); // {"q":"mcp","limit":2}
+const hits = search(args.q).slice(0, args.limit ?? 5);
+process.stdout.write(JSON.stringify({ hits }));
+```
+
+</FileBlock>
+
+Le serveur scanne le dossier et sert chaque opération **à la fois** comme endpoint HTTP typé **et** comme tool MCP, le nom namespacé par dossier (`weather__current`, `search__query`) :
+
+<FileBlock filename="console">
+
+```console
+$ toolserver ./tools
+listening on http://127.0.0.1:8787
+  2 tool(s)
+  POST /weather/current       (mcp: weather__current)
+  POST /search-notes/query    (mcp: search__query)
+  MCP: http://127.0.0.1:8787/mcp
+
+$ curl -s localhost:8787/weather/current -d '{"city":"Saint-Denis"}' -H content-type:application/json
+{"city":"Saint-Denis","tempC":27,"sky":"clear"}
+```
+
+</FileBlock>
+
+Le même script est un tool `weather__current` pour n'importe quel client MCP pointé sur `/mcp`. **Un script, deux protocoles, un schéma.** Et c'est là mon premier désaccord avec « il faut revenir au REST » : mes tools **sont déjà** du REST. MCP n'est qu'une seconde projection du même script. Je ne choisis pas REST _contre_ MCP — j'ai les deux, gratuitement, sans dupliquer une ligne.
+
+## B — Le serveur sert tout, l'agent ne voit que sa part
+
+Voilà le cœur, et la réponse au token bloat. Le serveur sert **tout** le pool à tout le monde. Mais **servir n'est pas accorder.**
+
+Un agent, chez moi, n'est pas du code : c'est de la config. Un fichier `agent.md` avec un frontmatter YAML qui déclare les groupes de tools qu'il a le droit de voir.
+
+<FileBlock filename="agents/assistant/agent.md">
+
+```yaml
+---
+tools: [search] # ne verra QUE les tools search__*
+---
+```
+
+</FileBlock>
+
+<FileBlock filename="agents/meteo/agent.md">
+
+```yaml
+---
+tools: [weather] # ne verra QUE les tools weather__*
+---
+```
+
+</FileBlock>
+
+Entre le pool et le modèle, un middleware _live-pull_ : **à chaque tour du modèle**, il récupère le pool complet et le filtre aux seuls tools dont le nom commence par un préfixe accordé. Le filtre entier tient en deux lignes :
+
+<FileBlock filename="middleware (le filtre)">
+
+```python
+prefixes = tuple(f"{g}__" for g in groupes)     # ("search__",)
+visibles = [t for t in pool if t.name.startswith(prefixes)]
+```
+
+</FileBlock>
+
+L'`assistant` reçoit `search__query`. Le `meteo` reçoit `weather__current`. Ni l'un ni l'autre ne voit le pool entier. **Le modèle voit 2 tools, pas 40** — le token bloat de Perplexity n'a plus lieu d'être, parce que je n'injecte jamais des schémas que l'agent n'utilisera pas.
+
+Deux propriétés que j'aime, et qui sont pile ce que Perplexity reproche à MCP de ne pas donner :
+
+- **Accorder = ajouter un mot.** Partager `weather` avec l'`assistant` ? J'ajoute `weather` à _son_ frontmatter. Zéro code. La permission est déclarative et **auditable en une ligne**.
+- **Live-pull.** Le filtre re-tire le pool à chaque tour. J'ajoute ou retire un tool sans redéployer l'agent, et la permission reflète le frontmatter à chaud.
+
+## Ce que le POC prouve — et ce qu'il ne prétend pas
+
+Soyons honnête sur le périmètre : **c'est un POC.** Il prouve une seule chose, mais il la prouve bien — qu'on désamorce le token bloat en n'exposant à chaque agent que sa part, sans quitter MCP. Il ne prétend **pas** être une archi de prod. Reprenons les trois reproches de Perplexity, sans tricher :
+
+<Callout tone="ok">
+**#1 Token bloat — réglé.** C'est tout l'intérêt du filtrage par agent : le modèle ne reçoit que les schémas des tools qu'on lui a accordés. Le coût par tour est proportionnel au _job_ de l'agent, pas à la taille du pool.
+</Callout>
+
+<Callout tone="warn">
+**#2 Permissions — en partie seulement.** Mon grant déclaratif _est_ de la permission granulaire, et c'est déjà plus que « tout le monde voit tout ». Mais il n'y a **ni OAuth, ni audit log, ni rate-limit**. Et surtout : **zéro isolation.** Les scripts tournent comme des process enfants avec _mes_ droits — ils peuvent lire mes fichiers, sortir sur le réseau, supprimer des choses. La seule frontière du POC, c'est le bind **loopback (127.0.0.1)**. Ce n'est pas un sandbox ; c'est une façon de publier des scripts en qui j'ai déjà confiance. Sur ce point, Perplexity a raison : à l'échelle entreprise, il faut la vraie plomberie de sécurité. Mon POC est indie-scale et l'assume.
+</Callout>
+
+<Callout tone="info">
+**#3 Fiabilité — je contourne, je ne résous pas.** Le reproche vise **stdio**. Mon POC parle **HTTP en loopback**, pas stdio, donc j'échappe à ce mode d'échec précis. Mais je tourne sur _une_ machine, pas sur une flotte distribuée — je n'ai simplement pas le problème que Perplexity a. Ce n'est pas une victoire, c'est une différence d'échelle.
+</Callout>
+
+Et un dernier piège, spécifique au filtre par préfixe : **l'oubli est silencieux.** Un groupe mal orthographié dans le frontmatter (`serch` au lieu de `search`) ne lève aucune erreur — `startswith` rejette simplement ses tools, et l'agent se retrouve avec zéro tool, sans avertissement. C'est le mode d'échec n°1 du pattern. Un POC honnête le dit.
+
+## Le constat
+
+MCP n'est pas mort. Le brancher bêtement, si. Perplexity nomme de vraies douleurs, mais deux d'entre elles — le token bloat et la sur-exposition — disparaissent dès qu'on arrête d'injecter tout le pool dans chaque agent.
+
+Ce que ce POC me laisse, concrètement : un pool de tools partagé où **ajouter un tool = déposer un fichier**, **accorder = ajouter un mot**, et où la permission d'un agent tient sur **une ligne lisible**. Mes tools restent du REST ; MCP n'en est qu'une projection. Ce n'est pas prêt pour l'entreprise, et ce n'est pas le but — c'est la preuve, faite en petit, qu'on peut donner ses tools à un agent sans tout lui donner.
