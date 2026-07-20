@@ -25,7 +25,9 @@ const label = `${t("pagination.page")} ${page.currentPage} / ${page.lastPage}`;
           ← {t("pagination.prev")}
         </span>
       )}
-      <span class="count">{label}</span>
+      <span class="count" aria-current="page">
+        {label}
+      </span>
       {page.url.next ? (
         <a class="link" href={page.url.next} rel="next">
           {t("pagination.next")} →

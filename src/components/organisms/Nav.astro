@@ -26,7 +26,7 @@ const altPath = current
     : "/";
 ---
 
-<nav class="nav" aria-label="Primary">
+<nav class="nav" aria-label={t("nav.ariaPrimary")}>
   <a href={t.path("home")} class="brand"
     >aymeric<span class="slash">/</span>dijoux</a
   >
@@ -34,7 +34,11 @@ const altPath = current
     {
       links.map((l) => (
         <li>
-          <a href={l.href} class:list={["item", current === l.id && "active"]}>
+          <a
+            href={l.href}
+            class:list={["item", current === l.id && "active"]}
+            aria-current={current === l.id ? "page" : undefined}
+          >
             {l.label}
           </a>
         </li>
@@ -43,7 +47,7 @@ const altPath = current
   </ul>
   <div class="end">
     <LangToggle current={locale} altPath={altPath} />
-    <ThemeToggle />
+    <ThemeToggle locale={locale} />
   </div>
 </nav>
 

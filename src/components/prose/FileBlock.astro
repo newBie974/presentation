@@ -14,22 +14,34 @@ const { filename } = Astro.props;
 </div>
 
 <script>
+  // FileBlock is authored inside MDX without a locale prop, so labels are
+  // localized client-side from the page's <html lang>.
+  function copyLabels() {
+    const isFr = document.documentElement.lang.startsWith("fr");
+    return isFr
+      ? { idle: "copier", done: "copié", fail: "échec" }
+      : { idle: "copy", done: "copied", fail: "failed" };
+  }
+
   function attachCopyHandlers() {
+    const labels = copyLabels();
     document
       .querySelectorAll<HTMLButtonElement>(".file-block .copy")
       .forEach((btn) => {
         if (btn.dataset.bound === "1") return;
         btn.dataset.bound = "1";
+        btn.textContent = labels.idle;
+        btn.setAttribute("aria-label", labels.idle);
         btn.addEventListener("click", async () => {
           const code =
             btn.closest(".file-block")?.querySelector("pre code")
               ?.textContent ?? "";
           try {
             await navigator.clipboard.writeText(code);
-            btn.textContent = "copied";
-            setTimeout(() => (btn.textContent = "copy"), 1500);
+            btn.textContent = labels.done;
+            setTimeout(() => (btn.textContent = labels.idle), 1500);
           } catch {
-            btn.textContent = "failed";
+            btn.textContent = labels.fail;
           }
         });
       });

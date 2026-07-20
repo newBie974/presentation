@@ -38,7 +38,9 @@ const showHighlight = page.currentPage === 1 && featured !== null;
 </section>
 
 <nav class="filters" aria-label={t("notes.filtersLabel")}>
-  <a href={notesPath} class="tag-pill active">{t("notes.allPill")}</a>
+  <a href={notesPath} class="tag-pill active" aria-current="page"
+    >{t("notes.allPill")}</a
+  >
   {
     PRIMARY_TAGS.map((tag) => (
       <a href={`${tagsBase}/${tag}`} class="tag-pill">

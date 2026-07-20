@@ -1,6 +1,6 @@
 ---
 import type { Locale } from "@/types";
-import { alternateLocale } from "@/i18n/utils";
+import { alternateLocale, useTranslations } from "@/i18n/utils";
 
 interface Props {
   current: Locale;
@@ -9,9 +9,10 @@ interface Props {
 
 const { current, altPath } = Astro.props;
 const alt = alternateLocale(current);
+const t = useTranslations(current);
 ---
 
-<div class="lang-toggle" role="group" aria-label="Language">
+<div class="lang-toggle" role="group" aria-label={t("a11y.language")}>
   <span class="current">{current.toUpperCase()}</span>
   <span class="sep">·</span>
   <a href={altPath} hreflang={alt}>{alt.toUpperCase()}</a>
