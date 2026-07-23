@@ -45,7 +45,7 @@ const heading = locale === "fr" ? headingFR : headingEN;
 <style>
   .notes {
     padding: 40px 48px;
-    border-bottom: var(--border-w) solid var(--color-border);
+    border-bottom: var(--border-w) solid var(--color-border-soft);
   }
   .head {
     display: flex;
@@ -63,14 +63,14 @@ const heading = locale === "fr" ? headingFR : headingEN;
   .all {
     font-family: var(--font-mono);
     font-size: 11px;
-    color: var(--color-text-muted);
+    color: var(--color-accent);
     text-decoration: none;
   }
   .all:hover {
-    color: var(--color-text);
+    text-decoration: underline;
   }
   .list :global(.note-row:last-child) {
-    border-bottom: var(--border-w) solid var(--color-border);
+    border-bottom: var(--border-w) solid var(--color-border-soft);
   }
   @media (max-width: 720px) {
     .notes {
