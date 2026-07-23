@@ -17,6 +17,14 @@ html {
      d'ancre (#apps, le skip-link vers #main) atterrit derrière la nav. */
   scroll-padding-top: 64px;
 }
+
+/* At narrow viewports, the nav wraps into two rows (~67px total).
+   Increase scroll-padding to clear the wrapped nav + breathing room. */
+@media (max-width: 720px) {
+  html {
+    scroll-padding-top: 88px;
+  }
+}
 body {
   margin: 0;
   background: var(--color-bg);
