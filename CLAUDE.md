@@ -38,7 +38,7 @@ Pas de framework JS additionnel (React/Vue/Svelte). Astro statique pur, hydratat
 src/
 ├─ assets/                         avatars, logos apps, portrait B&W
 ├─ components/
-│  ├─ atoms/                       Avatar, StatusBadge, ThemeToggle, Icon, Highlight, JsonLd
+│  ├─ atoms/                       Avatar, StatusBadge, Icon, Highlight, JsonLd, SectionLabel
 │  ├─ molecules/                   SocialLink, AppCell, NoteRow, Chapter, FAQItem, ProcessStep, ServiceCard, StackGroup, LangToggle
 │  ├─ organisms/                   Nav, Hero, AppsGrid, SocialBar, Footer, CollabBand, AboutExcerpt, NotesSection
 │  └─ prose/                       Callout, FileBlock, CodeTabs, Stackblitz, Tweet (composants MDX)
@@ -72,7 +72,7 @@ src/
 │  └─ en/                          miroir EN avec slugs traduits + rss.xml.ts
 ├─ styles/
 │  ├─ global.css                   reset, base, Tailwind directives
-│  ├─ theme.css                    @theme Tailwind 4 + dark mode overrides
+│  ├─ theme.css                    @theme Tailwind 4, thème sombre unique
 │  └─ prose.css                    typographie MDX
 └─ types/                          interfaces partagées
 ```
@@ -168,7 +168,7 @@ const hasTranslation = !!entry.data.translationKey;
 const canShowLangToggle = hasTranslation && translationExists;
 
 // Handlers → préfixe handle (côté client uniquement, rare ici)
-const handleThemeToggle = () => {};
+const handleFilterChange = () => {};
 
 // Async / build-time → verbe d'action clair
 async function loadPublishedNotes(locale: Locale) {}
