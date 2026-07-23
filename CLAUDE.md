@@ -292,12 +292,12 @@ const notes = defineCollection({
 
 ### 6. Pas de couleurs ni de tailles en dur
 
-Le D1 Swiss Brutalist vit dans `src/styles/theme.css` via `@theme`. Toute valeur de design vient de là.
+Le D2 Sombre Raffiné vit dans `src/styles/theme.css` via `@theme`. Toute valeur de design vient de là.
 
 ```astro
 {/* ❌ Hardcodé */}
-<div style="background: #ccff00; padding: 16px; color: #0a0a0a;">…</div>
-<div class="bg-[#ccff00] p-[16px] text-[#0a0a0a]">…</div>
+<div style="background: #8ab4ff; padding: 16px; color: #0c0d10;">…</div>
+<div class="bg-[#8ab4ff] p-[16px] text-[#0c0d10]">…</div>
 
 {/* ✅ Tokens */}
 <div class="bg-accent p-4 text-text">…</div>
@@ -516,7 +516,7 @@ Une page publique sans `<SeoHead>` n'est pas mergeable. Un test CI (script Node 
 ### F. A11y — focus rings, landmarks, reduced motion
 
 ```css
-/* Focus ring D1 — visible et brutaliste */
+/* Focus ring D2 — visible, sur fond sombre */
 *:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--color-accent);
@@ -703,8 +703,8 @@ npm run preview                   # sert ./dist localement
 - Témoignages / social proof public
 - Page Talks / Press / Highlights
 - CMS (Astro Content Collections suffit)
-- Plus d'un thème visuel (D1 only — l'architecture en tokens permettra l'extension)
-- Theme switcher D1 ↔ D2 (option reportée si besoin)
+- Plus d'un thème visuel (D2 dark-only — l'architecture en tokens permettra l'extension si besoin)
+- Theme switcher (retiré avec le passage à D2 ; pas de toggle clair/sombre)
 - Tests unitaires Vitest sur composants
 - E2E (Playwright sert uniquement à axe-core)
 - Search côté client (V1.1 si volume de notes le justifie)
