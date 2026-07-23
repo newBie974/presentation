@@ -12,13 +12,7 @@ const { as: Tag = "span" } = Astro.props;
 
 <style>
   .highlight {
-    background: var(--color-accent);
-    color: var(--color-text);
-    padding: 0 0.2em;
-    box-decoration-break: clone;
-    -webkit-box-decoration-break: clone;
-  }
-  :global([data-theme="dark"]) .highlight {
-    color: #0a0a0a;
+    color: var(--color-accent);
+    font-weight: 600;
   }
 </style>
