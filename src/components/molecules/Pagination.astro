@@ -60,8 +60,9 @@ const label = `${t("pagination.page")} ${page.currentPage} / ${page.lastPage}`;
     background: var(--color-bg-soft);
   }
   .link:hover {
-    background: var(--color-strong-bg);
-    color: var(--color-strong-fg);
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    color: var(--color-accent);
+    border-radius: var(--radius-base);
   }
   .is-disabled {
     opacity: 0.4;

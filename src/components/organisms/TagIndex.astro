@@ -82,14 +82,15 @@ const notesPath = localizePath("notes", locale);
     border: 1px solid var(--color-border);
   }
   .grid a:hover {
-    background: var(--color-strong-bg);
-    color: var(--color-strong-fg);
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    color: var(--color-accent);
+    border-radius: var(--radius-base);
   }
   .count {
     color: var(--color-text-muted);
   }
   .grid a:hover .count {
-    color: var(--color-strong-fg);
+    color: var(--color-accent);
   }
   @media (max-width: 720px) {
     .hero,
