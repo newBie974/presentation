@@ -90,11 +90,13 @@ const altPath =
     border-radius: 6px;
     transition: color 120ms ease;
   }
-  .item:hover {
-    color: var(--color-text);
-  }
+  /* .active before :hover — same specificity, so the later rule wins and the
+     current page would otherwise get no hover feedback at all. */
   .item.active {
     color: var(--color-accent);
+  }
+  .item:hover {
+    color: var(--color-text);
   }
   .end {
     display: flex;

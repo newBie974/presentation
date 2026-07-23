@@ -206,11 +206,18 @@ const processSteps = [
     max-width: 580px;
   }
   .end-cta {
-    background: var(--color-bg-soft);
+    margin: 70px 48px;
+    padding: 44px 40px;
     color: var(--color-text);
+    border: var(--border-w) solid var(--color-accent-dim);
     border-radius: var(--radius-band);
-    box-shadow: inset 0 2px 0 var(--color-accent);
-    padding: 56px 48px;
+    background:
+      radial-gradient(
+        ellipse at top left,
+        color-mix(in srgb, var(--color-accent) 8%, transparent),
+        transparent 55%
+      ),
+      var(--color-bg-soft);
     text-align: center;
   }
   .end-cta h2 {
@@ -240,21 +247,14 @@ const processSteps = [
     color: var(--color-text-muted);
     margin-top: 12px;
   }
-  .end-cta .email {
-    margin-top: 16px;
-    font-size: 12px;
-    font-family: var(--font-mono);
-  }
-  .end-cta .email a {
-    color: var(--color-accent);
-    text-decoration: underline;
-  }
   @media (max-width: 720px) {
     .page-hero,
-    .section,
-    .end-cta {
+    .section {
       padding-left: 20px;
       padding-right: 20px;
+    }
+    .end-cta {
+      margin: 40px 20px;
     }
   }
 </style>
