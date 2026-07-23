@@ -88,8 +88,8 @@ Contenu complet du fichier :
   --container-content: 900px;
   --container-narrow: 720px;
 
-  /* TEMP — alias de compat D1→D2, supprimés en fin de migration (Task 11).
-     TODO(2026-07-23): retirer une fois strong-*/inverse-* balayés de src/. */
+  /* TEMP — alias de compat D1 vers D2, supprimés en fin de migration (Task 11).
+     TODO(2026-07-23): retirer une fois les tokens strong- et inverse- balayés de src. */
   --color-strong-bg: #16181d;
   --color-strong-fg: #e7e9ec;
   --color-inverse-bg: #131519;
