@@ -33,21 +33,21 @@ export async function renderOg(args: OgImageArgs): Promise<Buffer> {
     args.title.length > 60 ? 56 : args.title.length > 40 ? 68 : 80;
 
   const markup = html(`
-    <div style="display:flex;flex-direction:column;justify-content:space-between;width:1200px;height:630px;padding:64px;background:#f6f6f4;border:8px solid #0a0a0a;color:#0a0a0a;font-family:Inter;">
+    <div style="display:flex;flex-direction:column;justify-content:space-between;width:1200px;height:630px;padding:64px;background:#0c0d10;border:8px solid #24262c;color:#e7e9ec;font-family:Inter;">
       <div style="display:flex;justify-content:space-between;align-items:center;width:1072px;">
-        <div style="font-family:Mono;font-size:22px;letter-spacing:0.12em;color:#404040;">
+        <div style="font-family:Mono;font-size:22px;letter-spacing:0.12em;color:#a3a8b1;">
           AYMERIC.DIJOUX.DEV
         </div>
         ${
           args.badge
-            ? `<div style="font-family:Mono;font-size:16px;background:#ccff00;color:#0a0a0a;padding:8px 14px;letter-spacing:0.12em;font-weight:700;">${escape(args.badge)}</div>`
+            ? `<div style="font-family:Mono;font-size:16px;background:#8ab4ff;color:#0c0d10;padding:8px 14px;letter-spacing:0.12em;font-weight:700;">${escape(args.badge)}</div>`
             : ""
         }
       </div>
       <div style="display:flex;font-size:${titleSize}px;font-weight:700;line-height:0.96;letter-spacing:-0.04em;max-width:1072px;">
         ${escape(args.title)}
       </div>
-      <div style="font-family:Mono;font-size:20px;letter-spacing:0.08em;color:#404040;">
+      <div style="font-family:Mono;font-size:20px;letter-spacing:0.08em;color:#a3a8b1;">
         ${escape(args.subtitle)}
       </div>
     </div>
