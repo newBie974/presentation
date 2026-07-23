@@ -1,6 +1,5 @@
 ---
 import LangToggle from "@/components/molecules/LangToggle.astro";
-import ThemeToggle from "@/components/atoms/ThemeToggle.astro";
 import { useTranslations, alternateUrl } from "@/i18n/utils";
 import type { Locale } from "@/types";
 
@@ -46,7 +45,6 @@ const altPath =
   </ul>
   <div class="end">
     <LangToggle current={locale} altPath={altPath} />
-    <ThemeToggle locale={locale} />
   </div>
 </nav>
 

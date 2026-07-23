@@ -12,6 +12,7 @@
 }
 html {
   -webkit-text-size-adjust: 100%;
+  color-scheme: dark;
 }
 body {
   margin: 0;
@@ -20,6 +21,11 @@ body {
   font-family: var(--font-sans);
   font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 /* Skip link */
@@ -35,6 +41,7 @@ body {
   font-weight: 600;
   text-decoration: none;
   border: var(--border-w) solid var(--color-text);
+  border-radius: var(--radius-base);
 }
 .skip-link:focus {
   top: 0;
