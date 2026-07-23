@@ -1,62 +1,50 @@
-/* D1 Swiss Brutalist — design tokens via Tailwind 4 @theme */
+/* D2 Sombre Raffiné — design tokens via Tailwind 4 @theme (dark only) */
 
 @theme {
-  /* Surfaces / text (swap between modes) */
-  --color-bg: #f6f6f4;
-  --color-bg-soft: #ffffff;
-  --color-border: #0a0a0a;
-  --color-text: #0a0a0a;
-  --color-text-muted: #404040;
+  /* Surfaces */
+  --color-bg: #0c0d10; /* fond de page */
+  --color-bg-soft: #131519; /* cartes, hover de lignes */
+  --color-bg-raised: #16181d; /* boutons ghost, surfaces sur cartes */
 
-  /* Accent (fluo — same in both modes; text on it must always be ink) */
-  --color-accent: #ccff00;
-  --color-on-accent: #0a0a0a;
+  /* Bordures */
+  --color-border: #24262c; /* bordures de cartes/composants */
+  --color-border-soft: #1c1e23; /* séparateurs de sections, filets */
 
-  /* "Strong" block (high-contrast pills / counts / collab band).
-     Light: ink bg + fluo text. Dark: inverts to fluo bg + ink text. */
-  --color-strong-bg: #0a0a0a;
-  --color-strong-fg: #ccff00;
+  /* Texte */
+  --color-text: #e7e9ec;
+  --color-text-muted: #a3a8b1;
+  --color-text-faint: #7d8490; /* métadonnées mono, labels de section (AA ≥ 4.7:1) */
 
-  /* Inverse band (always-dark CTA block — constant across both themes) */
-  --color-inverse-bg: #0a0a0a;
-  --color-inverse-fg: #f6f6f4;
-  --color-inverse-muted: #a3a3a3;
+  /* Accent */
+  --color-accent: #8ab4ff; /* liens, CTA, hover titres, focus */
+  --color-on-accent: #0c0d10; /* texte sur fond accent */
+  --color-accent-dim: #2b3a56; /* bordures actives, hover de cartes */
 
-  /* States */
-  --color-success: #3f6b08;
-  --color-building: #92400e;
-  --color-danger: #dc2626;
+  /* États */
+  --color-success: #7dd3a8; /* badge live, disponibilité */
+  --color-building: #f5b453; /* badge en cours */
+  --color-danger: #ef4444;
 
-  /* Typography */
+  /* Typo (inchangé) */
   --font-sans: "Inter Tight Variable", system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
 
-  /* Geometry */
-  --radius-base: 0;
-  --border-w: 2px;
+  /* Géométrie */
+  --radius-base: 10px; /* boutons, badges, petits éléments */
+  --radius-card: 14px; /* cartes apps, notes */
+  --radius-band: 18px; /* grandes bandes (CollabBand) */
+  --border-w: 1px;
 
-  /* Containers */
+  /* Conteneurs (inchangés) */
   --container-prose: 65ch;
   --container-content: 900px;
   --container-narrow: 720px;
-}
 
-/* Dark mode override */
-[data-theme="dark"] {
-  --color-bg: #0a0a0a;
-  --color-bg-soft: #171717;
-  --color-border: #f6f6f4;
-  --color-text: #f6f6f4;
-  --color-text-muted: #a3a3a3;
-
-  /* --color-accent stays #ccff00 */
-  /* --color-on-accent stays #0a0a0a */
-
-  /* Strong block inverts: fluo bg + ink text */
-  --color-strong-bg: #ccff00;
-  --color-strong-fg: #0a0a0a;
-
-  --color-success: #84cc16;
-  --color-building: #f59e0b;
-  --color-danger: #ef4444;
+  /* TEMP — alias de compat D1 vers D2, supprimés en fin de migration (Task 11).
+     TODO(2026-07-23): retirer une fois les tokens strong- et inverse- balayés de src. */
+  --color-strong-bg: #16181d;
+  --color-strong-fg: #e7e9ec;
+  --color-inverse-bg: #131519;
+  --color-inverse-fg: #e7e9ec;
+  --color-inverse-muted: #a3a8b1;
 }
