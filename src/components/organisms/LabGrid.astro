@@ -47,7 +47,7 @@ const items = loadExperiments(limit);
 <style>
   .lab {
     padding: 40px 48px;
-    border-bottom: var(--border-w) solid var(--color-border);
+    border-bottom: var(--border-w) solid var(--color-border-soft);
   }
   .head {
     margin-bottom: 20px;
@@ -70,12 +70,17 @@ const items = loadExperiments(limit);
     background: var(--color-accent);
     color: var(--color-on-accent);
     padding: 6px 12px;
+    border-radius: var(--radius-base);
     font-family: var(--font-mono);
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     text-decoration: none;
+    transition: filter 120ms ease-out;
+  }
+  .more:hover {
+    filter: brightness(1.08);
   }
   @media (max-width: 720px) {
     .lab {

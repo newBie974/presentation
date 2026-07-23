@@ -31,12 +31,18 @@ const price = locale === "fr" ? `dès ${amount} €` : `from €${amount}`;
     display: flex;
     flex-direction: column;
     padding: 22px;
-    background: var(--color-bg-soft);
+    background: linear-gradient(
+      180deg,
+      var(--color-bg-raised),
+      var(--color-bg-soft)
+    );
     border: var(--border-w) solid var(--color-border);
+    border-radius: var(--radius-card);
   }
   .is-featured {
-    border-color: var(--color-text);
-    box-shadow: 4px 4px 0 0 var(--color-accent);
+    border-color: var(--color-accent-dim);
+    box-shadow: 0 0 24px
+      color-mix(in srgb, var(--color-accent) 12%, transparent);
   }
   .badge {
     align-self: flex-start;
@@ -46,8 +52,9 @@ const price = locale === "fr" ? `dès ${amount} €` : `from €${amount}`;
     font-size: 10px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    background: var(--color-accent);
-    color: var(--color-on-accent);
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    color: var(--color-accent);
+    border-radius: var(--radius-base);
   }
   h3 {
     font-size: 19px;
@@ -76,7 +83,7 @@ const price = locale === "fr" ? `dès ${amount} €` : `from €${amount}`;
     list-style: none;
     margin: 0;
     padding: 16px 0 0;
-    border-top: 1px solid var(--color-border);
+    border-top: var(--border-w) solid var(--color-border);
     display: flex;
     flex-direction: column;
     gap: 9px;

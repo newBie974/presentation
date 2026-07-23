@@ -57,11 +57,17 @@ const t = useTranslations(locale);
     gap: 18px;
     align-items: center;
     padding: 20px;
-    background: var(--color-bg-soft);
+    background: linear-gradient(
+      180deg,
+      var(--color-bg-raised),
+      var(--color-bg-soft)
+    );
     border: var(--border-w) solid var(--color-border);
+    border-radius: var(--radius-card);
   }
   .cta-card :global(img) {
     border: var(--border-w) solid var(--color-border);
+    border-radius: var(--radius-base);
   }
   .name {
     font-weight: 700;
@@ -87,19 +93,20 @@ const t = useTranslations(locale);
   .book {
     display: inline-flex;
     padding: 9px 14px;
-    background: var(--color-text);
-    color: var(--color-bg);
-    border: var(--border-w) solid var(--color-text);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    border-radius: var(--radius-base);
+    box-shadow: 0 0 24px
+      color-mix(in srgb, var(--color-accent) 25%, transparent);
     font-size: 13px;
     font-weight: 600;
     letter-spacing: -0.01em;
     text-decoration: none;
     white-space: nowrap;
+    transition: filter 120ms ease-out;
   }
   .book:hover {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
-    border-color: var(--color-accent);
+    filter: brightness(1.08);
   }
   @media (max-width: 640px) {
     .note-end {

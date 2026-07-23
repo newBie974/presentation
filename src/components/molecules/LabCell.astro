@@ -63,16 +63,21 @@ const t = useTranslations(locale);
     display: flex;
     flex-direction: column;
     padding: 16px 18px;
-    background: var(--color-bg-soft);
+    background: linear-gradient(
+      180deg,
+      var(--color-bg-raised),
+      var(--color-bg-soft)
+    );
     border: var(--border-w) solid var(--color-border);
+    border-radius: var(--radius-card);
     color: var(--color-text);
     transition:
       transform 120ms ease,
-      box-shadow 120ms ease;
+      border-color 120ms ease;
   }
   .lab-cell:hover {
-    transform: translate(-3px, -3px);
-    box-shadow: 5px 5px 0 0 var(--color-accent);
+    transform: translateY(-2px);
+    border-color: var(--color-accent-dim);
   }
   .top {
     display: flex;
@@ -92,10 +97,7 @@ const t = useTranslations(locale);
     text-decoration: none;
   }
   .name a:hover {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
-    padding: 0 4px;
-    margin: 0 -4px;
+    color: var(--color-accent);
   }
   .date {
     font-family: var(--font-mono);
@@ -123,7 +125,8 @@ const t = useTranslations(locale);
     color: var(--color-text-muted);
     padding: 3px 8px;
     background: var(--color-bg);
-    border: 1px solid var(--color-border);
+    border: var(--border-w) solid var(--color-border);
+    border-radius: 6px;
   }
   .links {
     margin-top: auto;
@@ -137,11 +140,14 @@ const t = useTranslations(locale);
   .links a {
     color: var(--color-text);
     text-decoration: none;
-    border-bottom: 1px solid var(--color-accent);
+    border-bottom: var(--border-w) solid var(--color-accent-dim);
     padding-bottom: 1px;
+    transition:
+      color 120ms ease-out,
+      border-color 120ms ease-out;
   }
   .links a:hover {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
+    color: var(--color-accent);
+    border-bottom-color: var(--color-accent);
   }
 </style>
