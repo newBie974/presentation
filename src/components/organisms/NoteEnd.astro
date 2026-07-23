@@ -21,7 +21,7 @@ const t = useTranslations(locale);
   {
     related.length > 0 && (
       <section class="related" aria-label={t("note.readNext")}>
-        <SectionLabel>— {t("note.readNext")}</SectionLabel>
+        <SectionLabel>{t("note.readNext")}</SectionLabel>
         {related.map((note) => (
           <NoteRow note={note} locale={locale} showExcerpt={false} />
         ))}

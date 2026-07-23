@@ -84,12 +84,12 @@ const platformLabel = project.platform.map((p) => p.toUpperCase()).join(" · ");
   </div>
 
   <section class="block">
-    <SectionLabel>— {t("app.about")}</SectionLabel>
+    <SectionLabel>{t("app.about")}</SectionLabel>
     <p class="body">{detail.whatItIs[locale]}</p>
   </section>
 
   <section class="block">
-    <SectionLabel>— {t("app.features")}</SectionLabel>
+    <SectionLabel>{t("app.features")}</SectionLabel>
     <ul class="features" role="list">
       {detail.keyFeatures.map((f) => <li>{f[locale]}</li>)}
     </ul>
@@ -97,11 +97,11 @@ const platformLabel = project.platform.map((p) => p.toUpperCase()).join(" · ");
 
   <section class="meta block">
     <div>
-      <SectionLabel>— {t("app.forWho")}</SectionLabel>
+      <SectionLabel>{t("app.forWho")}</SectionLabel>
       <p class="body">{detail.targetUser[locale]}</p>
     </div>
     <div>
-      <SectionLabel>— Stack</SectionLabel>
+      <SectionLabel>Stack</SectionLabel>
       <ul class="tech" role="list">
         {project.techStack.map((tech) => <li>{tech}</li>)}
       </ul>
