@@ -39,12 +39,4 @@
   --container-prose: 65ch;
   --container-content: 900px;
   --container-narrow: 720px;
-
-  /* TEMP — alias de compat D1 vers D2, supprimés en fin de migration (Task 11).
-     TODO(2026-07-23): retirer une fois les tokens strong- et inverse- balayés de src. */
-  --color-strong-bg: #16181d;
-  --color-strong-fg: #e7e9ec;
-  --color-inverse-bg: #131519;
-  --color-inverse-fg: #e7e9ec;
-  --color-inverse-muted: #a3a8b1;
 }
