@@ -130,7 +130,13 @@ const {
 <style>
   .cal-embed {
     width: 100%;
-    background: var(--color-bg-soft);
+    background: linear-gradient(
+      180deg,
+      var(--color-bg-raised),
+      var(--color-bg-soft)
+    );
     border: var(--border-w) solid var(--color-border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
   }
 </style>
