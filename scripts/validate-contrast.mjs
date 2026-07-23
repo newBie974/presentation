@@ -77,6 +77,11 @@ const CHECKS_NONTEXT = [
     fg: tint("color-accent", 60, "color-bg-soft"),
     bg: tint("color-accent", 10, "color-bg-soft"),
   },
+  {
+    id: "lab-cell link underline",
+    fg: solid("color-accent"),
+    bg: solid("color-bg-raised"),
+  },
 ];
 
 function solid(token) {
