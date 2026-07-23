@@ -7,8 +7,13 @@
   --color-bg-raised: #16181d; /* boutons ghost, surfaces sur cartes */
 
   /* Bordures */
-  --color-border: #24262c; /* bordures de cartes/composants */
+  --color-border: #24262c; /* bordures de cartes/composants (décoratif) */
   --color-border-soft: #1c1e23; /* séparateurs de sections, filets */
+  /* Bordure des contrôles interactifs (chips, pills, boutons ghost, badges) :
+     seule limite visuelle du contrôle, donc soumise à WCAG 2.1 AA §1.4.11
+     (non-text contrast ≥ 3:1). Vérifiée sur bg, bg-soft et bg-raised par
+     scripts/validate-contrast.mjs. Ne pas utiliser pour du décoratif. */
+  --color-border-interactive: #646872;
 
   /* Texte */
   --color-text: #e7e9ec;

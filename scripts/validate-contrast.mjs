@@ -6,6 +6,7 @@ import { readFile } from "node:fs/promises";
 
 const THEME_PATH = "src/styles/theme.css";
 const AA_NORMAL = 4.5;
+const AA_NONTEXT = 3; // WCAG 2.1 AA §1.4.11 — boundaries of UI components
 
 // Real foreground/background pairs used in the UI (single dark theme).
 const CHECKS = [
@@ -45,6 +46,37 @@ const CHECKS = [
     bg: tint("color-accent", 10, "color-bg-soft"),
   },
   { id: "danger on bg", fg: "color-danger", bg: solid("color-bg") },
+];
+
+// Non-text contrast (§1.4.11): the border IS the only boundary of these
+// controls, so it must clear 3:1 against every surface it sits on. Neither
+// axe-core nor Lighthouse implements this rule — hence the gate here.
+const CHECKS_NONTEXT = [
+  {
+    id: "control border on bg",
+    fg: solid("color-border-interactive"),
+    bg: solid("color-bg"),
+  },
+  {
+    id: "control border on soft",
+    fg: solid("color-border-interactive"),
+    bg: solid("color-bg-soft"),
+  },
+  {
+    id: "control border on raised",
+    fg: solid("color-border-interactive"),
+    bg: solid("color-bg-raised"),
+  },
+  {
+    id: "active pill border",
+    fg: tint("color-accent", 60, "color-bg-soft"),
+    bg: solid("color-bg-soft"),
+  },
+  {
+    id: "active pill inner edge",
+    fg: tint("color-accent", 60, "color-bg-soft"),
+    bg: tint("color-accent", 10, "color-bg-soft"),
+  },
 ];
 
 function solid(token) {
@@ -107,28 +139,37 @@ function contrastRatio(fg, bg) {
   return (light + 0.05) / (dark + 0.05);
 }
 
-function evaluate(check, tokens) {
-  const ratio = contrastRatio(
-    hexToRgb(tokens[check.fg]),
-    resolveBg(check.bg, tokens),
-  );
-  return { ratio, passed: ratio >= AA_NORMAL };
+function evaluate(check, tokens, threshold) {
+  const foreground =
+    typeof check.fg === "string"
+      ? hexToRgb(tokens[check.fg])
+      : resolveBg(check.fg, tokens);
+  const ratio = contrastRatio(foreground, resolveBg(check.bg, tokens));
+  return { ratio, passed: ratio >= threshold };
+}
+
+function runTier(checks, threshold, tokens) {
+  let failed = 0;
+  for (const check of checks) {
+    const { ratio, passed } = evaluate(check, tokens, threshold);
+    const mark = passed ? "✓" : "✗";
+    const line = `${mark} ${check.id.padEnd(24)} ${ratio.toFixed(2)}:1 (min ${threshold})`;
+    if (passed) console.log(line);
+    else {
+      console.error(line);
+      failed++;
+    }
+  }
+  return failed;
 }
 
 const css = await readFile(THEME_PATH, "utf8");
 const tokens = buildTokens(css);
-let failed = 0;
 
-for (const check of CHECKS) {
-  const { ratio, passed } = evaluate(check, tokens);
-  const mark = passed ? "✓" : "✗";
-  const line = `${mark} ${check.id.padEnd(24)} ${ratio.toFixed(2)}:1 (min ${AA_NORMAL})`;
-  if (passed) console.log(line);
-  else {
-    console.error(line);
-    failed++;
-  }
-}
+console.log("— Text contrast (WCAG AA §1.4.3)");
+let failed = runTier(CHECKS, AA_NORMAL, tokens);
+console.log("\n— Non-text contrast (WCAG AA §1.4.11)");
+failed += runTier(CHECKS_NONTEXT, AA_NONTEXT, tokens);
 
 if (failed > 0) {
   console.error(
@@ -136,4 +177,5 @@ if (failed > 0) {
   );
   process.exit(1);
 }
-console.log(`\n✓ Contrast validation passed (${CHECKS.length} token pairs)`);
+const total = CHECKS.length + CHECKS_NONTEXT.length;
+console.log(`\n✓ Contrast validation passed (${total} token pairs)`);

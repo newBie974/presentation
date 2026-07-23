@@ -88,7 +88,7 @@ const heading = locale === "fr" ? headingFR : headingEN;
     text-transform: uppercase;
     color: var(--color-text-muted);
     background: var(--color-bg-raised);
-    border: var(--border-w) solid var(--color-border);
+    border: var(--border-w) solid var(--color-border-interactive);
     border-radius: 99px;
     cursor: pointer;
     transition:
@@ -102,7 +102,7 @@ const heading = locale === "fr" ? headingFR : headingEN;
   .filters input:checked + label {
     background: color-mix(in srgb, var(--color-accent) 10%, transparent);
     color: var(--color-accent);
-    border-color: var(--color-accent-dim);
+    border-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
   }
   .filters input:focus-visible + label {
     box-shadow: 0 0 0 2px var(--color-accent);

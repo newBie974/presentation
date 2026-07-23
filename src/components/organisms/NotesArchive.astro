@@ -117,13 +117,12 @@ const showHighlight = page.currentPage === 1 && featured !== null;
     color: var(--color-text-muted);
     text-decoration: none;
     background: var(--color-bg-soft);
-    border: 1px solid var(--color-border);
+    border: var(--border-w) solid var(--color-border-interactive);
   }
   .tag-pill.active {
     background: color-mix(in srgb, var(--color-accent) 10%, transparent);
     color: var(--color-accent);
-    border-radius: var(--radius-base);
-    border-color: var(--color-accent-dim);
+    border-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
   }
   .all-tags {
     margin-left: auto;

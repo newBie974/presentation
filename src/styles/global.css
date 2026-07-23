@@ -13,6 +13,9 @@
 html {
   -webkit-text-size-adjust: 100%;
   color-scheme: dark;
+  /* La nav est `position: sticky; top: 0` (~50px). Sans ça, toute cible
+     d'ancre (#apps, le skip-link vers #main) atterrit derrière la nav. */
+  scroll-padding-top: 64px;
 }
 body {
   margin: 0;
