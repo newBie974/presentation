@@ -6,9 +6,30 @@ import { readFile } from "node:fs/promises";
 
 const THEME_PATH = "src/styles/theme.css";
 const AA_NORMAL = 4.5;
+const AA_NONTEXT = 3; // WCAG 2.1 AA §1.4.11 — boundaries of UI components
 
-// Real foreground/background pairs used in the UI. Each runs in both modes.
+// Real foreground/background pairs used in the UI (single dark theme).
 const CHECKS = [
+  { id: "body text", fg: "color-text", bg: solid("color-bg") },
+  { id: "muted on bg", fg: "color-text-muted", bg: solid("color-bg") },
+  {
+    id: "muted on bg-soft",
+    fg: "color-text-muted",
+    bg: solid("color-bg-soft"),
+  },
+  { id: "faint on bg", fg: "color-text-faint", bg: solid("color-bg") },
+  {
+    id: "faint on bg-soft",
+    fg: "color-text-faint",
+    bg: solid("color-bg-soft"),
+  },
+  {
+    id: "faint on bg-raised",
+    fg: "color-text-faint",
+    bg: solid("color-bg-raised"),
+  },
+  { id: "accent link on bg", fg: "color-accent", bg: solid("color-bg") },
+  { id: "primary CTA", fg: "color-on-accent", bg: solid("color-accent") },
   {
     id: "status.live pill",
     fg: "color-success",
@@ -19,15 +40,48 @@ const CHECKS = [
     fg: "color-building",
     bg: tint("color-building", 16, "color-bg-soft"),
   },
-  { id: "tech chip", fg: "color-text-muted", bg: solid("color-bg") },
-  { id: "muted body text", fg: "color-text-muted", bg: solid("color-bg-soft") },
-  { id: "primary CTA", fg: "color-bg", bg: solid("color-text") },
   {
-    id: "highlight (ink on fluo)",
-    fg: "color-on-accent",
-    bg: solid("color-accent"),
+    id: "accent pill",
+    fg: "color-accent",
+    bg: tint("color-accent", 10, "color-bg-soft"),
   },
-  { id: "strong block", fg: "color-strong-fg", bg: solid("color-strong-bg") },
+  { id: "danger on bg", fg: "color-danger", bg: solid("color-bg") },
+];
+
+// Non-text contrast (§1.4.11): the border IS the only boundary of these
+// controls, so it must clear 3:1 against every surface it sits on. Neither
+// axe-core nor Lighthouse implements this rule — hence the gate here.
+const CHECKS_NONTEXT = [
+  {
+    id: "control border on bg",
+    fg: solid("color-border-interactive"),
+    bg: solid("color-bg"),
+  },
+  {
+    id: "control border on soft",
+    fg: solid("color-border-interactive"),
+    bg: solid("color-bg-soft"),
+  },
+  {
+    id: "control border on raised",
+    fg: solid("color-border-interactive"),
+    bg: solid("color-bg-raised"),
+  },
+  {
+    id: "active pill border",
+    fg: tint("color-accent", 60, "color-bg-soft"),
+    bg: solid("color-bg-soft"),
+  },
+  {
+    id: "active pill inner edge",
+    fg: tint("color-accent", 60, "color-bg-soft"),
+    bg: tint("color-accent", 10, "color-bg-soft"),
+  },
+  {
+    id: "lab-cell link underline",
+    fg: solid("color-accent"),
+    bg: solid("color-bg-raised"),
+  },
 ];
 
 function solid(token) {
@@ -49,13 +103,10 @@ function parseBlocks(css) {
   return blocks;
 }
 
-function buildModes(css) {
+function buildTokens(css) {
   const blocks = parseBlocks(css);
-  const find = (needle) =>
-    Object.keys(blocks).find((key) => key.includes(needle));
-  const light = blocks[find("@theme")];
-  const dark = { ...light, ...blocks[find('data-theme="dark"')] };
-  return { light, dark };
+  const key = Object.keys(blocks).find((k) => k.includes("@theme"));
+  return blocks[key];
 }
 
 function hexToRgb(hex) {
@@ -93,30 +144,37 @@ function contrastRatio(fg, bg) {
   return (light + 0.05) / (dark + 0.05);
 }
 
-function evaluate(check, tokens) {
-  const ratio = contrastRatio(
-    hexToRgb(tokens[check.fg]),
-    resolveBg(check.bg, tokens),
-  );
-  return { ratio, passed: ratio >= AA_NORMAL };
+function evaluate(check, tokens, threshold) {
+  const foreground =
+    typeof check.fg === "string"
+      ? hexToRgb(tokens[check.fg])
+      : resolveBg(check.fg, tokens);
+  const ratio = contrastRatio(foreground, resolveBg(check.bg, tokens));
+  return { ratio, passed: ratio >= threshold };
 }
 
-const css = await readFile(THEME_PATH, "utf8");
-const modes = buildModes(css);
-let failed = 0;
-
-for (const [mode, tokens] of Object.entries(modes)) {
-  for (const check of CHECKS) {
-    const { ratio, passed } = evaluate(check, tokens);
+function runTier(checks, threshold, tokens) {
+  let failed = 0;
+  for (const check of checks) {
+    const { ratio, passed } = evaluate(check, tokens, threshold);
     const mark = passed ? "✓" : "✗";
-    const line = `${mark} ${mode.padEnd(5)} ${check.id.padEnd(24)} ${ratio.toFixed(2)}:1 (min ${AA_NORMAL})`;
+    const line = `${mark} ${check.id.padEnd(24)} ${ratio.toFixed(2)}:1 (min ${threshold})`;
     if (passed) console.log(line);
     else {
       console.error(line);
       failed++;
     }
   }
+  return failed;
 }
+
+const css = await readFile(THEME_PATH, "utf8");
+const tokens = buildTokens(css);
+
+console.log("— Text contrast (WCAG AA §1.4.3)");
+let failed = runTier(CHECKS, AA_NORMAL, tokens);
+console.log("\n— Non-text contrast (WCAG AA §1.4.11)");
+failed += runTier(CHECKS_NONTEXT, AA_NONTEXT, tokens);
 
 if (failed > 0) {
   console.error(
@@ -124,6 +182,5 @@ if (failed > 0) {
   );
   process.exit(1);
 }
-console.log(
-  `\n✓ Contrast validation passed (${CHECKS.length * 2} token pairs)`,
-);
+const total = CHECKS.length + CHECKS_NONTEXT.length;
+console.log(`\n✓ Contrast validation passed (${total} token pairs)`);

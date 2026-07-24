@@ -28,7 +28,7 @@ const lastUpdated = formatDate(notes[0].data.date, locale);
   <Nav slot="nav" locale={locale} />
 
   <section class="page-hero">
-    <SectionLabel>— NOW</SectionLabel>
+    <SectionLabel>NOW</SectionLabel>
     <h1>Ce sur quoi je <Highlight>bosse</Highlight> en ce moment.</h1>
     <p class="deck">
       Inspiré du <a
@@ -245,9 +245,6 @@ const lastUpdated = formatDate(notes[0].data.date, locale);
     font-family: var(--font-mono);
     color: var(--color-accent);
     font-weight: 700;
-  }
-  :global([data-theme="dark"]) .b {
-    color: var(--color-accent);
   }
   @media (max-width: 720px) {
     .page-hero,

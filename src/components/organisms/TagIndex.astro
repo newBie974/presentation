@@ -79,17 +79,18 @@ const notesPath = localizePath("notes", locale);
     text-decoration: none;
     color: var(--color-text);
     background: var(--color-bg-soft);
-    border: 1px solid var(--color-border);
+    border: var(--border-w) solid var(--color-border-interactive);
+    border-radius: 99px;
   }
   .grid a:hover {
-    background: var(--color-strong-bg);
-    color: var(--color-strong-fg);
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    color: var(--color-accent);
   }
   .count {
     color: var(--color-text-muted);
   }
   .grid a:hover .count {
-    color: var(--color-strong-fg);
+    color: var(--color-accent);
   }
   @media (max-width: 720px) {
     .hero,

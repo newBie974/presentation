@@ -72,7 +72,7 @@ const processSteps = [
   <Nav slot="nav" locale={locale} current="work" />
 
   <section class="page-hero">
-    <SectionLabel>— COLLABORER</SectionLabel>
+    <SectionLabel>COLLABORER</SectionLabel>
     <h1>
       Développeur freelance <Highlight>IA</Highlight> — ton produit du Figma au store.
     </h1>
@@ -206,13 +206,20 @@ const processSteps = [
     max-width: 580px;
   }
   .end-cta {
-    background: var(--color-inverse-bg);
-    color: var(--color-inverse-fg);
-    padding: 56px 48px;
+    max-width: var(--container-content);
+    margin: 70px auto;
+    padding: 44px 40px;
+    color: var(--color-text);
+    border: var(--border-w) solid var(--color-accent-dim);
+    border-radius: var(--radius-band);
+    background:
+      radial-gradient(
+        ellipse at top left,
+        color-mix(in srgb, var(--color-accent) 8%, transparent),
+        transparent 55%
+      ),
+      var(--color-bg-soft);
     text-align: center;
-  }
-  :global([data-theme="dark"]) .end-cta {
-    box-shadow: inset 0 2px 0 var(--color-accent);
   }
   .end-cta h2 {
     font-size: clamp(24px, 5vw, 32px);
@@ -220,11 +227,11 @@ const processSteps = [
     letter-spacing: -0.03em;
     margin: 0 0 14px;
     line-height: 1;
-    color: var(--color-inverse-fg);
+    color: var(--color-text);
   }
   .end-cta p {
     font-size: 14px;
-    color: var(--color-inverse-muted);
+    color: var(--color-text-muted);
     max-width: 460px;
     margin: 0 auto 20px;
     line-height: 1.6;
@@ -238,24 +245,17 @@ const processSteps = [
   .end-cta .alt {
     font-family: var(--font-mono);
     font-size: 12px;
-    color: var(--color-inverse-muted);
+    color: var(--color-text-muted);
     margin-top: 12px;
-  }
-  .end-cta .email {
-    margin-top: 16px;
-    font-size: 12px;
-    font-family: var(--font-mono);
-  }
-  .end-cta .email a {
-    color: var(--color-accent);
-    text-decoration: underline;
   }
   @media (max-width: 720px) {
     .page-hero,
-    .section,
-    .end-cta {
+    .section {
       padding-left: 20px;
       padding-right: 20px;
+    }
+    .end-cta {
+      margin: 40px 20px;
     }
   }
 </style>

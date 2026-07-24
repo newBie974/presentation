@@ -7,6 +7,8 @@ Positionnement : **indie builder d'abord, freelance ensuite**. Vitrine des apps 
 
 Spec de design source : `docs/superpowers/specs/2026-05-21-portfolio-design.md`. En cas de conflit entre ce CLAUDE.md et le spec, le spec gagne pour les décisions produit/design ; ce CLAUDE.md gagne pour les règles de code.
 
+Système visuel : `docs/superpowers/specs/2026-07-23-d2-dark-refined-redesign.md` (D2 remplace D1).
+
 ---
 
 ## Stack & versions
@@ -36,7 +38,7 @@ Pas de framework JS additionnel (React/Vue/Svelte). Astro statique pur, hydratat
 src/
 ├─ assets/                         avatars, logos apps, portrait B&W
 ├─ components/
-│  ├─ atoms/                       Avatar, StatusBadge, ThemeToggle, Icon, Highlight, JsonLd
+│  ├─ atoms/                       Avatar, StatusBadge, Icon, Highlight, JsonLd, SectionLabel
 │  ├─ molecules/                   SocialLink, AppCell, NoteRow, Chapter, FAQItem, ProcessStep, ServiceCard, StackGroup, LangToggle
 │  ├─ organisms/                   Nav, Hero, AppsGrid, SocialBar, Footer, CollabBand, AboutExcerpt, NotesSection
 │  └─ prose/                       Callout, FileBlock, CodeTabs, Stackblitz, Tweet (composants MDX)
@@ -70,7 +72,7 @@ src/
 │  └─ en/                          miroir EN avec slugs traduits + rss.xml.ts
 ├─ styles/
 │  ├─ global.css                   reset, base, Tailwind directives
-│  ├─ theme.css                    @theme Tailwind 4 + dark mode overrides
+│  ├─ theme.css                    @theme Tailwind 4, thème sombre unique
 │  └─ prose.css                    typographie MDX
 └─ types/                          interfaces partagées
 ```
@@ -166,7 +168,7 @@ const hasTranslation = !!entry.data.translationKey;
 const canShowLangToggle = hasTranslation && translationExists;
 
 // Handlers → préfixe handle (côté client uniquement, rare ici)
-const handleThemeToggle = () => {};
+const handleFilterChange = () => {};
 
 // Async / build-time → verbe d'action clair
 async function loadPublishedNotes(locale: Locale) {}
@@ -290,12 +292,12 @@ const notes = defineCollection({
 
 ### 6. Pas de couleurs ni de tailles en dur
 
-Le D1 Swiss Brutalist vit dans `src/styles/theme.css` via `@theme`. Toute valeur de design vient de là.
+Le D2 Sombre Raffiné vit dans `src/styles/theme.css` via `@theme`. Toute valeur de design vient de là.
 
 ```astro
 {/* ❌ Hardcodé */}
-<div style="background: #ccff00; padding: 16px; color: #0a0a0a;">…</div>
-<div class="bg-[#ccff00] p-[16px] text-[#0a0a0a]">…</div>
+<div style="background: #8ab4ff; padding: 16px; color: #0c0d10;">…</div>
+<div class="bg-[#8ab4ff] p-[16px] text-[#0c0d10]">…</div>
 
 {/* ✅ Tokens */}
 <div class="bg-accent p-4 text-text">…</div>
@@ -309,7 +311,7 @@ Le D1 Swiss Brutalist vit dans `src/styles/theme.css` via `@theme`. Toute valeur
 </style>
 ```
 
-**Règle critique GEO/A11y** : `--color-accent` (#ccff00) ne doit **jamais** être utilisé comme `color:` sur fond clair (contraste WCAG raté). Il sert uniquement comme `background` derrière du texte foncé (Highlight component, pills, CTAs).
+**Règle critique GEO/A11y** : le site est sombre uniquement (D2). `--color-accent` (#8ab4ff) sert en texte sur fonds sombres ET en background de CTA avec texte `--color-on-accent`. Tout nouveau couple fg/bg doit être ajouté aux `CHECKS` de `scripts/validate-contrast.mjs`.
 
 Si tu écris un nouveau composant et qu'il n'a pas accès à un token, c'est probablement qu'il manque dans `theme.css` — ajoute-le là, pas dans le composant.
 
@@ -319,7 +321,8 @@ Si tu écris un nouveau composant et qu'il n'a pas accès à un token, c'est pro
 
 ```astro
 {/* ❌ Logique dans le render */}
-import { getCollection } from "astro:content"; const notes = await getCollection("notes");
+import {getCollection} from "astro:content"; const notes = await
+getCollection("notes");
 <section>
   {
     notes
@@ -513,7 +516,7 @@ Une page publique sans `<SeoHead>` n'est pas mergeable. Un test CI (script Node 
 ### F. A11y — focus rings, landmarks, reduced motion
 
 ```css
-/* Focus ring D1 — visible et brutaliste */
+/* Focus ring D2 — visible, sur fond sombre */
 *:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--color-accent);
@@ -568,14 +571,14 @@ Avant chaque commit, vérifier :
 
 Site marketing statique → pas de tests unitaires sur les composants. On teste **ce qui peut casser silencieusement en prod** :
 
-| Niveau | Quoi          | Comment                                                                                                                                                                                                                                                                                                                                             |
-| ------ | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1      | Build & types | `astro check` + `astro build` au CI                                                                                                                                                                                                                                                                                                                 |
-| 2      | Accessibilité | `@axe-core/playwright` sur les routes critiques (`/`, `/a-propos`, `/notes`, `/notes/<latest>`, `/collaborer` + miroir EN)                                                                                                                                                                                                                          |
-| 3      | Performance   | Lighthouse CI (`@lhci/cli`) — budget Perf ≥ 95, A11y = 100, BP ≥ 95, SEO = 100                                                                                                                                                                                                                                                                      |
-| 4      | JSON-LD       | Script Node qui parse `dist/`, extrait les `<script type="application/ld+json">` et valide la présence de Person/WebSite sur chaque page publique                                                                                                                                                                                                   |
-| 5      | Contraste     | `scripts/validate-contrast.mjs` (`npm run validate:contrast`) — résout les tokens de `theme.css` (y compris les `color-mix(... transparent)` sur leur fond) et vérifie WCAG AA ≥ 4.5:1 en clair + sombre, sans navigateur. Tourne au pre-commit (si `theme.css` change) et en CI avant le build, pour attraper un souci de contraste avant axe-core |
-| 6      | Liens cassés  | (Optionnel V1.1) `linkinator` sur `dist/`                                                                                                                                                                                                                                                                                                           |
+| Niveau | Quoi          | Comment                                                                                                                                                                                                                                                                                                                                                      |
+| ------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1      | Build & types | `astro check` + `astro build` au CI                                                                                                                                                                                                                                                                                                                          |
+| 2      | Accessibilité | `@axe-core/playwright` sur les routes critiques (`/`, `/a-propos`, `/notes`, `/notes/<latest>`, `/collaborer` + miroir EN)                                                                                                                                                                                                                                   |
+| 3      | Performance   | Lighthouse CI (`@lhci/cli`) — budget Perf ≥ 95, A11y = 100, BP ≥ 95, SEO = 100                                                                                                                                                                                                                                                                               |
+| 4      | JSON-LD       | Script Node qui parse `dist/`, extrait les `<script type="application/ld+json">` et valide la présence de Person/WebSite sur chaque page publique                                                                                                                                                                                                            |
+| 5      | Contraste     | `scripts/validate-contrast.mjs` (`npm run validate:contrast`) — résout les tokens de `theme.css` (y compris les `color-mix(... transparent)` sur leur fond) et vérifie WCAG AA ≥ 4.5:1 sur le thème sombre unique, sans navigateur. Tourne au pre-commit (si `theme.css` change) et en CI avant le build, pour attraper un souci de contraste avant axe-core |
+| 6      | Liens cassés  | (Optionnel V1.1) `linkinator` sur `dist/`                                                                                                                                                                                                                                                                                                                    |
 
 Pas de tests unitaires Vitest sur les composants Astro — la TS strict + le rendu statique attrapent l'essentiel. Si du jour 1 on a une logique métier réelle (ex: filtre complexe), on teste cette logique pure isolée dans `lib/` avec Vitest.
 
@@ -689,8 +692,6 @@ npm run preview                   # sert ./dist localement
 
 **Les OG images dynamiques (Satori) sont générées au build.** Si tu changes une OG image, fais `astro build` pour la régénérer.
 
-**Le surligneur fluo (#ccff00) ne sert qu'en background.** Jamais comme couleur de texte sur fond clair (échec WCAG). Si tu vois `text-accent` quelque part sur fond cream, c'est un bug.
-
 **`prefers-reduced-motion`** : toute animation doit être désactivée. Ne pas l'oublier dans les nouveaux composants animés.
 
 ---
@@ -702,8 +703,8 @@ npm run preview                   # sert ./dist localement
 - Témoignages / social proof public
 - Page Talks / Press / Highlights
 - CMS (Astro Content Collections suffit)
-- Plus d'un thème visuel (D1 only — l'architecture en tokens permettra l'extension)
-- Theme switcher D1 ↔ D2 (option reportée si besoin)
+- Plus d'un thème visuel (D2 dark-only — l'architecture en tokens permettra l'extension si besoin)
+- Theme switcher (retiré avec le passage à D2 ; pas de toggle clair/sombre)
 - Tests unitaires Vitest sur composants
 - E2E (Playwright sert uniquement à axe-core)
 - Search côté client (V1.1 si volume de notes le justifie)

@@ -53,7 +53,7 @@ const heading = locale === "fr" ? headingFR : headingEN;
 <style>
   .apps {
     padding: 40px 48px;
-    border-bottom: var(--border-w) solid var(--color-border);
+    border-bottom: var(--border-w) solid var(--color-border-soft);
   }
   .head {
     display: flex;
@@ -87,20 +87,22 @@ const heading = locale === "fr" ? headingFR : headingEN;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--color-text-muted);
-    background: var(--color-bg-soft);
-    border: 1px solid var(--color-border);
+    background: var(--color-bg-raised);
+    border: var(--border-w) solid var(--color-border-interactive);
+    border-radius: 99px;
     cursor: pointer;
     transition:
       background 120ms ease,
-      color 120ms ease;
+      color 120ms ease,
+      border-color 120ms ease;
   }
   .filters label:hover {
     color: var(--color-text);
   }
   .filters input:checked + label {
-    background: var(--color-strong-bg);
-    color: var(--color-strong-fg);
-    border-color: var(--color-strong-bg);
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    color: var(--color-accent);
+    border-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
   }
   .filters input:focus-visible + label {
     box-shadow: 0 0 0 2px var(--color-accent);
@@ -120,9 +122,12 @@ const heading = locale === "fr" ? headingFR : headingEN;
   .count {
     font-family: var(--font-mono);
     font-size: 11px;
-    padding: 3px 8px;
-    background: var(--color-strong-bg);
-    color: var(--color-strong-fg);
+    padding: 3px 10px;
+    border-radius: 99px;
+    color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    border: var(--border-w) solid
+      color-mix(in srgb, var(--color-accent) 25%, transparent);
   }
   .emoji {
     display: inline-block;

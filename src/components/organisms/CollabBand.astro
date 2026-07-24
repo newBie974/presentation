@@ -34,16 +34,18 @@ const subEN =
 
 <style>
   .band {
-    /* Always-dark band — strong identity in both themes */
-    background: #0a0a0a;
-    color: #f6f6f4;
-    padding: 56px 48px;
+    margin: 70px 48px;
+    padding: 44px 40px;
     text-align: center;
-    border-bottom: var(--border-w) solid var(--color-border);
-  }
-  :global([data-theme="dark"]) .band {
-    /* In dark mode, page is also dark — add a fluo top accent line to separate */
-    box-shadow: inset 0 2px 0 var(--color-accent);
+    border: var(--border-w) solid var(--color-accent-dim);
+    border-radius: var(--radius-band);
+    background:
+      radial-gradient(
+        ellipse at top left,
+        color-mix(in srgb, var(--color-accent) 8%, transparent),
+        transparent 55%
+      ),
+      var(--color-bg-soft);
   }
   h2 {
     font-size: clamp(28px, 5vw, 40px);
@@ -51,11 +53,11 @@ const subEN =
     letter-spacing: -0.03em;
     line-height: 1;
     margin: 0 0 14px;
-    color: #f6f6f4;
+    color: var(--color-text);
   }
   p {
-    font-size: 14px;
-    color: #a3a3a3;
+    font-size: 15px;
+    color: var(--color-text-muted);
     max-width: 460px;
     margin: 0 auto 24px;
     line-height: 1.6;
@@ -67,11 +69,18 @@ const subEN =
     color: var(--color-on-accent);
     font-weight: 700;
     font-size: 13px;
-    border: var(--border-w) solid var(--color-accent);
+    border-radius: var(--radius-base);
+    box-shadow: 0 0 24px
+      color-mix(in srgb, var(--color-accent) 25%, transparent);
     text-decoration: none;
+    transition: filter 120ms ease;
   }
   .cta:hover {
-    background: #f6f6f4;
-    border-color: #f6f6f4;
+    filter: brightness(1.08);
+  }
+  @media (max-width: 720px) {
+    .band {
+      margin: 40px 20px;
+    }
   }
 </style>

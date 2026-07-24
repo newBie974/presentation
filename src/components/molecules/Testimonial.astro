@@ -23,8 +23,13 @@ const meta = [testimonial.role[locale], testimonial.company, testimonial.date]
   .testimonial {
     margin: 0;
     padding: 20px;
+    background: linear-gradient(
+      180deg,
+      var(--color-bg-raised),
+      var(--color-bg-soft)
+    );
     border: var(--border-w) solid var(--color-border);
-    background: var(--color-bg-soft);
+    border-radius: var(--radius-card);
     display: flex;
     flex-direction: column;
     gap: 14px;

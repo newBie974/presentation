@@ -12,6 +12,18 @@
 }
 html {
   -webkit-text-size-adjust: 100%;
+  color-scheme: dark;
+  /* La nav est `position: sticky; top: 0` (~50px). Sans ça, toute cible
+     d'ancre (#apps, le skip-link vers #main) atterrit derrière la nav. */
+  scroll-padding-top: 64px;
+}
+
+/* At narrow viewports, the nav wraps into two rows (~67px total).
+   Increase scroll-padding to clear the wrapped nav + breathing room. */
+@media (max-width: 720px) {
+  html {
+    scroll-padding-top: 88px;
+  }
 }
 body {
   margin: 0;
@@ -20,6 +32,11 @@ body {
   font-family: var(--font-sans);
   font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 /* Skip link */
@@ -35,12 +52,13 @@ body {
   font-weight: 600;
   text-decoration: none;
   border: var(--border-w) solid var(--color-text);
+  border-radius: var(--radius-base);
 }
 .skip-link:focus {
   top: 0;
 }
 
-/* Focus rings — D1 style */
+/* Focus rings — D2 style */
 *:focus-visible {
   outline: none;
   box-shadow:

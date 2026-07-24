@@ -130,17 +130,22 @@ const playStoreHint = t("apps.getItOn");
   .cell {
     display: flex;
     flex-direction: column;
-    padding: 20px;
-    background: var(--color-bg-soft);
+    padding: 22px;
+    background: linear-gradient(
+      180deg,
+      var(--color-bg-raised),
+      var(--color-bg-soft)
+    );
     border: var(--border-w) solid var(--color-border);
+    border-radius: var(--radius-card);
     color: var(--color-text);
     transition:
       transform 120ms ease,
-      box-shadow 120ms ease;
+      border-color 120ms ease;
   }
   .cell:hover {
-    transform: translate(-3px, -3px);
-    box-shadow: 6px 6px 0 0 var(--color-accent);
+    transform: translateY(-2px);
+    border-color: var(--color-accent-dim);
   }
   .logo-link {
     display: inline-block;
@@ -149,8 +154,9 @@ const playStoreHint = t("apps.getItOn");
   .logo {
     width: 52px;
     height: 52px;
-    background: var(--color-bg);
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
     border: var(--border-w) solid var(--color-border);
+    border-radius: var(--radius-base);
     margin-bottom: 16px;
     overflow: hidden;
   }
@@ -170,11 +176,7 @@ const playStoreHint = t("apps.getItOn");
     text-decoration: none;
   }
   .name a:hover {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
-    padding: 0 4px;
-    margin: 0 -4px;
-    border-radius: 5px;
+    color: var(--color-accent);
   }
   .desc {
     font-size: 12.5px;
@@ -193,10 +195,11 @@ const playStoreHint = t("apps.getItOn");
   .tech li {
     font-family: var(--font-mono);
     font-size: 10px;
-    color: var(--color-text-muted);
+    color: var(--color-text-faint);
     padding: 4px 8px;
     background: var(--color-bg);
-    border: 1px solid var(--color-border);
+    border: var(--border-w) solid var(--color-border);
+    border-radius: 6px;
   }
   .status {
     display: inline-flex;
@@ -233,16 +236,18 @@ const playStoreHint = t("apps.getItOn");
     align-items: center;
     gap: 8px;
     padding: 9px 12px;
-    background: var(--color-inverse-bg);
-    color: var(--color-inverse-fg);
-    border: var(--border-w) solid var(--color-inverse-bg);
+    background: var(--color-bg-raised);
+    color: var(--color-text);
+    border: var(--border-w) solid var(--color-border-interactive);
+    border-radius: var(--radius-base);
     text-decoration: none;
-    transition: background 120ms ease-out;
+    transition:
+      border-color 120ms ease-out,
+      color 120ms ease-out;
   }
   .badge:hover {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-dim);
+    color: var(--color-accent);
   }
   .badge-text {
     display: flex;
@@ -267,22 +272,19 @@ const playStoreHint = t("apps.getItOn");
     justify-content: center;
     gap: 6px;
     padding: 10px 14px;
-    background: var(--color-text);
-    color: var(--color-bg);
-    border: var(--border-w) solid var(--color-text);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    border: var(--border-w) solid var(--color-accent);
+    border-radius: var(--radius-base);
     font-family: var(--font-sans);
     font-size: 13px;
     font-weight: 600;
     letter-spacing: -0.01em;
     text-decoration: none;
     text-align: center;
-    transition:
-      background 120ms ease-out,
-      color 120ms ease-out;
+    transition: filter 120ms ease-out;
   }
   .website-link:hover {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
-    border-color: var(--color-accent);
+    filter: brightness(1.08);
   }
 </style>

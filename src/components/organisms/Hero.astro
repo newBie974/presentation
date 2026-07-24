@@ -19,6 +19,7 @@ const t = useTranslations(locale);
 <section class="hero">
   <div class="text">
     <SectionLabel>BUILDER · 2026</SectionLabel>
+    <StatusBadge label={t("status.dispoLabel")} />
     <h1>
       {
         locale === "fr" ? (
@@ -37,7 +38,6 @@ const t = useTranslations(locale);
       <a href="#apps" class="btn primary">{t("cta.viewApps")} ↓</a>
       <a href={t.path("work")} class="btn ghost">{t("cta.collaborate")} →</a>
     </div>
-    <StatusBadge label={t("status.dispoLabel")} />
   </div>
   <div class="portrait">
     <Image
@@ -57,53 +57,61 @@ const t = useTranslations(locale);
     grid-template-columns: 1fr 200px;
     gap: 48px;
     align-items: end;
-    padding: 56px 48px 40px;
-    border-bottom: var(--border-w) solid var(--color-border);
+    padding: 90px 48px 70px;
+    border-bottom: var(--border-w) solid var(--color-border-soft);
   }
   h1 {
-    font-size: clamp(36px, 6vw, 58px);
-    line-height: 0.96;
+    font-size: clamp(36px, 6vw, 52px);
+    line-height: 1.05;
     font-weight: 700;
-    letter-spacing: -0.04em;
-    margin: 18px 0 24px;
+    letter-spacing: -0.035em;
+    margin: 20px 0 20px;
   }
   .lead {
-    font-size: 16px;
-    line-height: 1.55;
-    color: var(--color-text);
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--color-text-muted);
     max-width: 480px;
-    margin: 0 0 24px;
+    margin: 0 0 32px;
   }
   .ctas {
     display: flex;
-    margin-bottom: 20px;
+    gap: 14px;
   }
   .btn {
-    padding: 12px 20px;
-    font-size: 13px;
+    padding: 11px 22px;
+    font-size: 14px;
     font-weight: 600;
     text-decoration: none;
-    border: var(--border-w) solid var(--color-text);
+    border-radius: var(--radius-base);
     cursor: pointer;
+    transition:
+      filter 120ms ease,
+      background 120ms ease;
   }
   .primary {
-    background: var(--color-text);
-    color: var(--color-bg);
-  }
-  .ghost {
-    background: var(--color-bg);
-    color: var(--color-text);
-    border-left: 0;
-  }
-  .ghost:hover {
     background: var(--color-accent);
     color: var(--color-on-accent);
-    border-color: var(--color-accent);
+    box-shadow: 0 0 24px
+      color-mix(in srgb, var(--color-accent) 25%, transparent);
+  }
+  .primary:hover {
+    filter: brightness(1.08);
+  }
+  .ghost {
+    background: var(--color-bg-raised);
+    color: var(--color-text);
+    border: var(--border-w) solid var(--color-border-interactive);
+  }
+  .ghost:hover {
+    border-color: var(--color-accent-dim);
+    color: var(--color-accent);
   }
   .portrait {
     width: 200px;
     height: 240px;
     border: var(--border-w) solid var(--color-border);
+    border-radius: var(--radius-card);
     overflow: hidden;
   }
   .portrait :global(img) {
@@ -114,7 +122,7 @@ const t = useTranslations(locale);
   @media (max-width: 720px) {
     .hero {
       grid-template-columns: 1fr;
-      padding: 32px 20px;
+      padding: 48px 20px 40px;
     }
     .portrait {
       width: 140px;

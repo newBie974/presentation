@@ -28,13 +28,14 @@ const labels = { info: "NOTE", warn: "ATTENTION", ok: "OK" };
     font-weight: 700;
     letter-spacing: 0.1em;
     padding: 3px 6px;
-    background: var(--color-strong-bg);
-    color: var(--color-strong-fg);
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    color: var(--color-accent);
+    border-radius: var(--radius-base);
     align-self: start;
   }
   .tone-warn .label {
-    background: #b45309;
-    color: #fef3c7;
+    background: var(--color-building);
+    color: var(--color-on-accent);
   }
   .tone-ok .label {
     background: var(--color-success);

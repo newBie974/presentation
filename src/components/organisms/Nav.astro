@@ -1,6 +1,5 @@
 ---
 import LangToggle from "@/components/molecules/LangToggle.astro";
-import ThemeToggle from "@/components/atoms/ThemeToggle.astro";
 import { useTranslations, alternateUrl } from "@/i18n/utils";
 import type { Locale } from "@/types";
 
@@ -27,7 +26,8 @@ const altPath =
 
 <nav class="nav" aria-label={t("nav.ariaPrimary")}>
   <a href={t.path("home")} class="brand"
-    >aymeric<span class="slash">/</span>dijoux</a
+    >aymeric<span class="dot-sep">.</span>dijoux<span class="dot-sep">.</span
+    >dev</a
   >
   <ul class="menu" role="list">
     {
@@ -46,18 +46,22 @@ const altPath =
   </ul>
   <div class="end">
     <LangToggle current={locale} altPath={altPath} />
-    <ThemeToggle locale={locale} />
   </div>
 </nav>
 
 <style>
   .nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 14px 48px;
-    border-bottom: var(--border-w) solid var(--color-border);
-    background: var(--color-bg);
+    border-bottom: var(--border-w) solid var(--color-border-soft);
+    background: color-mix(in srgb, var(--color-bg) 80%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
   .brand {
     font-family: var(--font-mono);
@@ -67,26 +71,36 @@ const altPath =
     color: var(--color-text);
     text-decoration: none;
   }
-  .slash {
-    color: var(--color-success);
+  .dot-sep {
+    color: var(--color-accent);
   }
   .menu {
     display: flex;
-    gap: 28px;
+    gap: 26px;
     list-style: none;
     margin: 0;
     padding: 0;
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 500;
   }
   .item {
-    color: var(--color-text);
+    color: var(--color-text-muted);
     text-decoration: none;
     padding: 2px 6px;
+    border-radius: 6px;
+    transition: color 120ms ease;
   }
+  /* .active before :hover — same specificity, so the later rule wins and the
+     current page would otherwise get no hover feedback at all. */
   .item.active {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
+    color: var(--color-accent);
+  }
+  .item:hover {
+    color: var(--color-text);
+  }
+  .item.active:hover {
+    color: var(--color-accent);
+    filter: brightness(1.15);
   }
   .end {
     display: flex;

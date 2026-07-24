@@ -37,13 +37,14 @@ const hreflangLinks = buildHreflangLinks({
 ---
 
 <!doctype html>
-<html lang={locale === "fr" ? "fr-FR" : "en-US"} data-theme="light">
+<html lang={locale === "fr" ? "fr-FR" : "en-US"}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
+    <meta name="theme-color" content="#0c0d10" />
 
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -68,23 +69,6 @@ const hreflangLinks = buildHreflangLinks({
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={new URL(ogImage, SITE_URL).href} />
-
-    <script is:inline>
-      (function () {
-        try {
-          const saved = localStorage.getItem("theme");
-          if (saved === "dark" || saved === "light") {
-            document.documentElement.dataset.theme = saved;
-          } else if (
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-          ) {
-            document.documentElement.dataset.theme = "dark";
-          }
-        } catch {
-          /* localStorage may be unavailable */
-        }
-      })();
-    </script>
 
     <slot name="head" />
     <ClientRouter />
