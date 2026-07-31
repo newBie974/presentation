@@ -69,3 +69,27 @@ C'est une distinction qui change tout. Le middleware devient la zone où vivent 
 </Callout>
 
 C'est pourquoi c'est « The Heart ». Pattern 1 pose les fondations. Mais Pattern 2 est le cœur battant du système. C'est là où il devient vraiment vivant, vraiment réactif. C'est ce qui fait la différence entre un agent statique et un système qui respire, qui s'adapte, qui prospère dans des contextes changeants sans redéploiement.
+
+## Pattern 3: Dynamic Subagent Discovery (Scalability)
+
+Jusqu'à présent, on a parlé de configurer et adapter un seul agent en temps réel. Mais qu'arrive-t-il quand tu dois gérer non plus un, mais une dizaine d'agents ? Une centaine ? La question semble saugrenue au premier abord. Mais en vrai, c'est ce qui sépare un système qui fonctionne de celui qui s'écroule sous son propre poids.
+
+### Le problème qu'il résout
+
+Avant : chaque nouvel agent, tu l'enregistres dans le code. Ou dans une configuration gravée. Tu lui donnes un identifiant, tu defines ses rôles, ses outils, tu le branche à l'orchestration centrale. Ajouter un agent c'est une décision architectural. C'est un changement qui demande du testing, de la review, un déploiement. Et si demain quelqu'un veut créer un nouvel agent spécialisé sans passer par le processus complet ? Trop lourd.
+
+Après : tu crées un répertoire, tu y mets la configuration du nouvel agent, et c'est fini. Le système la détecte automatiquement. Pas de redéploiement. Pas de code change. Pas de restart. Le système scanne son dossier « agents », charge chaque configuration, les injecte dans l'orchestration. Nouveau agent ? Il marche tout de suite. Tu veux le retirer ? Tu le supprimes du dossier. Le système s'adapte au prochain appel.
+
+### Ce que j'ai découvert
+
+À un moment, j'ai réalisé que créer un nouveau subagent ne devrait pas être une décision d'architecture. Ça devrait être aussi simple que créer un dossier.
+
+C'est un décalage radical. Parce que ça veut dire que ton système n'est plus une configuration figée qu'on pousse en prod une fois par sprint. C'est un réseau vivant d'agents qui peut grandir organiquement. Quelqu'un a une idée pour un nouvel agent spécialisé ? Il crée un dossier, écrit sa configuration, et c'est prêt. Pas de dépendance au planning de release. Pas de cycle d'attente. C'est une forme de modularité que j'avais jamais expérimentée avec une système classique.
+
+Ça force aussi une discipline : chaque agent doit être composable. Il doit pouvoir fonctionner indépendamment de la connaissance des autres agents. Sa configuration doit être auto-suffisante. C'est un peu comme écrire du code découplé—mais à l'échelle de systèmes entiers.
+
+<Callout type="note">
+**Le décalage mental.** Avant, les agents étaient des singletons hardcodés. Tu les enum-ais dans le code ou dans une grande config centrale. Maintenant, c'est une roster découverte dynamiquement. Elle change à chaque scan du dossier. La différence? Ça passe à l'échelle sans effort. Ajouter le 50e agent demande la même friction que le 2e. Zéro friction, zéro code change, zéro risque de régression.
+</Callout>
+
+Pattern 1 a décentralisé la configuration des agents. Pattern 2 a rendu l'orchestration dynamique. Pattern 3 en tire la conséquence ultime : si les agents sont des données, et si l'orchestration est vivante, alors ajouter un nouvel agent n'est pas un changement système. C'est juste du contenu qu'on ajoute. Et le système se rebalance automatiquement.
