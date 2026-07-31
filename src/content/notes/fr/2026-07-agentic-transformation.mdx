@@ -93,3 +93,29 @@ C'est un décalage radical. Parce que ça veut dire que ton système n'est plus 
 </Callout>
 
 Pattern 1 a décentralisé la configuration des agents. Pattern 2 a rendu l'orchestration dynamique. Pattern 3 en tire la conséquence ultime : si les agents sont des données, et si l'orchestration est vivante, alors ajouter un nouvel agent n'est pas un changement système. C'est juste du contenu qu'on ajoute. Et le système se rebalance automatiquement.
+
+## Pattern 4: Per-Call Context Injection (Security & Isolation)
+
+À ce stade, tu as un système flexible, modulaire, qui respire. Mais il y a un piège silencieux qu'on ignore souvent : l'État.
+
+Si ton agent garde en mémoire un état global—qui l'a invoqué, quels contextes il a déjà vus, quelles permissions il a accordées—tu crées instantanément des risques de sécurité cachés. Deux requêtes concurrentes ? Elles peuvent se piler dessus. Un utilisateur accède à un contexte qu'il ne devrait pas ? C'est parce que l'état global l'a laissé passer. Multitenancy devient un cauchemar.
+
+La réponse est radical : l'agent n'a aucun état global. Zéro. Tout ce qui pourrait être contexte—l'utilisateur qui invoque, le scope des données accessibles, les permissions, la collection de contexte, tout—est injecté dans chaque appel à l'agent. L'agent ne « connaît » rien de lui-même. Il est complètement stateless. Il reçoit un package complet au démarrage de la requête, l'exécute, et c'est fini. Le package suivant apporte un contexte complètement différent. Pas de trace, pas de mélange, pas de fuite.
+
+### Le problème qu'il résout
+
+Avant : tu relâches un agent en production. Tout marche bien. Trois mois plus tard, tu découvres qu'une utilisatrice a accédé à des données d'un autre utilisateur parce que l'agent gardait en cache un jeton d'accès invalide qui n'avait jamais été réinitialisé. Ou deux requêtes concurrentes ont pollué l'état interne et une a reçu le contexte de l'autre. Tu dois alors retracer tous les accès, vérifier l'intégrité des données, potentiellement avouer une brèche.
+
+Après : tu injectes le contexte complet et actuel dans chaque appel. L'agent ne peut accéder qu'à ce qu'on lui donne. Les deux requêtes concurrentes ? Elles reçoivent des packages différents, aucune interférence possible. Revocation de permission ? Tu changes simplement ce qui est injecté au prochain appel. L'autorisation devient une première classe du système, pas une couche qu'on ajoute par dessus.
+
+### Ce que j'ai découvert
+
+Le moment clé : je me suis rendu compte que les agents ne doivent pas « connaître » qui les utilise ou quel contexte ils opèrent. Ça doit être injecté dans chaque appel. Pas de mémoire persistante. Pas de cache. Pas d'état. Chaque invocation est un univers propre, fourni au démarrage, complètement isolé des autres.
+
+Ça change radicalement comment tu penses la sécurité. Ce n'est plus « comment j'ajoute une couche d'authentification? » C'est « comment je garantis que chaque agent ne reçoit que ce qu'il doit recevoir, injecté au moment de l'appel, sans possibilité de débordement? » C'est une posture défensive par défaut, pas une couche ajoutée après. Et ça rend la multitenancy safe d'une façon qui serait quasi impossible autrement.
+
+<Callout type="note">
+**Le décalage mental.** Avant, je pensais state management—comment je garde l'état, comment je le synchronise, comment je le nettoie. Maintenant c'est : « nothing is stored, everything is injected ». L'agent reçoit tout au démarrage de la requête, rien ne persiste. Pas de cache qui traîne. Pas d'état qui fuit vers une autre requête. C'est un changement de philosophie. Le système devient plus simple, plus prédictible, plus sûr.
+</Callout>
+
+Pattern 1, 2, et 3 t'ont donné un système flexible et modulaire. Pattern 4 en fait un système sûr. C'est la couche de sécurité architecturale qui rend le système vraiment digne de production. Pas de back door invisibles. Pas de fuite de contexte. Pas de race conditions qui attendent d'exploser en prod.
