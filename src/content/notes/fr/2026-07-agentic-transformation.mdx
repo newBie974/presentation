@@ -119,3 +119,27 @@ Le moment clé : je me suis rendu compte que les agents ne doivent pas « conna�
 </Callout>
 
 Pattern 1, 2, et 3 t'ont donné un système flexible et modulaire. Pattern 4 en fait un système sûr. C'est la couche de sécurité architecturale qui rend le système vraiment digne de production. Pas de back door invisibles. Pas de fuite de contexte. Pas de race conditions qui attendent d'exploser en prod.
+
+## Pattern 5: Graceful Degradation & Hot Reload (Resilience)
+
+Je construisais un système où des gens éditent les agents en live. Pas en dev. En production. D'autres personnes utilisent le système pendant qu'ils itèrent sur les configurations. Et la première question qui arrive c'est : comment ça ne crash pas?
+
+La réponse que j'ai trouvée c'est une philosophie de résilience qui s'appelle graceful degradation. L'idée est simple : le système ne doit jamais s'arrêter parce que quelqu'un modifie un fichier de configuration. Pas même si cette configuration est malformée. Pas même si elle est incomplète. Le système continue à fonctionner avec la dernière version valide qu'il connaît. La nouvelle version est testée, validée. Si elle est bonne, elle est chargée. Si elle est mauvaise, elle est ignorée, et un log l'enregistre. Mais le service reste vivant.
+
+### Le problème qu'il résout
+
+Avant : tu édites le fichier de configuration d'un agent. Il y a une typo YAML. Tu l'enregistres. Le système essaie de le recharger. Le parseur casse. Exception. Et boom—l'agent ne démarre plus pour personne. Tout le service s'écroule. Ou pire encore, tu charges une nouvelle configuration qui est incomplète, qui oublie un champ obligatoire. Aucune validation. Aucune fallback. Le système commence à se comporter de façon imprévisible. Les autres requêtes qui arrivent reçoivent des réponses bizarres. C'est un cauchemar en production.
+
+Après : tu édites la configuration. Il y a une erreur. Le système détecte l'erreur au parse, la loggue, et continue à utiliser la configuration précédente qui marche. Zéro downtime. Zéro impact utilisateur. L'éditeur de config voit l'erreur dans les logs et corrège en deux secondes. C'est un processus d'apprentissage—pas une catastrophe. Tout le monde reste tranquille. Le système fonctionne en arrière-plan.
+
+### Ce que j'ai découvert
+
+La résilience n'est pas optionnelle. C'est une première classe du système. Ça veut dire que chaque point de variation—chaque fichier qui pourrait changer, chaque donnée injectée—doit avoir deux choses : une validation au chargement et un fallback si ça échoue.
+
+Ça force une mentalité de robustesse. Tu ne peux pas supposer que la configuration est valide. Tu dois la valider explicitement. Tu ne peux pas supposer qu'un nouveau champ existe toujours. Tu dois prévoir qu'il ne soit pas là, et tu dois avoir une valeur par défaut. C'est un peu comme programmer défensivement, mais à grande échelle.
+
+<Callout type="note">
+**Le décalage mental.** Avant, une erreur de configuration = l'agent crash, le service down, il faut redéployer, tout le monde attend. Maintenant c'est : « erreur de config = on la loggue, on la rejette, on continue avec la version précédente ». Le système devrait fonctionner même quand les gens font des erreurs. Surtout quand les gens font des erreurs. C'est résilience par design, pas par chance.
+</Callout>
+
+Pattern 1 a décentralisé la configuration. Pattern 2 l'a rendue vivante. Pattern 3 l'a rendue modulaire. Pattern 4 l'a rendue sûre. Pattern 5 la rend indestructible. C'est le pattern qui transforme un système fragile—qui casse dès qu'il y a une petite erreur—en un système qui prospère même sous pression, même quand les gens font des changements en production.
