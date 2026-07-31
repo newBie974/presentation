@@ -22,4 +22,26 @@ Ces 5 patterns, ce sont eux. Ce sont les leviers architecturaux que la roadmap �
 
 ## Les 5 patterns
 
-(Article continues...)
+## Pattern 1: Data-Driven Configuration (The Foundation)
+
+Ton agent n'est pas défini dans le code. Il est défini dans des données structurées—YAML, fichiers, configurations. Le système lit ces données à l'exécution, pas au build. C'est la première distinction fondamentale. Tout ce qui pourrait changer sans redéployer devrait vivre dans une donnée, pas gravé dans du code.
+
+### Le problème qu'il résout
+
+Avant : tu veux changer la persona de ton agent. Ajouter une instruction système. Affiner son tone. Ajouter un nouveau skill. Tu édites le code source, tu lances le déploiement, tu redémarres le système. Pendant ce temps, le système est offline ou tu exécutes l'ancienne version. Chaque itération devient un cycle complet. Et si tu dois tester trois variations de persona avant de trouver celle qui marche ? Trois redéploiements. Trois redémarrages.
+
+Après : tu changes un fichier YAML. Le système le relit au prochain appel. Zéro downtime. Zéro redéploiement. C'est crucial quand tu as plusieurs agents en production et que tu dois itérer rapidement sur leur comportement sans affecter le reste du système. Les mêmes trois variations ? Trois changements de fichier. Quelques secondes chacun.
+
+### Ce que j'ai découvert
+
+J'ai réalisé que mes agents ne devaient jamais avoir de code dur. Zéro. Tout devrait être une donnée—la persona, les instructions systèmes, les skills disponibles, les outils autorisés, même les paramètres comme la température ou les limites de contexte. C'est un changement de perspective radical.
+
+Quand tu fais ça, l'architecture devient soudain vivante. Tu peux expérimenter, itérer, corriger un agent sans toucher à l'infra. Le code devient un moteur générique qui lit et exécute une configuration. Ça veut dire que tu peux deployer une fois et itérer infiniment sur le comportement de ton système. Le couplage entre « ce que l'agent fait » et « comment l'infra fonctionne » disparaît.
+
+C'est un décalage subtle mais profond. Ça force aussi une discipline architecturale : si tu ne peux pas externaliser quelque chose en donnée, c'est peut-être un signal que ton abstraction n'est pas bonne. Ça t'oblige à penser plus clairement et à remettre en question tes assomptions.
+
+<Callout type="note">
+**Le décalage mental.** Avant, je pensais « le code c'est la source de vérité ». Maintenant c'est « les données c'est la source de vérité. Le code lit juste les données ». Cette distinction change comment tu structures tout—validation, versioning, rollback, audit.
+</Callout>
+
+C'est pourquoi c'est le pattern fondateur. Les quatre autres patterns découlent de celui-ci. Dès que tu acceptes que tes agents vivent dans des données, tu comprends comment les orchestrer en production, comment évaluer leurs décisions, comment les adapter en temps réel sans redéploiement.
