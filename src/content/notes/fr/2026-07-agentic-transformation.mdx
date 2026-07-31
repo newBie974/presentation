@@ -45,3 +45,27 @@ C'est un décalage subtle mais profond. Ça force aussi une discipline architect
 </Callout>
 
 C'est pourquoi c'est le pattern fondateur. Les quatre autres patterns découlent de celui-ci. Dès que tu acceptes que tes agents vivent dans des données, tu comprends comment les orchestrer en production, comment évaluer leurs décisions, comment les adapter en temps réel sans redéploiement.
+
+## Pattern 2: LIVE Orchestration via Middleware (The Heart)
+
+Maintenant que tu as externalisé la configuration, vient la question qui tue : comment une même configuration gère-t-elle des contextes différents ? Comment un agent s'adapte sans que tu aies à prévoir tous les cas à l'avance ?
+
+La réponse : le middleware n'injecte pas une configuration figée une fois et congelée. Il injecte différentes configurations à chaque tour, en fonction du contexte actuel. La persona change. Les skills disponibles changent. Les outils qu'on autorise changent. Le modèle change même, selon ce qu'on demande. Ce n'est pas un agent qui reste le même d'une invocation à l'autre. C'est un agent qui se reconfigure à chaque appel, en fonction de ce que le contexte exige.
+
+### Le problème qu'il résout
+
+Avant : tu définis ton agent une fois. "Voilà, tu as ces 8 skills, ce système prompt, ce modèle." À chaque exécution, tu passes simplement ta question. Mais ça veut dire que tu dois prévoir d'avance tous les contextes possibles. Tu dois imaginer les cas d'usage les plus exigeants, les outils qu'il faudra peut-être, les limites de tokens, et les backer dans le agent default. Résultat : tu crées un agent généraliste lourd, qui traîne des outils inutiles pour 90 % des requêtes, juste au cas où.
+
+Après : tu crées un middleware qui dit « regardez cette requête. C'est une demande d'analyse de données. Je vais donc charger les skills analytiques, pas les skills de communication. » Ou : « C'est une tâche simple. Je vais utiliser le modèle rapide, moins cher. » Ou encore : « C'est une tâche complexe qui demande du contexte. Je vais ajouter un étape de retrieval avant d'appeler l'agent, et lui injecter le résultat dans ses variables dynamiques. » Chaque décision est *programmée dans le middleware*, pas gravée dans l'agent.
+
+### Ce que j'ai découvert
+
+Le vrai défi n'était pas le modèle. Le modèle fait ce qu'on lui demande. Le vrai défi était l'orchestration—décider quoi injecter, quand, comment. Pendant longtemps, j'ai pensé que le travail se faisait « à l'intérieur » du modèle. Que la qualité sortait de ma capacité à formule un prompt parfait. Mais en réalité, ce qui fait ou casse un système, c'est ce qu'on *propose* au modèle avant qu'il pense.
+
+C'est une distinction qui change tout. Le middleware devient la zone où vivent les vraies décisions. C'est là qu'on demande : qui a besoin de quel contexte ? Quels outils sont pertinents ? Quel modèle est adapté au budget de cette requête ? Quel est le bon compromis entre qualité et coût ? Chaque réponse est une injection dynamique. Le modèle reçoit un package parfaitement taillé pour sa tâche, pas un fourre-tout générique.
+
+<Callout type="note">
+**Le décalage mental.** Je pensais que c'était le modèle qui décidait tout. En vrai, c'est le middleware qui décide quoi proposer au modèle. Le middleware, c'est où vit le vrai contrôle. Le modèle est un moteur générique—puissant, oui, mais c'est le middleware qui décide ses instructions, son contexte, ses outils, sa structure de pensée. Inverser cette perspective change radicalement comment tu architéctes les systèmes.
+</Callout>
+
+C'est pourquoi c'est « The Heart ». Pattern 1 pose les fondations. Mais Pattern 2 est le cœur battant du système. C'est là où il devient vraiment vivant, vraiment réactif. C'est ce qui fait la différence entre un agent statique et un système qui respire, qui s'adapte, qui prospère dans des contextes changeants sans redéploiement.
