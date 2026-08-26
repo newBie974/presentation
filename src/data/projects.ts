@@ -4,8 +4,22 @@ import carouboltLogo from "@/assets/caroubolt-logo.png";
 import voicejournalLogo from "@/assets/voicejournal-logo.png";
 import karibteckLogo from "@/assets/karibteck-logo.svg";
 import tibougLogo from "@/assets/tiboug-logo.png";
+import noanLogo from "@/assets/noan-logo.png";
 
 export const projects: Project[] = [
+  {
+    slug: "noan",
+    title: "Noan",
+    tagline: {
+      fr: "Pour que ce ne soit plus toujours le même qui y pense.",
+      en: "So it isn't always the same parent who has to remember.",
+    },
+    url: "https://newbie974.github.io/noan-web",
+    status: "coming-soon",
+    techStack: ["React Native", "Expo", "TypeScript", "Convex", "Gemini AI"],
+    platform: ["ios"],
+    logo: noanLogo,
+  },
   {
     slug: "tiboug",
     title: "Ti Boug",

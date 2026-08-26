@@ -171,7 +171,8 @@ const platformLabel = project.platform.map((p) => p.toUpperCase()).join(" · ");
     letter-spacing: 0.08em;
     color: var(--color-success);
   }
-  .status[data-status="building"] {
+  .status[data-status="building"],
+  .status[data-status="coming-soon"] {
     color: var(--color-building);
   }
   .status[data-status="archived"] {
