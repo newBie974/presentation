@@ -1,0 +1,168 @@
+---
+title: "I read my own telemetry: I don't write specs, I steer in flight"
+date: 2026-08-26
+locale: en
+translationKey: "2026-08-steering-in-flight"
+tags: ["ia", "claude", "process"]
+excerpt: "42 sessions, 913 messages, 155 commits. The report doesn't show what I thought I was doing — it shows what I actually do: hand over broad missions, let them run, and correct mid-flight instead of specifying upfront. Here's the loop, and what it costs."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+
+Claude Code ships a `/insights` command. It re-reads your local transcripts and hands back a report: what you worked on, which tools you called, where things ground to a halt, what you rejected. Not a survey — **telemetry**, pulled from what actually happened in the terminal.
+
+I ran it over my corpus from July 4th to August 26th, 2026: **42 analyzed sessions, 913 messages, 155 commits.** I expected a feature list. I got a mirror, and it wasn't showing what I thought I was doing.
+
+## The number that stopped me
+
+It isn't the commit count. It's the **median response time: 109 seconds.**
+
+Almost two minutes between the agent handing control back and me answering. Across sessions stacking up **3,169 Bash calls, 577 Chrome navigation calls, and 118 subagent launches**. In other words: I don't read what the agent does. I let it run, for a long time, and I judge the output.
+
+Two more numbers finish the portrait, and they look like a contradiction:
+
+- **40 sessions out of 42** end fully or mostly achieved.
+- **14 rejected actions**, **16 wrong approaches**, several explicit mid-flight interrupts.
+
+A high success rate alongside heavy correction. That's not a contradiction — it's the signature of a method. I don't succeed because I frame things well upfront. I succeed because **I correct fast during**.
+
+## The loop, in five beats
+
+Re-reading the sessions, the same shape keeps coming back. I'd never named it.
+
+### 1. A mission shaped by the outcome, not by the steps
+
+My opening prompts aren't specs. They're end states: "fix the `make dev` workflow so a fresh clone works", "resolve the conflicts on PRs #45 and #44, and review #44", "find out why assets are missing in prod".
+
+None of them says _how_. Each says **what the end looks like**. That's deliberate: describing the steps costs me more than correcting the ones that go sideways.
+
+### 2. Let it run
+
+3,169 Bash calls across 42 sessions is roughly 75 shell commands per session. I don't approve them one by one. The session works continuously — inspecting, building, testing, git — while I do something else. The report even detects **10 overlaps across 20 sessions**: I run several Claudes in parallel, and 9% of my messages land while another session is still working.
+
+### 3. Interrupt early, don't tolerate drift
+
+This is the beat that holds everything else up, and it's the one no tutorial mentions.
+
+When I only wanted a **SharePoint site ID**, the agent wandered off into verifying tenants and mailboxes. I cut it twice. When it launched a brainstorming skill I hadn't asked for, I cut it and redirected three tool calls in the same session. When it dropped my day rate from €700 to €650 in a commercial document, I reversed it in the next message. When a title-truncation fix drifted into making the sidebar two lines tall, I pulled it back to the tooltip alone.
+
+The point isn't that the agent drifts — it does. The point is that **cutting costs one sentence**. As long as interrupting is cheap, drift is an incident, not a failure.
+
+### 4. Runtime proof, not green tests
+
+577 Chrome navigation calls over two months: I don't accept "it should work". The feature gets exercised in the running app before the PR goes out.
+
+This isn't zeal. It caught things the tests couldn't see:
+
+- a `per_file` cap that was **silently dropping 8 matching files** from a search;
+- a `Dockerfile` that never copied `public/`, so assets went missing in production only;
+- a `DATA_ROOT` override that broke S3 mounts while breaking nothing locally.
+
+None of the three would have turned a test suite red. All three broke the app for a real user.
+
+### 5. Ship
+
+Sessions end with a PR opened, a branch merged, a push. Not with a proposal. That's what makes the previous four beats pay off: the loop produces shipped work, not discussed work.
+
+## Why it works: relative cost
+
+The spec-first method assumes correction is expensive, so you pay upfront in precision. My telemetry says the opposite **in my context**: on a project I know, with an agent handing control back every two minutes, **a correction costs one sentence and a spec costs an hour.**
+
+There's one detail in the report I particularly like: the agent asked me **105 questions** through its clarification tool. I'm not enduring the loop, I'm feeding it. A question asked mid-course beats a paragraph of spec written before you know what matters.
+
+<Callout tone="ok">
+  **The validity condition.** This bet only holds if verification is real.
+  Delegating broadly without runtime proof isn't steering in flight — it's
+  signing a blank check. The 577 browser calls aren't a side effect of the
+  method: they're its mandatory counterpart.
+</Callout>
+
+## What it costs
+
+An honest article pays its bill. The loop **shifts** the load: it removes specification work and adds attention work. Here's what that cost me over these two months.
+
+<Callout tone="warn">
+**A shallow diagnosis costs me a full round trip.** My number-one friction, with 16 wrong-approach events and 13 buggy-code ones. The pattern is always the same: the agent fixes the first visible symptom, not the cause.
+
+On the title truncation, it fixed the **CSS and the tooltip** when the value was being truncated to 50 characters **at persistence**. On a Docker fetch failure, the first hypothesis was `vfs-cache-mode` — the real cause was **poppler missing from the container**, found on the second pass. On an `AuiProvider` error, the diagnosis blamed component placement when the culprit was **duplicate `@assistant-ui` packages**.
+
+Each time, one extra full round trip. On the truncation one, I ended up saying the whole thing was taking too long.
+
+</Callout>
+
+Two more line items, more mechanical:
+
+- **Scope drift.** 14 rejected actions. The most expensive: design docs committed straight onto an existing MR branch, without pulling `main` or creating a dedicated branch. It had to rewind and re-branch. In another session, a process-group `kill` took my own Chrome client down with it.
+- **The environment.** 8 environment issues, 7 tool failures. The dev stack killed **four times** in a single validation session. Five verification subagents dying at once on an API session limit. An exhausted OpenRouter credit, an expired AWS session. Time that produces nothing, and that no spec would have prevented.
+
+And one line item I handle separately, because it belongs to trust rather than to the loop: an entire architecture spec built on a code citation the agent had invented. It deserves its own article — [I wrote it here](/en/writing/2026-08-fabricated-citation).
+
+## The three guardrails I take from it
+
+Reading the report is worthless if it stays a diagnosis. Here's what I do with it, in order of payoff.
+
+**1. A "root cause" gate before any edit.** My three worst time sinks are three confident fixes at the wrong layer. The counter fits in one prompt, reused verbatim:
+
+<FileBlock filename="the root-cause gate">
+
+```text
+Don't change anything yet. Diagnose: (1) the exact root cause, (2) the
+file:line or log line that proves it, (3) what you'd expect to see if you
+were WRONG, (4) the smallest possible fix. If your hypothesis doesn't
+explain every symptom, say so and keep digging.
+```
+
+</FileBlock>
+
+Point (3) is the one that actually works. Asking for a refutation condition costs one line and breaks surface-level confidence.
+
+**2. A hook that blocks what I keep catching by hand.** Rewinding a commit that landed on the wrong branch is purely mechanical work. A `PreToolUse` hook makes it impossible:
+
+<FileBlock filename=".claude/settings.json">
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "b=$(git branch --show-current); case \"$b\" in main|master) echo 'BLOCKED: protected branch, create a feature branch first' >&2; exit 2;; esac"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+</FileBlock>
+
+The hook runs on the harness side, not the model side. That's what makes it reliable: it can't be forgotten mid-session, unlike an instruction sitting in a `CLAUDE.md`.
+
+**3. "Done" defined upfront, not negotiated at the end.** I now state it in the opening prompt, before the agent budgets its work:
+
+<FileBlock filename="the verification contract">
+
+```text
+For this task, "done" means: tests pass, typecheck passes, AND you have
+driven the change in the live app via the browser and shown me the result.
+If you cannot verify end-to-end, say exactly what is blocking you rather
+than reporting success. Tell me now whether you can meet that bar.
+```
+
+</FileBlock>
+
+The last sentence is the one that counts. It forces the constraint to be accepted **before** the work, not discovered after.
+
+## The takeaway
+
+The loop I'd been repeating without naming it isn't a failure of rigor. It's a bet on relative cost: **correcting in flight costs me less than specifying upfront** — and that bet holds as long as verification is real and interrupting stays cheap.
+
+It has a hard limit, and the report shows it: it shifts the load onto my attention. An unwatched loop isn't autonomy, it's drift. The three guardrails above exist for exactly one reason — to make watching cheaper than what it prevents.
+
+What I mostly take away: I would never have found this pattern by thinking about it. I found it by reading what I had actually typed over two months. Running `/insights` once is worth it — on your corpus the shape will differ from mine, but it will be there.

@@ -1,0 +1,169 @@
+---
+title: "J'ai lu ma propre télémétrie : je ne spécifie pas, je pilote en vol"
+date: 2026-08-26
+locale: fr
+translationKey: "2026-08-steering-in-flight"
+tags: ["ia", "claude", "process"]
+excerpt: "42 sessions, 913 messages, 155 commits. Le rapport ne dit pas ce que je pensais faire — il dit ce que je fais vraiment : déléguer des missions larges, laisser courir, et corriger en vol plutôt que spécifier en amont. Voici la boucle, et ce qu'elle coûte."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+
+Claude Code a une commande `/insights`. Elle relit tes transcripts locaux et te rend un rapport : ce sur quoi tu as travaillé, quels outils tu as appelés, où ça a frotté, ce que tu as rejeté. Pas un sondage — de la **télémétrie**, tirée de ce qui s'est réellement passé dans le terminal.
+
+Je l'ai lancée sur mon corpus du 4 juillet au 26 août 2026 : **42 sessions analysées, 913 messages, 155 commits.** Je m'attendais à une liste de features. J'ai eu un miroir, et il ne montrait pas ce que je croyais faire.
+
+## Le chiffre qui m'a arrêté
+
+Ce n'est pas le nombre de commits. C'est le **temps de réponse médian : 109 secondes.**
+
+Presque deux minutes entre le moment où l'agent me rend la main et le moment où je réponds. Sur des sessions qui empilent **3 169 appels Bash, 577 appels de navigation Chrome et 118 lancements de subagents**. Autrement dit : je ne lis pas ce que l'agent fait. Je le laisse courir, longtemps, et je juge la sortie.
+
+Deux autres chiffres complètent le portrait, et ils se contredisent en apparence :
+
+- **40 sessions sur 42** finissent en objectif atteint ou majoritairement atteint.
+- **14 actions rejetées**, **16 mauvaises approches**, plusieurs interruptions explicites en plein vol.
+
+Un taux de réussite élevé avec beaucoup de corrections. Ce n'est pas une contradiction : c'est la signature d'une méthode. Je ne réussis pas parce que je cadre bien au départ. Je réussis parce que **je corrige vite pendant**.
+
+## La boucle, en cinq temps
+
+En relisant les sessions, la même forme revient. Je ne l'avais jamais nommée.
+
+### 1. Une mission façonnée par le résultat, pas par les étapes
+
+Mes prompts d'ouverture ne sont pas des specs. Ce sont des états finaux : « répare le workflow `make dev` pour qu'un clone frais marche », « résous les conflits sur les PR #45 et #44, et review la #44 », « trouve pourquoi les assets manquent en prod ».
+
+Aucun ne dit _comment_. Chacun dit **à quoi ressemble la fin**. C'est délibéré : décrire les étapes me coûte plus cher que de corriger celles qui partent de travers.
+
+### 2. Laisser courir
+
+3 169 appels Bash sur 42 sessions, c'est environ 75 commandes shell par session. Je ne les approuve pas une par une. La session travaille en continu — inspection, build, test, git — pendant que je fais autre chose. Le rapport détecte même **10 chevauchements sur 20 sessions** : je fais tourner plusieurs Claude en parallèle, 9 % de mes messages arrivent pendant qu'une autre session tourne.
+
+### 3. Interrompre tôt, pas tolérer la dérive
+
+C'est le temps qui fait tenir tout le reste, et c'est celui qui n'apparaît nulle part dans les tutos.
+
+Quand je voulais juste un **site ID SharePoint**, l'agent est parti vérifier des tenants et des boîtes mail. Je l'ai coupé deux fois. Quand il a lancé une skill de brainstorming que je n'avais pas demandée, j'ai coupé et redirigé trois appels d'outil dans la même session. Quand il a baissé mon TJM de 700 € à 650 € dans un document commercial, j'ai annulé dans le message suivant. Quand un correctif de troncature de titre a dérivé en passant la sidebar sur deux lignes, je l'ai ramené au tooltip seul.
+
+Le point n'est pas que l'agent dérive — il dérive. Le point est que **couper coûte une phrase**. Tant que l'interruption est bon marché, la dérive est un incident, pas un échec.
+
+### 4. La preuve au runtime, pas les tests verts
+
+577 appels de navigation Chrome sur deux mois : je n'accepte pas « ça devrait marcher ». La feature est exercée dans l'app qui tourne avant que la PR parte.
+
+Ce n'est pas du zèle. Ça a attrapé des choses que les tests ne voyaient pas :
+
+- un plafond `per_file` qui **supprimait silencieusement 8 fichiers** pourtant correspondants dans une recherche ;
+- un `Dockerfile` qui ne copiait pas `public/`, donc des assets absents en prod uniquement ;
+- une surcharge de `DATA_ROOT` qui cassait les montages S3 sans rien casser en local.
+
+Aucun de ces trois n'aurait fait rougir une suite de tests. Tous les trois cassaient l'app pour un vrai utilisateur.
+
+### 5. Livrer
+
+Les sessions se terminent par une PR ouverte, une branche mergée, un push. Pas par une proposition. C'est ce qui rend les quatre temps précédents rentables : la boucle produit du livré, pas du discuté.
+
+## Pourquoi ça marche : le coût relatif
+
+La méthode « spec d'abord » suppose que corriger coûte cher, donc qu'il faut payer d'avance en précision. Ma télémétrie dit l'inverse **dans mon contexte** : sur un projet que je connais, avec un agent qui me rend la main toutes les deux minutes, **une correction coûte une phrase et une spec coûte une heure.**
+
+Il y a un détail du rapport que j'aime particulièrement : l'agent m'a posé **105 questions** via son outil de clarification. Je ne subis pas la boucle, je l'alimente. Une question à mi-course vaut mieux qu'un paragraphe de spec écrit avant de savoir ce qui compte.
+
+<Callout tone="ok">
+  **La condition de validité.** Ce pari ne tient que si la vérification est
+  réelle. Déléguer large sans preuve au runtime, ce n'est pas piloter en vol —
+  c'est signer un chèque en blanc. Les 577 appels navigateur ne sont pas un
+  à-côté de la méthode : ils en sont la contrepartie obligatoire.
+</Callout>
+
+## Ce que ça coûte
+
+Un article honnête paie sa facture. La boucle **déplace** la charge : elle enlève du travail de spécification et ajoute du travail d'attention. Voici ce que ça m'a coûté sur ces deux mois.
+
+<Callout tone="warn">
+**Le diagnostic superficiel me coûte un tour complet.** Ma friction n°1, avec 16 occurrences de mauvaise approche et 13 de code buggé. Le schéma est toujours le même : l'agent répare le premier symptôme visible, pas la cause.
+
+Sur la troncature de titre, il a corrigé le **CSS et le tooltip** alors que la valeur était tronquée à 50 caractères **à la persistance**. Sur un échec de fetch dans Docker, la première hypothèse était `vfs-cache-mode` — la vraie cause était **poppler absent du conteneur**, trouvée au deuxième tour. Sur une erreur `AuiProvider`, le diagnostic a porté sur le placement du composant alors qu'il s'agissait de **paquets `@assistant-ui` dupliqués**.
+
+À chaque fois, un aller-retour complet en plus. Sur la troncature, j'ai fini par écrire que ça prenait trop de temps.
+
+</Callout>
+
+Deux autres postes, plus mécaniques :
+
+- **La dérive de scope.** 14 actions rejetées. La plus coûteuse : des documents de design commités directement sur une branche de MR existante, sans passer par `main` ni créer de branche dédiée. Il a fallu rembobiner et re-brancher. Dans une autre session, un `kill` de groupe de processus a emporté mon propre client Chrome.
+- **L'environnement.** 8 problèmes d'environnement, 7 échecs d'outil. La stack de dev tuée **quatre fois** dans une seule session de validation. Cinq subagents de vérification morts d'un coup sur une limite de session API. Un crédit OpenRouter épuisé, une session AWS expirée. Du temps qui ne produit rien et qu'aucune spec n'aurait évité.
+
+Et un poste que je traite à part, parce qu'il ne relève pas de la boucle mais de la confiance : une spec d'architecture entière bâtie sur une citation de code que l'agent avait inventée. Elle mérite son propre article — [je l'ai écrit ici](/notes/2026-08-citation-inventee).
+
+## Les trois garde-fous que j'en tire
+
+La lecture du rapport ne sert à rien si elle reste un constat. Voici ce que j'en fais, dans l'ordre de rentabilité.
+
+**1. Une porte « cause racine » avant toute édition.** Mes trois pires pertes de temps sont trois correctifs confiants au mauvais étage. La parade tient en un prompt, réutilisé tel quel :
+
+<FileBlock filename="la porte root-cause">
+
+```text
+Ne modifie rien pour l'instant. Diagnostique : (1) la cause racine exacte,
+(2) le file:line ou la ligne de log qui la prouve, (3) ce que tu verrais si
+tu avais tort, (4) le plus petit correctif possible. Si ton hypothèse
+n'explique pas tous les symptômes, dis-le et continue à creuser.
+```
+
+</FileBlock>
+
+Le point (3) est celui qui travaille vraiment. Demander une condition de réfutation coûte une ligne et casse la confiance de façade.
+
+**2. Un hook qui bloque ce que je rattrape à la main.** Rembobiner un commit parti sur la mauvaise branche est du travail purement mécanique. Un `PreToolUse` le rend impossible :
+
+<FileBlock filename=".claude/settings.json">
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "b=$(git branch --show-current); case \"$b\" in main|master) echo 'BLOQUÉ : branche protégée, crée une feature branch' >&2; exit 2;; esac"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+</FileBlock>
+
+Le hook s'exécute côté harness, pas côté modèle. C'est ce qui le rend fiable : il ne peut pas être oublié en cours de session, contrairement à une consigne dans un `CLAUDE.md`.
+
+**3. Le « fini » défini à l'avance, pas négocié à la fin.** Je le pose maintenant dans le prompt d'ouverture, avant que l'agent budgète son travail :
+
+<FileBlock filename="le contrat de vérification">
+
+```text
+Pour cette tâche, « fini » veut dire : tests verts, typecheck vert, ET tu as
+piloté le changement dans l'app en vrai via le navigateur et tu me montres
+le résultat. Si tu ne peux pas vérifier de bout en bout, dis exactement ce
+qui bloque au lieu d'annoncer un succès. Dis-moi maintenant si tu peux tenir
+cette barre.
+```
+
+</FileBlock>
+
+La dernière phrase est celle qui compte. Elle force la contrainte à être acceptée **avant** le travail, pas découverte après.
+
+## Le constat
+
+La boucle que je répétais sans la nommer n'est pas un défaut de rigueur. C'est un pari sur un coût relatif : **corriger en vol me coûte moins cher que spécifier en amont** — et ce pari est défendable tant que la vérification est réelle et que l'interruption reste bon marché.
+
+Il a une limite nette, et le rapport la montre : il transfère la charge sur mon attention. Une boucle non surveillée, ce n'est pas de l'autonomie, c'est de la dérive. Les trois garde-fous ci-dessus ne servent qu'à ça — rendre la surveillance moins coûteuse que ce qu'elle empêche.
+
+Ce que je retiens surtout : je n'aurais pas trouvé ce pattern en y réfléchissant. Je l'ai trouvé en lisant ce que j'avais réellement tapé pendant deux mois. Ça vaut le coup de lancer `/insights` une fois — sur ton corpus, la forme sera différente de la mienne, mais elle sera là.

@@ -1,0 +1,135 @@
+---
+title: "Claude a inventé utils/headers.py:72, et j'ai conçu une archi dessus"
+date: 2026-08-26
+locale: fr
+translationKey: "2026-08-fabricated-citation"
+tags: ["ia", "claude", "process"]
+excerpt: "Un design d'access-control entier reposait sur une ligne de code qui n'existe pas. Ce n'est pas le code qui était faux, c'était le sol. Voici pourquoi un numéro de ligne inventé est le mensonge le plus efficace d'un agent — et le garde-fou qui l'attrape."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+
+Claude Code a une commande `/insights` : elle relit tes transcripts locaux et te rend un rapport sur ta façon de travailler. J'ai lancé la mienne sur 42 sessions, du 4 juillet au 26 août 2026 — j'en ai tiré [un article sur ma boucle de travail](/notes/2026-08-piloter-en-vol).
+
+Mais le rapport finit sur une rubrique « le moment le plus drôle ». Le mien n'était pas drôle. Il disait, en substance : _Claude a construit un design complet d'access-control par-dessus un fait plateforme qu'il avait inventé — que les headers `x-_`atterrissent nativement dans`configurable`, à `utils/headers.py:72`. Le numéro de ligne inventé était le signe.\*
+
+Je m'en souvenais. Voici ce qui s'est passé, et pourquoi ça n'a rien d'anecdotique.
+
+## La scène
+
+Je voulais un design propre pour du contrôle d'accès par utilisateur : qui a le droit de voir quel namespace, quelle collection, et comment la permission voyage du frontend jusqu'au moteur de retrieval. J'ai demandé une spec repartant de zéro, ancrée dans le code existant.
+
+J'ai reçu exactement ça. Un document sérieux, structuré, avec des citations de code. Au centre du raisonnement, une affirmation sur le comportement de la plateforme : les headers `x-*` entrants sont propagés nativement dans l'objet `configurable` — donc pas besoin de plomberie pour transporter l'identité de l'utilisateur, il suffit de la lire à l'arrivée. Référence donnée : `utils/headers.py:72`.
+
+Toute l'architecture découlait de là. Le fichier n'existe pas.
+
+**14 artefacts de planification** avaient déjà été écrits par-dessus.
+
+## Pourquoi ça passe
+
+Ce qui me dérange dans cette histoire, ce n'est pas que le modèle se soit trompé. C'est **la forme** de l'erreur.
+
+Une affirmation vague — « je crois que la plateforme propage ces headers » — déclenche ma vigilance. Elle sonne comme une opinion, donc je vais vérifier. Un `file:line` ne déclenche rien du tout. Il a la forme d'une chose déjà vérifiée. C'est précisément ce qu'on demande à quelqu'un qui affirme : _montre-moi où_. Quand la réponse arrive au bon format, le cerveau coche la case et passe à la suite.
+
+<Callout tone="info">
+  **Un modèle qui invente un `file:line` ne ment pas plus qu'il ne complète.**
+  Après « d'après le code », la suite de tokens la plus probable est un chemin
+  plausible suivi d'un numéro de ligne plausible. Le format est appris, la
+  vérification ne l'est pas. Rien dans la génération ne distingue « j'ai lu ce
+  fichier » de « ce fichier aurait cette tête ». La précision n'est pas un
+  signal de fiabilité : c'est un signal de **fluence**.
+</Callout>
+
+Et c'est le mode d'échec qu'une revue de code normale ne peut pas voir. Le document était cohérent. Le design était bon _si_ la prémisse était vraie. Les tests, le typecheck, le lint — rien de tout ça n'a de prise : il n'y avait pas encore de code. Le problème n'était pas dans la construction, il était dans le **sol**.
+
+## Ce qui l'a attrapé
+
+Pas un outil. Une deuxième passe, que j'ai demandée explicitement — une review indépendante de ma propre spec, par un agent qui n'avait pas le contexte du raisonnement d'origine.
+
+Elle est revenue avec deux blockers, dont celui-là. Sans elle, l'implémentation partait sur une plomberie d'identité qui n'existait pas, et la découverte se serait faite bien plus tard, au moment le plus cher : en intégration, avec du code déjà écrit autour.
+
+Ce détail compte, et c'est le seul vrai enseignement de l'histoire : **l'agent auteur ne peut pas attraper cette erreur.** Il relit son document avec le raisonnement qui l'a produit encore en tête ; la prémisse fait partie de son contexte, pas de ce qu'il examine. Il faut un lecteur qui n'a jamais vu le raisonnement pour que la question « ce fichier existe-t-il ? » soit seulement posée.
+
+## Le garde-fou bon marché
+
+Avant de sortir la grosse artillerie, il y a un filtre qui coûte trois secondes. Un spec qui cite du code contient des chaînes de la forme `chemin:ligne`. On peut toutes les vérifier mécaniquement.
+
+<FileBlock filename="scripts/check-citations.sh">
+
+```bash
+#!/usr/bin/env bash
+# Vérifie que chaque file:line cité dans un document pointe vers quelque chose de réel.
+grep -oE '[A-Za-z0-9_./-]+\.(py|ts|tsx|js|astro):[0-9]+' "$1" | sort -u |
+while IFS=: read -r file line; do
+  if [ ! -f "$file" ]; then
+    echo "INVENTÉ   $file:$line — le fichier n'existe pas"
+  elif [ "$(wc -l < "$file")" -lt "$line" ]; then
+    echo "HORS SOL  $file:$line — le fichier ne fait que $(wc -l < "$file") lignes"
+  else
+    echo "OK        $file:$line — $(sed -n "${line}p" "$file" | cut -c1-60)"
+  fi
+done
+```
+
+</FileBlock>
+
+<FileBlock filename="console">
+
+```console
+$ ./scripts/check-citations.sh docs/specs/per-user-access.md
+INVENTÉ   utils/headers.py:72 — le fichier n'existe pas
+OK        src/lib/retrieval.ts:118 — export async function search(query: string, ns
+OK        src/lib/retrieval.ts:204 —   const filtered = hits.filter((hit) => allowe
+```
+
+</FileBlock>
+
+<Callout tone="warn">
+  **Ce script attrape le cas grossier, pas le cas subtil.** Il vérifie qu'un
+  fichier existe et qu'une ligne existe — pas que la ligne dit ce que la spec
+  prétend. Une citation qui pointe vers le bon fichier, la mauvaise ligne, et
+  une conclusion inversée passera « OK ». C'est un détecteur de fabrication, pas
+  un vérificateur de sens. Le sens, il faut quand même un lecteur pour le
+  vérifier.
+</Callout>
+
+## La règle, et la phase que je n'enlève plus
+
+Deux choses en sont sorties. La première tient en une ligne, et elle vit maintenant dans mon `CLAUDE.md` :
+
+<FileBlock filename="CLAUDE.md">
+
+```markdown
+## Vérité & vérification
+
+- N'affirme jamais un comportement de plateforme ou de librairie comme un fait
+  sans avoir ouvert le fichier. Cite le file:line ou la sortie de commande.
+- Si ce n'est pas vérifié, écris-le : « je crois, non vérifié ».
+```
+
+</FileBlock>
+
+La seconde est structurelle. Pour tout document de design qui sert de fondation à du code, je passe par trois phases séparées, et la troisième est un veto :
+
+1. **Recherche.** Un agent lit le code et rend une fiche de faits où **chaque affirmation porte un `file:line` qu'il a réellement ouvert**. Ce qu'il ne peut pas citer part dans une section `HYPOTHÈSES NON VÉRIFIÉES`, explicitement.
+2. **Rédaction.** La spec s'écrit à partir des faits cités uniquement. Quand elle s'appuie sur une hypothèse, elle la marque en ligne et dit **ce qui casse si l'hypothèse est fausse**.
+3. **Red team.** Un agent séparé, dont le seul travail est de **falsifier** la spec : rouvrir chaque fichier cité pour confirmer qu'il dit bien ce qui est prétendu, chercher l'hypothèse la plus probablement fausse, classer en BLOQUANT / MAJEUR / MINEUR.
+
+Le détail qui change tout : **je lis le verdict de la red team avant la spec.** Si je lis la spec d'abord, je l'adopte, et la review devient une formalité que j'expédie. Dans l'autre ordre, j'arrive sur le document en sachant déjà où il est fragile.
+
+<Callout tone="ok">
+  **Le coût est réel, et il est acceptable.** Cette phase supplémentaire allonge
+  la production d'une spec d'un tour. Face à ça : 14 artefacts écrits sur une
+  prémisse fausse, plus une implémentation qui serait partie derrière. Le calcul
+  n'est pas serré.
+</Callout>
+
+## Le constat
+
+On répète qu'il faut vérifier ce que produit un agent. La leçon de `utils/headers.py:72` est plus précise que ça : **il faut vérifier en priorité ce qui a l'air le plus vérifié.**
+
+Une sortie hésitante est déjà signalée comme fragile. Une sortie précise, sourcée, au bon format, ne l'est pas — et c'est exactement là que la fabrication se loge, parce que le format d'une citation s'apprend indépendamment du fait de citer. Un numéro de ligne n'est pas une preuve. C'est une adresse, et il faut y aller.
+
+Ma review adversariale n'est plus une option que je demande quand j'ai un doute. C'est une phase, elle est obligatoire, et je lis son verdict en premier.
