@@ -1,0 +1,133 @@
+---
+title: "Claude invented utils/headers.py:72, and I designed an architecture on top of it"
+date: 2026-08-26
+locale: en
+translationKey: "2026-08-fabricated-citation"
+tags: ["ia", "claude", "process"]
+excerpt: "An entire access-control design rested on a line of code that doesn't exist. The code wasn't wrong — the ground was. Here's why a fabricated line number is an agent's most effective lie, and the guardrail that catches it."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+
+Claude Code ships a `/insights` command: it re-reads your local transcripts and hands back a report on how you work. I ran mine over 42 sessions, from July 4th to August 26th, 2026 — and pulled [an article about my working loop](/en/writing/2026-08-steering-in-flight) out of it.
+
+But the report ends on a "funniest moment" section. Mine wasn't funny. It read, in substance: _Claude built a complete access-control design on top of a platform fact it had invented — that `x-_`headers land natively in`configurable`, at `utils/headers.py:72`. The made-up line number was the tell.\*
+
+I remembered it. Here's what happened, and why it isn't an anecdote.
+
+## The scene
+
+I wanted a clean design for per-user access control: who's allowed to see which namespace, which collection, and how the permission travels from the frontend down to the retrieval engine. I asked for a clean-slate spec, grounded in the existing code.
+
+That's exactly what I got. A serious, structured document, with code citations. At the heart of the reasoning sat a claim about platform behavior: incoming `x-*` headers are natively propagated into the `configurable` object — so no plumbing is needed to carry the user's identity, you just read it on arrival. Reference given: `utils/headers.py:72`.
+
+The whole architecture followed from that. The file doesn't exist.
+
+**14 planning artifacts** had already been written on top of it.
+
+## Why it gets through
+
+What bothers me about this story isn't that the model was wrong. It's the **shape** of the error.
+
+A vague claim — "I believe the platform propagates those headers" — trips my guard. It sounds like an opinion, so I go check. A `file:line` trips nothing at all. It has the shape of something already verified. It's precisely what you ask of anyone making a claim: _show me where_. When the answer arrives in the right format, the brain ticks the box and moves on.
+
+<Callout tone="info">
+  **A model that invents a `file:line` isn't lying any more than it is
+  completing.** After "according to the code", the most probable token sequence
+  is a plausible path followed by a plausible line number. The format is
+  learned; the verification is not. Nothing in generation separates "I read this
+  file" from "this file would look like this". Precision isn't a reliability
+  signal — it's a **fluency** signal.
+</Callout>
+
+And this is the failure mode a normal code review cannot see. The document was coherent. The design was good _if_ the premise held. Tests, typecheck, lint — none of them get a grip: there was no code yet. The problem wasn't in the construction, it was in the **ground**.
+
+## What caught it
+
+Not a tool. A second pass, which I asked for explicitly — an independent review of my own spec, by an agent that had none of the original reasoning in context.
+
+It came back with two blockers, that one included. Without it, the implementation would have started on identity plumbing that didn't exist, and the discovery would have happened much later, at the most expensive possible moment: at integration, with code already written around it.
+
+That detail matters, and it's the only real lesson here: **the authoring agent cannot catch this error.** It re-reads its document with the reasoning that produced it still in mind; the premise is part of its context, not part of what it's examining. It takes a reader who never saw the reasoning for the question "does this file exist?" to even be asked.
+
+## The cheap guardrail
+
+Before rolling out the heavy machinery, there's a filter that costs three seconds. A spec citing code contains strings shaped like `path:line`. Every one of them can be checked mechanically.
+
+<FileBlock filename="scripts/check-citations.sh">
+
+```bash
+#!/usr/bin/env bash
+# Check that every file:line cited in a document points at something real.
+grep -oE '[A-Za-z0-9_./-]+\.(py|ts|tsx|js|astro):[0-9]+' "$1" | sort -u |
+while IFS=: read -r file line; do
+  if [ ! -f "$file" ]; then
+    echo "FABRICATED  $file:$line — the file does not exist"
+  elif [ "$(wc -l < "$file")" -lt "$line" ]; then
+    echo "OUT OF RANGE $file:$line — the file is only $(wc -l < "$file") lines long"
+  else
+    echo "OK          $file:$line — $(sed -n "${line}p" "$file" | cut -c1-60)"
+  fi
+done
+```
+
+</FileBlock>
+
+<FileBlock filename="console">
+
+```console
+$ ./scripts/check-citations.sh docs/specs/per-user-access.md
+FABRICATED  utils/headers.py:72 — the file does not exist
+OK          src/lib/retrieval.ts:118 — export async function search(query: string, ns
+OK          src/lib/retrieval.ts:204 —   const filtered = hits.filter((hit) => allowe
+```
+
+</FileBlock>
+
+<Callout tone="warn">
+  **This script catches the crude case, not the subtle one.** It checks that a
+  file exists and that a line exists — not that the line says what the spec
+  claims. A citation pointing at the right file, the wrong line, and an inverted
+  conclusion will come back "OK". It's a fabrication detector, not a meaning
+  checker. Meaning still needs a reader.
+</Callout>
+
+## The rule, and the phase I no longer remove
+
+Two things came out of it. The first fits on one line, and now lives in my `CLAUDE.md`:
+
+<FileBlock filename="CLAUDE.md">
+
+```markdown
+## Truth & verification
+
+- Never state a platform or library behavior as fact without having opened
+  the file. Cite the file:line or the command output.
+- If it isn't verified, write it: "I believe, unverified".
+```
+
+</FileBlock>
+
+The second is structural. For any design document that grounds code, I run three separate phases, and the third one holds a veto:
+
+1. **Research.** An agent reads the code and returns a fact sheet where **every claim carries a `file:line` it actually opened**. Anything it can't cite goes into an explicit `UNVERIFIED ASSUMPTIONS` section.
+2. **Authoring.** The spec is written from cited facts only. Where it leans on an assumption, it marks it inline and states **what breaks if the assumption is false**.
+3. **Red team.** A separate agent whose only job is to **falsify** the spec: reopen every cited file to confirm it says what's claimed, hunt for the assumption most likely to be wrong, rank findings as BLOCKING / MAJOR / MINOR.
+
+The detail that changes everything: **I read the red team's verdict before the spec.** If I read the spec first, I adopt it, and the review becomes a formality I rush through. In the other order, I come to the document already knowing where it's fragile.
+
+<Callout tone="ok">
+  **The cost is real, and it's acceptable.** That extra phase adds one round
+  trip to producing a spec. Against it: 14 artifacts written on a false premise,
+  plus the implementation that would have followed. The math isn't close.
+</Callout>
+
+## The takeaway
+
+Everyone repeats that you should verify what an agent produces. The lesson of `utils/headers.py:72` is sharper than that: **verify what looks most verified, first.**
+
+A hesitant output is already flagged as fragile. A precise, sourced, correctly-formatted one isn't — and that's exactly where fabrication lodges itself, because the format of a citation is learned independently of the act of citing. A line number isn't proof. It's an address, and you have to go there.
+
+My adversarial review is no longer an option I request when something feels off. It's a phase, it's mandatory, and I read its verdict first.
