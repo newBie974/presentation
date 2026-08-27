@@ -4,6 +4,46 @@ import type { AppDetail } from "@/types";
 // own apps). Keyed by the project slug in projects.ts. FR sourced from the landings,
 // EN adapted idiomatically.
 export const appDetails: Record<string, AppDetail> = {
+  noan: {
+    oneLiner: {
+      fr: "L'organisation du foyer qui répartit la charge entre les deux parents, au lieu de la ranger.",
+      en: "Household organisation that redistributes the load between both parents instead of just filing it.",
+    },
+    whatItIs: {
+      fr: "App iPhone d'organisation familiale conçue contre la charge mentale. Tâches, courses, agenda et repas vivent au même endroit, en temps réel entre les deux téléphones. Sa mécanique propre est la covalidation : une tâche faite par l'un est covalidée par l'autre, ce qui rend le travail invisible visible — sans tableau de score ni reproche.",
+      en: "An iPhone household-organisation app built against mental load. Tasks, groceries, calendar and meals live in one place, in real time across both phones. Its own mechanic is co-validation: a task done by one parent gets co-validated by the other, making invisible work visible — with no scoreboard and no blame.",
+    },
+    keyFeatures: [
+      {
+        fr: "Covalidation : ce que l'un fait, l'autre le voit et le valide — l'accusé de réception du travail invisible",
+        en: "Co-validation: what one does, the other sees and acknowledges — a receipt for invisible work",
+      },
+      {
+        fr: "Équilibre de la semaine entre co-parents, affiché sans classement ni perdant",
+        en: "A weekly balance between co-parents, shown with no ranking and no loser",
+      },
+      {
+        fr: "Courses et tâches co-éditées en temps réel : l'un au supermarché, l'autre à la maison",
+        en: "Groceries and tasks co-edited live: one at the shop, the other at home",
+      },
+      {
+        fr: "Menus et recettes générés en respectant les restrictions alimentaires du foyer",
+        en: "Menus and recipes generated within the household's dietary restrictions",
+      },
+      {
+        fr: "Le mot du frigo : les petits mots qui n'entrent dans aucune liste",
+        en: "The fridge note: the small messages that fit into no list",
+      },
+    ],
+    targetUser: {
+      fr: "Deux parents qui veulent arrêter que ce soit toujours le même qui pense à tout",
+      en: "Two parents who want to stop it always being the same one who thinks of everything",
+    },
+    notable: {
+      fr: "Le foyer est l'unité de base, pas l'utilisateur : les co-parents ont strictement les mêmes droits et les enfants sont des profils, sans compte. Design « Serene Hearth » volontairement calme — une app anti-charge-mentale qui crie serait un contresens. V1 iPhone, gratuit au lancement, en préparation de review App Store.",
+      en: "The household is the unit, not the user: co-parents hold strictly equal rights and children are profiles, without accounts. A deliberately calm “Serene Hearth” design — an app against mental load that shouts would defeat its own purpose. iPhone V1, free at launch, currently heading into App Store review.",
+    },
+  },
   tiboug: {
     oneLiner: {
       fr: "Les fruits & légumes les moins chers du jour, près de chez toi — à La Réunion.",

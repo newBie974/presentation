@@ -1,0 +1,116 @@
+---
+title: "Ranger l'information ne redistribue rien"
+date: 2026-08-26
+locale: fr
+translationKey: "2026-08-noan-mental-load"
+tags: ["indie", "build", "mobile"]
+excerpt: "Les apps familiales rangent très bien l'information du foyer. Aucune ne change qui y pense. En construisant Noan, j'ai passé plus de temps sur ce déplacement-là que sur toutes les features réunies — et sur la ligne de crête qu'il impose : rendre le travail invisible visible sans tenir un tableau de score."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+Je construis **Noan**, une app d'organisation familiale. Tâches, courses, agenda, repas. Sur le papier, c'est une catégorie encombrée où tout a déjà été fait dix fois.
+
+Ce que j'ai mis le plus longtemps à formuler, c'est pourquoi une app de plus pouvait valoir le coup. La réponse tient en une phrase, et elle est devenue le manifeste de la landing :
+
+> La charge mentale, ce n'est pas la liste des choses à faire. C'est d'être seul·e à la tenir.
+
+Tout le produit découle de là. Voici ce que ça change, concrètement, et ce que ça coûte.
+
+## Le problème n'est pas l'information
+
+Prends un foyer avec deux parents et deux enfants. Demande à celui qui porte la charge ce qui lui pèse. Il ne va pas te dire « je ne sais pas quoi faire ». Il sait. C'est exactement le problème : **il est le seul à savoir**, en permanence, et cette veille ne s'arrête jamais — y compris quand il ne fait rien.
+
+Or c'est précisément ce que les apps familiales adressent : elles rangent l'information. Une liste partagée, un calendrier en couleurs, un module par domaine. Elles répondent à « qu'est-ce qu'il y a à faire ? », une question à laquelle le parent qui souffre a déjà la réponse.
+
+Il y a une objection qui revient dans les avis des apps du secteur, et je la trouve excellente :
+
+> Pourquoi pas juste des Notes Apple partagées ?
+
+Elle est imparable, et elle devrait terrifier tout le monde dans cette catégorie. Si ta valeur est « centraliser l'information du foyer », un document partagé le fait gratuitement et sans onboarding. Tu n'as pas de produit, tu as un classeur.
+
+Donc j'ai gardé un seul test, et je le passe à chaque feature que j'envisage :
+
+**Est-ce que ça change qui y pense ?**
+
+Un calendrier partagé : non. Une liste de courses en temps réel : un peu, sur la logistique. Un module de plus : non. La plupart des idées meurent à ce test, et c'est très bien — c'est le seul moyen de ne pas finir avec une app large et creuse.
+
+## La covalidation : un accusé de réception
+
+Le mécanisme qui passe le test, chez Noan, c'est la **covalidation**. Une tâche faite par l'un n'est pas simplement cochée : l'autre la voit et la **covalide**.
+
+<Callout tone="info">
+  En pratique, sur l'écran : « Prendre RDV pédiatre » → **Fait · Aymeric** →
+  **Covalidé ✓ Camille**. Deux gestes, deux personnes, une ligne.
+</Callout>
+
+Ça ressemble à une formalité. C'est en réalité la seule chose du produit qui adresse le vrai sujet, pour une raison simple : **le travail domestique invisible est invisible parce que personne ne le voit se faire.** Le RDV pédiatre pris entre deux réunions n'existe pour l'autre parent que si quelqu'un le lui raconte — et le raconter, c'est encore du travail, en plus teinté de reproche.
+
+La covalidation retire cette charge-là. Elle transforme « il faut que je pense à lui dire » en un événement que l'app livre toute seule. Ce n'est pas une validation hiérarchique : les deux parents ont strictement les mêmes droits, il n'y a pas d'admin, personne n'approuve le travail de personne. C'est un **accusé de réception**.
+
+Et ça se propage : dans l'agenda, chaque rendez-vous a un responsable, et ça aussi ça se covalide. Le point n'est pas de tracer qui fait quoi. Le point est que le travail existe pour deux personnes au lieu d'une.
+
+## La ligne de crête : visible, mais pas comptabilisé
+
+Voilà le choix de design le plus difficile du projet, et celui sur lequel j'ai le plus hésité.
+
+Dès que tu rends le travail visible, tu es à un pas de le **compter**. Et une app familiale qui compte devient une app familiale qui arbitre. Un tableau de score entre deux parents épuisés, ce n'est pas un outil d'organisation — c'est un générateur de disputes avec une jolie typo.
+
+Alors Noan affiche un équilibre hebdomadaire, mais je l'ai volontairement désarmé :
+
+- Pas de classement, pas de premier, pas de perdant.
+- Quand c'est équilibré, l'app le dit et s'arrête là : _« Bel équilibre cette semaine 👏 »_.
+- Aucun historique de culpabilité : pas de courbe de qui a fait moins le mois dernier.
+- Aucune notification qui pointe un déséquilibre. L'app ne prend jamais parti.
+
+<Callout tone="warn">
+  **Cette retenue est fragile et je le sais.** Un déséquilibre réel finira par
+  s'afficher, et l'app aura beau ne rien dire, deux chiffres côte à côte
+  suffisent à alimenter une dispute qui existait déjà. Je fais le pari que voir
+  ensemble vaut mieux que subir seul — mais c'est un pari, pas une certitude, et
+  c'est la première chose que je regarderai chez de vrais foyers.
+</Callout>
+
+## Ce que le foyer impose au produit
+
+Concevoir pour un foyer, ce n'est pas concevoir pour un utilisateur avec des invités. C'est un autre objet, et il impose des contraintes que je n'avais pas anticipées.
+
+- **Les co-parents sont strictement égaux.** Pas de propriétaire, pas d'admin, pas de rôle supérieur. Dès que tu introduis une hiérarchie, tu recrées le déséquilibre que l'app est censée réduire.
+- **Les enfants sont des profils, pas des comptes.** Une étiquette et une couleur, rattachées au foyer. Ils peuvent porter une tâche ou une couleur d'agenda, ils n'ont pas de login. C'est aussi ce qui garde l'app hors du terrain des données d'enfants.
+- **L'asynchrone est le cas normal, pas le cas limite.** L'un est au supermarché, l'autre à la maison, un enfant dans les bras. La liste de courses se co-édite en direct : ce que l'un coche disparaît chez l'autre, sans rafraîchir, sans se parler.
+- **Il faut une place pour ce qui n'entre dans aucune liste.** C'est « le mot du frigo » : _« Pense au doudou de Noah pour la crèche demain 💛 »_. Ce n'est ni une tâche, ni un événement, ni une course. C'est le genre d'information qui, sinon, reste dans une seule tête.
+
+Ça se paie en architecture, et lourdement : rien n'appartient à un utilisateur, tout appartient au foyer, et chaque accès doit le vérifier. Mais c'est un autre article — celui-ci parle du produit.
+
+## Le calme est une fonctionnalité
+
+Dernier parti pris, qui n'en a pas l'air : Noan est délibérément calme. Crème, sauge, beaucoup d'air, cartes blanches très arrondies, typo douce. Les priorités hautes ont une couleur terracotta, utilisée avec parcimonie.
+
+Ce n'est pas de la décoration. **Une app qui prétend réduire la charge mentale et qui te crie dessus est un contresens.** Les badges rouges, les compteurs de retard, les notifications d'encouragement : tout ça ajoute de la charge en prétendant en enlever. Chaque élément d'interface que j'ajoute est une chose de plus à traiter pour quelqu'un qui en traite déjà trop.
+
+## Le pari, et le risque
+
+Soyons honnête sur le terrain de jeu : le positionnement est déjà occupé. Un concurrent français sérieux, lancé fin 2025, revendique des milliers de foyers, une vingtaine de modules et un assistant IA qui agit dans l'app. La presse le décrit exactement comme « l'app qui veut tuer la charge mentale ».
+
+Je ne vais pas courir après sa largeur. Vingt-cinq modules contre un développeur seul, c'est perdu d'avance, et ce serait de toute façon la mauvaise course : la dispersion est l'inverse exact de ma promesse. Je parie sur la **profondeur d'un seul mécanisme** que personne n'a poussé à fond.
+
+<Callout tone="warn">
+  **Le risque, écrit noir sur blanc.** Si la covalidation n'est pas *ressentie*
+  comme un soulagement dans les deux premières semaines d'usage, alors Noan est
+  une liste de plus avec une bonne intention. Ce n'est pas une hypothèse
+  confortable, et aucune quantité de code ne la valide — seuls de vrais foyers
+  le peuvent.
+</Callout>
+
+## Où ça en est
+
+V1 iPhone uniquement — le mode tablette « frigo » viendra plus tard, et c'est pour lui que le multi-écran est déjà prévu dans l'archi. Gratuit au lancement. Compte de démonstration et foyer de test prêts pour les reviewers Apple, l'app part en review.
+
+Pas encore de lien App Store, donc. En attendant : [la landing de Noan](https://newbie974.github.io/noan-web) et [sa page ici](/apps/noan).
+
+## Le constat
+
+Je n'ai pas construit une app pour savoir ce qu'il y a à faire dans un foyer. Cette question a déjà dix réponses gratuites, dont un document partagé.
+
+J'en construis une pour que **ce ne soit plus toujours le même qui y pense** — et c'est un problème beaucoup plus petit, beaucoup plus précis, et beaucoup plus dur. Il se joue sur un mécanisme, pas sur un catalogue de modules. Et il ne se prouve pas dans un repo : il se prouve dans un vrai foyer, un dimanche soir, quand l'un voit que l'autre a déjà pensé au RDV pédiatre.

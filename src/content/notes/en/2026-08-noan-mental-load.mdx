@@ -1,0 +1,115 @@
+---
+title: "Filing information redistributes nothing"
+date: 2026-08-26
+locale: en
+translationKey: "2026-08-noan-mental-load"
+tags: ["indie", "build", "mobile"]
+excerpt: "Family apps are very good at filing a household's information. None of them change who has to think about it. Building Noan, I spent more time on that shift than on every feature combined — and on the tightrope it forces: making invisible work visible without keeping score."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+I'm building **Noan**, a household organisation app. Tasks, groceries, calendar, meals. On paper, a crowded category where everything has been done ten times over.
+
+The thing that took me longest to put into words was why one more app could be worth building. The answer fits in a single sentence, and it became the landing page's manifesto:
+
+> Mental load isn't the list of things to do. It's being the only one holding it.
+
+The whole product follows from that. Here's what it changes in practice, and what it costs.
+
+## The problem isn't the information
+
+Take a household with two parents and two kids. Ask the one carrying the load what actually weighs on them. They won't say "I don't know what needs doing". They know. That's exactly the problem: **they're the only one who knows**, permanently, and that watch never stops — including when they're doing nothing at all.
+
+And that's precisely what family apps address: they file information. A shared list, a colour-coded calendar, one module per domain. They answer "what needs doing?" — a question the suffering parent already has the answer to.
+
+There's an objection that keeps showing up in reviews of apps in this space, and I think it's excellent:
+
+> Why not just use a shared Apple Note?
+
+It's unanswerable, and it should terrify everyone in this category. If your value is "centralising the household's information", a shared document does it for free and with no onboarding. You don't have a product, you have a filing cabinet.
+
+So I kept a single test, and I run every feature I consider through it:
+
+**Does this change who has to think about it?**
+
+A shared calendar: no. A real-time grocery list: a little, on logistics. One more module: no. Most ideas die at that test, and that's the point — it's the only way not to end up with an app that's wide and hollow.
+
+## Co-validation: a receipt
+
+The mechanic that passes the test, in Noan, is **co-validation**. A task done by one parent isn't merely ticked off: the other sees it and **co-validates** it.
+
+<Callout tone="info">
+  On screen, in practice: "Book the paediatrician" → **Done · Aymeric** →
+  **Co-validated ✓ Camille**. Two gestures, two people, one line.
+</Callout>
+
+It looks like a formality. It's actually the only part of the product that addresses the real subject, for one simple reason: **invisible domestic work is invisible because nobody sees it happen.** The paediatrician appointment booked between two meetings only exists for the other parent if someone tells them — and telling them is more work, tinged with blame on top.
+
+Co-validation removes that load. It turns "I need to remember to tell them" into an event the app delivers on its own. It isn't a hierarchical approval: both parents hold strictly equal rights, there's no admin, nobody signs off anyone's work. It's a **receipt**.
+
+And it spreads: in the calendar, every event has an owner, and that gets co-validated too. The point isn't to track who does what. The point is that the work exists for two people instead of one.
+
+## The tightrope: visible, but not counted
+
+Here's the hardest design decision of the project, and the one I went back and forth on most.
+
+The moment you make work visible, you're one step from **counting** it. And a family app that counts becomes a family app that arbitrates. A scoreboard between two exhausted parents isn't an organisation tool — it's an argument generator with nice typography.
+
+So Noan shows a weekly balance, but I deliberately disarmed it:
+
+- No ranking, no first place, no loser.
+- When it's balanced, the app says so and stops there: _"Nicely balanced this week 👏"_.
+- No guilt history: no chart of who did less last month.
+- No notification pointing at an imbalance. The app never takes sides.
+
+<Callout tone="warn">
+  **This restraint is fragile and I know it.** A real imbalance will eventually
+  show up, and however quiet the app stays, two numbers side by side are enough
+  to feed an argument that already existed. My bet is that seeing it together
+  beats carrying it alone — but it is a bet, not a certainty, and it's the first
+  thing I'll be watching in real households.
+</Callout>
+
+## What a household forces on the product
+
+Designing for a household isn't designing for a user with guests. It's a different object, and it imposes constraints I hadn't anticipated.
+
+- **Co-parents are strictly equal.** No owner, no admin, no senior role. The moment you introduce a hierarchy, you recreate the very imbalance the app is meant to reduce.
+- **Children are profiles, not accounts.** A label and a colour, attached to the household. They can carry a task or a calendar colour; they have no login. It also keeps the app off the terrain of children's data.
+- **Async is the normal case, not the edge case.** One is at the supermarket, the other at home with a kid on their hip. The grocery list is co-edited live: what one ticks off disappears on the other's phone, with no refresh and no phone call.
+- **There has to be a place for what fits in no list.** That's the "fridge note": _"Don't forget Noah's comfort blanket for nursery tomorrow 💛"_. It isn't a task, an event or a grocery item. It's the kind of thing that otherwise stays in one person's head.
+
+That's paid for in architecture, heavily: nothing belongs to a user, everything belongs to the household, and every access has to verify it. But that's another article — this one is about the product.
+
+## Calm is a feature
+
+One last choice that doesn't look like one: Noan is deliberately calm. Cream, sage, plenty of air, very rounded white cards, a soft typeface. High priorities get a terracotta colour, used sparingly.
+
+This isn't decoration. **An app claiming to reduce mental load while shouting at you defeats its own purpose.** Red badges, overdue counters, encouragement notifications: all of it adds load while claiming to remove some. Every interface element I add is one more thing to process for someone already processing too much.
+
+## The bet, and the risk
+
+Let's be honest about the playing field: the positioning is already taken. A serious French competitor, launched in late 2025, claims thousands of households, some twenty-five modules and an AI assistant that acts inside the app. The press describes it in exactly those terms — the app that wants to kill mental load.
+
+I'm not going to chase its breadth. Twenty-five modules against one solo developer is lost before it starts, and it would be the wrong race anyway: sprawl is the exact opposite of my promise. I'm betting on the **depth of a single mechanic** nobody has pushed all the way.
+
+<Callout tone="warn">
+  **The risk, stated plainly.** If co-validation isn't *felt* as relief within
+  the first two weeks of use, then Noan is one more list with good intentions.
+  That's not a comfortable hypothesis, and no amount of code validates it — only
+  real households can.
+</Callout>
+
+## Where it stands
+
+iPhone-only V1 — the "fridge" tablet mode comes later, and it's the reason multi-screen is already accounted for in the architecture. Free at launch. Demo account and test household ready for Apple's reviewers; the app is heading into review.
+
+So no App Store link yet. In the meantime: [Noan's landing page](https://newbie974.github.io/noan-web) and [its page here](/en/apps/noan).
+
+## The takeaway
+
+I didn't build an app to know what needs doing in a household. That question already has ten free answers, one of them being a shared document.
+
+I'm building one so that **it isn't always the same person who has to think about it** — a much smaller, much more precise, and much harder problem. It's won on a mechanic, not on a catalogue of modules. And it isn't proven in a repo: it's proven in a real household, on a Sunday evening, when one parent sees the other already thought about the paediatrician.
