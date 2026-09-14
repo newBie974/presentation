@@ -14,10 +14,12 @@ export const projects: Project[] = [
       fr: "Pour que ce ne soit plus toujours le même qui y pense.",
       en: "So it isn't always the same parent who has to remember.",
     },
-    url: "https://newbie974.github.io/noan-web",
-    status: "coming-soon",
+    url: "https://noan-app.com",
+    status: "live",
     techStack: ["React Native", "Expo", "TypeScript", "Convex", "Gemini AI"],
     platform: ["ios"],
+    appStoreUrl:
+      "https://apps.apple.com/fr/app/noan-lorganisation-famille/id6793809327",
     logo: noanLogo,
   },
   {

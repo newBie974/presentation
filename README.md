@@ -1,10 +1,12 @@
 # aymeric.dijoux.dev
 
-The personal site of **Aymeric Dijoux** — indie builder, software engineer, and consumer apps founder.
+The personal site of **Aymeric Dijoux** — agentic developer and indie builder, based in Réunion Island and Paris.
 
 Live at **[aymeric.dijoux.dev](https://aymeric.dijoux.dev)**.
 
-> Indie builder first, freelance second. A hub for the apps I build (VoiceJournal, Caroubolt, Tookta), my path so far, my notes on the craft, and a door for the right kind of work together.
+> I ship production apps with agents, and I write down what actually holds. A hub for the apps I build (Noan, Ti Boug, VoiceJournal, Tookta), my path so far, my notes on the craft, and a door for the right kind of work together.
+
+The notes are the point: articles in French, mirrored in English, on agentic development, spec-driven work, and the traps that only surface once something is live. The method behind them is public too — [skills](https://github.com/newBie974/skills) and [claude-md-templates](https://github.com/newBie974/claude-md-templates).
 
 ---
 
@@ -141,6 +143,7 @@ If you're forking this for your own portfolio, the code is yours to take. The Mi
 ## Links
 
 - Live: **[aymeric.dijoux.dev](https://aymeric.dijoux.dev)**
-- Apps: [VoiceJournal](https://aivoicejournal.app) · [Caroubolt](https://caroubolt.com) · [Tookta](https://tookta.fr)
+- Apps: [Noan](https://noan-app.com) · [Ti Boug](https://tiboug.re) · [VoiceJournal](https://aivoicejournal.app) · [Tookta](https://tookta.fr) · [KaribTeck](https://karibteck.com)
+- Agentic artifacts: [skills](https://github.com/newBie974/skills) · [claude-md-templates](https://github.com/newBie974/claude-md-templates)
 - LinkedIn: [linkedin.com/in/aymeric-dijoux](https://www.linkedin.com/in/aymeric-dijoux/)
 - GitHub: [github.com/newBie974](https://github.com/newBie974)
