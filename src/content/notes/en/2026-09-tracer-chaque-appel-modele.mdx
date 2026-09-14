@@ -1,0 +1,90 @@
+---
+title: "Tracing every model call: the rule only holds if a test holds it"
+date: 2026-09-21
+locale: en
+translationKey: "2026-09-trace-every-model-call"
+tags: ["ia", "process", "tools"]
+excerpt: "\"We trace everything\" is an intention, not a guarantee: one new code path is enough to open a hole nobody sees. What holds the rule is a test that freezes the inventory of call sites — plus two traps that cost me time."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+
+On an agentic system, "what does this cost?" has no answer unless you trace. Neither does "why did that turn take forty seconds", nor "what prompt did the model actually receive". Everyone knows this, so the rule gets written: *every model call is traced*.
+
+Then the project grows. Someone adds a code path — a background job, a tool script in the stack's other language, a batch mode. That path calls a model, and nobody attaches a handler. Not out of carelessness: **the rule lived in a document, and documents don't execute.**
+
+On a recent project, the rule held. Here's what held it, and the two traps that cost me time.
+
+## What holds the rule: a test that freezes the inventory
+
+The idea is simple and slightly brutal. A test enumerates **every place in the code that calls a model** and compares that inventory against a frozen list. A new call site fails the suite.
+
+<Callout tone="info">
+  The subtlety is in how you get back to green. The right way is to **wire the trace**. Adding the new path to the list and moving on turns the guardrail into paperwork — the test becomes a place to register your exceptions.
+</Callout>
+
+It sounds minor, but it's what turns an intention into a property. You no longer depend on a reviewer noticing, inside a three-hundred-line diff, that a model call appeared without instrumentation. The test notices instead, every time, without getting tired.
+
+The pattern transfers well beyond AI: any time a rule says "everywhere", ask **who checks the "everywhere"**. If the answer is "us, at review time", the rule is already false somewhere.
+
+## Trap 1 — attaching twice doesn't widen coverage, it duplicates
+
+My first instinct, when unsure about coverage, was to attach one more handler. Just to be safe.
+
+That's a mistake, and a silent one. A graph that already carries a handler and receives a second doesn't become "better traced": **every generation is recorded twice**. Costs double on the dashboard, latencies become unreadable, and you spend a while wondering why consumption exploded.
+
+The phrasing that kept me straight: *traced means wired, not hoped for*. The handler must arrive through **the entry point that owns the call**, attached **once**, where that entry point builds its graph. Not two places doing it "just in case".
+
+## Trap 2 — only one global provider can claim the process
+
+The second trap is nastier, because it only shows at runtime.
+
+Tracing systems built on OpenTelemetry often claim the **process-global provider**. If two systems do it — application tracing on one side, LLM observability on the other — they don't coexist: the second one arrives and the other goes quiet.
+
+In practice: a process runs one **or** the other, never both. That isn't a bug to fix, it's a constraint to document. The cost of not knowing it is an operator enabling one option and losing half their traces with no error shown anywhere.
+
+<Callout tone="warn">
+  Anything that installs itself as a process-wide singleton deserves the same question: is something else already claiming it? The symptoms are always the same — it used to work, someone enabled an option elsewhere, and some data quietly vanished.
+</Callout>
+
+## The on/off contract: tracing never breaks a turn
+
+An underrated point: **observability must never be the reason something functional fails.**
+
+Missing keys, kill switch on, an invalid config value, the tracing service unreachable — each of those must produce **an untraced turn, and nothing else**. No exception, no degradation, no lost turn.
+
+The corollary matters just as much: when it happens, it is **not a defect to investigate**. It's the subsystem working as designed. Without that clause written down, every untraced run triggers an inquiry — and after three false alarms, someone disables the guardrail for peace of mind.
+
+<FileBlock filename="tracing.py">
+```python
+def tracing_handler() -> Handler | None:
+    """Return None rather than raise: an untraced turn is still a successful turn."""
+    if not settings.tracing_enabled:
+        return None
+    if not settings.tracing_keys_present:
+        return None
+    return build_handler(settings)
+```
+</FileBlock>
+
+## The operational detail: a port for metrics
+
+One last point, trivial but expensive to forget. If a service is publicly exposed behind a reverse proxy, serving `/metrics` on the **same port** as the application makes it **publicly reachable**. Traffic volumes, internal route names, sometimes tenant identifiers — all of it ends up online.
+
+The fix is one line of configuration: serve metrics on a **second, internal port** the proxy doesn't route. The collector reaches it from the internal network, nobody else does.
+
+## What it costs
+
+**Wiring work at every new entry point.** That's the price, and it's exactly what the test makes visible instead of letting it slip.
+
+**A composition discipline.** You need to know who owns the call, and therefore who attaches the handler. On a codebase where three different entry points build graphs, that question needs a written answer — otherwise you're back to double attachment.
+
+**Traces someone actually reads.** Instrumentation nobody looks at is cost with no return. The real payoff comes the day a precise question lands — "why did that turn cost ten times the usual?" — and the answer is three clicks away instead of a hypothesis.
+
+## What I take from it
+
+The starting rule — *every model call is traced* — is easy to write and easy to assume settled. What makes it real fits in one sentence: **something automatic has to fail when it's violated.**
+
+The rest — the two traps and the on/off contract — are the conditions that make the guardrail liveable. A guardrail that produces false alarms or breaks production doesn't survive three months. Someone will eventually switch it off, and they'll be right to.

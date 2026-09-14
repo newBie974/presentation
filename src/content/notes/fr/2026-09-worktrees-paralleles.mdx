@@ -10,6 +10,7 @@ draft: false
 
 import Callout from "@/components/prose/Callout.astro";
 import FileBlock from "@/components/prose/FileBlock.astro";
+import WorktreeOverlay from "@/components/prose/WorktreeOverlay.astro";
 
 Depuis que je délègue du volume à des agents, j'ai un problème que je n'avais pas avant : **je n'ai jamais une seule branche en vol.** Il y en a deux ou trois. Une où un agent finit une feature, une où je débugue, une où je teste une idée à jeter.
 
@@ -47,6 +48,8 @@ La réponse est un **overlay partagé** : ces chemins sont stockés **une fois**
 
 <Callout tone="info">
   Le « même chemin relatif » est le détail qui fait tout marcher. Le code ne sait pas qu'il est dans un worktree : il ouvre `data/corpus/` comme d'habitude. Aucune variable d'environnement à ajouter, aucune condition dans le code. C'est la seule version de ce pattern qui ne fuit pas dans l'application.
+<WorktreeOverlay lang="fr" />
+
 </Callout>
 
 Un script d'init pose les liens, et une commande de statut permet de vérifier ce qui est lié, local, ou cassé :

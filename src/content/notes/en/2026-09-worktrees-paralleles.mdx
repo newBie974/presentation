@@ -10,6 +10,7 @@ draft: false
 
 import Callout from "@/components/prose/Callout.astro";
 import FileBlock from "@/components/prose/FileBlock.astro";
+import WorktreeOverlay from "@/components/prose/WorktreeOverlay.astro";
 
 Since I started handing volume work to agents, I have a problem I didn't have before: **I never have just one branch in flight.** There are two or three. One where an agent is finishing a feature, one where I'm debugging, one where I'm testing an idea I'll throw away.
 
@@ -47,6 +48,8 @@ The answer is a **shared overlay**: those paths are stored **once** at the works
 
 <Callout tone="info">
   "Identical relative path" is the detail that makes the whole thing work. The code has no idea it's in a worktree: it opens `data/corpus/` exactly as before. No environment variable to add, no branch in the code. It's the only version of this pattern that doesn't leak into the application.
+<WorktreeOverlay lang="en" />
+
 </Callout>
 
 An init script lays the links down, and a status command shows what's linked, local, or broken:

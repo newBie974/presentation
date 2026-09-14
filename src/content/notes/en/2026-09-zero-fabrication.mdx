@@ -1,0 +1,97 @@
+---
+title: "Zero fabrication: when anti-hallucination becomes a product constraint"
+date: 2026-09-17
+locale: en
+translationKey: "2026-09-zero-fabrication"
+tags: ["ia", "process", "build"]
+excerpt: "\"The agent hallucinates\" is a bad diagnosis: it sends you looking at the model. On an agent extracting data from documents, I watched the guarantee move — from model quality to three engineering constraints. One of them surprised me."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+import ContextIsolation from "@/components/prose/ContextIsolation.astro";
+
+When someone says "the agent hallucinates", they almost always look in the wrong place: a better model, a firmer prompt, a lower temperature. That improves the statistics. It gives you no guarantee.
+
+On a recent project the requirement was phrased differently, and that changes everything: **if the information isn't in the files, the agent must say so — never invent a number, a date or a name.** That's not a model metric, it's a product metric. And a product metric is held up by engineering, not by hope.
+
+Here are the three constraints that hold it. The second is the one I didn't see coming.
+
+## 1. No value without its evidence
+
+The base rule: the agent doesn't return a value, it returns a value **with its justification attached**. Every extracted field requires three things:
+
+- a **confidence** between 0 and 1,
+- a **reason** — why it thinks this is the answer,
+- **evidence**: the **exact quote** from the source document.
+
+The important part isn't collecting that metadata, it's what you do with it. A required field with no evidence, or zero confidence, **isn't flagged: it's dropped**. The whole record is discarded.
+
+<Callout tone="info">
+  The gap between "flag" and "drop" is the whole gap between a guarantee and an intention. A doubtful field carrying a warning ends up in a spreadsheet, then in a decision. A dropped field forces someone to go and look. That's uncomfortable, and that's the point.
+</Callout>
+
+Demanding the exact quote has a side effect I hadn't anticipated: it makes invention **expensive**. Inventing a value is easy; inventing a value *and* the verbatim quote supporting it, inside a document the system can re-read, is much less so. You don't remove the risk, you make it checkable.
+
+## 2. One document per context — and why evidence isn't enough
+
+This is the constraint I wasn't expecting, and the most interesting one.
+
+The instinct, when processing a corpus, is to load everything into one context: the agent sees the whole set, cross-references, corroborates. Except that opens a hole the evidence mechanism **does not catch**.
+
+If ten documents share the context, the agent can take a value from document B and attribute it to document A. And look at what happens: the evidence is **genuine**. The quote really exists, word for word. Confidence is high, legitimately. The check goes green.
+
+<Callout tone="warn">
+  An evidence check validates that the quote exists. It does not validate that it came from the right file. That's an error no classic grounding check catches, because nothing is false — it's just attributed to the wrong document.
+</Callout>
+
+<ContextIsolation lang="en" />
+
+The fix isn't another check, it's a structural constraint: **one document per invocation**. Cross-contamination becomes impossible because the other documents simply aren't there.
+
+A secondary benefit that matters at scale: context and cost per call become **bounded**, whatever the corpus size. Ten documents or ten thousand, each invocation costs the same. You trade a quality problem for a throughput problem — and throughput parallelises.
+
+## 3. Refusal is an output, not an error
+
+The third constraint is almost cultural. In most systems, "I didn't find it" surfaces as a failure: exception, error log, ticket. The result is implicit pressure to return *something*.
+
+That has to be inverted. Absence must be a **first-class result**, with the same standing as a found value. As long as finding nothing looks like a malfunction, the system — model and humans alike — will find a way to fill the cell.
+
+## What has to sit around it
+
+These constraints don't survive without some boring but decisive execution machinery.
+
+**Idempotent writes.** Each document produces a result file with a deterministic name, overwritten on every pass. Re-running an interrupted job duplicates nothing.
+
+**Explicitly scoped merges.** At the end you assemble **the results of the documents you processed** — not whatever is lying around in the directory. It's subtle and it bites hard: if two jobs run at once and each sweeps up everything it finds, they eat each other's work.
+
+**Publish what you produced, by name.** You publish the exact list of files this run generated, never the folder's contents. A glob eventually picks up leftovers from a previous run — and by the time you notice, the data has already shipped.
+
+<FileBlock filename="pipeline.py">
+```python
+# Each document writes its own part, deterministically named → replayable
+part = parts_dir / f"{template.slug}__{document.slug}.json"
+part.write_text(json.dumps(record))
+
+# The merge takes ONLY the documents this run handled
+merged = merge_parts(template, documents=batch)
+
+# Publish exactly those paths — never a glob of the directory
+publish(sink, paths=merged)
+```
+</FileBlock>
+
+## What it costs
+
+**More calls.** One document per invocation means as many calls as documents. Total cost goes up; that's the price of the guarantee. In exchange it's **predictable**, which a context growing with the corpus never is.
+
+**You lose data, on purpose.** Dropping fields without evidence means returning an incomplete result where a laxer system would have returned a full table. You have to own that conversation: preferring a visible hole to a plausible, wrong number. It's a product decision, not a technical setting — and if it isn't taken explicitly up front, it will be reversed at the first incomplete report.
+
+**It doesn't cover everything.** These three constraints address fabrication and cross-contamination. They don't address a wrong source document, or a misread of an ambiguous table. The guarantee is "what I say came from there", not "what I say is true".
+
+## What I take from it
+
+The useful shift is this one: stop asking the model to be reliable, and design a system where unfaithfulness is **structurally hard**. A value without evidence doesn't get through. A lone document can't contaminate another. Finding nothing is a valid answer.
+
+None of those three constraints depends on which model you run. That's exactly what makes them interesting: they'll survive your next model change, which your prompt probably won't.

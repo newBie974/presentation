@@ -10,6 +10,7 @@ draft: false
 
 import Callout from "@/components/prose/Callout.astro";
 import FileBlock from "@/components/prose/FileBlock.astro";
+import LifetimeBands from "@/components/prose/LifetimeBands.astro";
 
 On a recent project I spent half an hour convinced I had a bug. I was editing an agent's system prompt, re-running my request, and the behaviour didn't shift an inch. I cleared caches, re-read my file, checked I was editing the right one.
 
@@ -28,6 +29,8 @@ This is the mental model that unblocked me. In an agent, every piece of configur
 | **Per turn** | on every model call | ✅ yes |
 
 The middle row is the trap. A "per thread" value **looks** live: you open a new conversation, your change shows up, you conclude everything is fine. Then you go back to an existing conversation and the old behaviour is still there. You go hunting for a cache bug when what you're looking at is persisted state.
+
+<LifetimeBands lang="en" />
 
 <Callout tone="info">
   The root of it: in these frameworks, isolation between conversations comes from a checkpointer persisting state per `thread_id` — not from rebuilding the agent. Whatever gets written into a thread's state stays there for the life of that thread.

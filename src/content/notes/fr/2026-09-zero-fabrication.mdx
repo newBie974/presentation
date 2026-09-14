@@ -1,0 +1,97 @@
+---
+title: "Zéro fabrication : quand l'anti-hallucination devient une contrainte produit"
+date: 2026-09-17
+locale: fr
+translationKey: "2026-09-zero-fabrication"
+tags: ["ia", "process", "build"]
+excerpt: "« L'agent hallucine » est un mauvais diagnostic : ça cherche la solution du côté du modèle. Sur un agent qui extrait des données de documents, j'ai vu la garantie se déplacer — de la qualité du modèle vers trois contraintes d'ingénierie. Dont une qui m'a surpris."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+import ContextIsolation from "@/components/prose/ContextIsolation.astro";
+
+Quand quelqu'un dit « l'agent hallucine », il cherche presque toujours la réponse au mauvais endroit : un meilleur modèle, un prompt plus ferme, une température plus basse. Ça améliore les statistiques. Ça ne donne aucune garantie.
+
+Sur un projet récent, l'exigence était formulée autrement, et ça change tout : **si l'information n'est pas dans les fichiers, l'agent doit le dire — jamais inventer un chiffre, une date ou un nom.** Ce n'est pas une métrique de modèle, c'est une métrique produit. Et une métrique produit, ça se tient par de l'ingénierie, pas par de l'espoir.
+
+Voici les trois contraintes qui la tiennent. La deuxième est celle que je n'avais pas vue venir.
+
+## 1. Aucune valeur sans sa preuve
+
+La règle de base : l'agent ne rend pas une valeur, il rend une valeur **accompagnée de sa justification**. Pour chaque champ extrait, trois choses sont exigées :
+
+- un **niveau de confiance** entre 0 et 1,
+- une **raison** — pourquoi il pense que c'est ça,
+- une **preuve** : la **citation exacte** du document source.
+
+Le point important n'est pas de collecter ces métadonnées, c'est ce qu'on en fait. Un champ obligatoire sans preuve, ou avec une confiance nulle, **n'est pas signalé : il est supprimé**. L'enregistrement entier est écarté.
+
+<Callout tone="info">
+  La différence entre « signaler » et « supprimer » est toute la différence entre une garantie et une intention. Un champ douteux marqué d'un avertissement finit dans un tableau, puis dans une décision. Un champ supprimé force quelqu'un à aller voir. C'est inconfortable, et c'est le but.
+</Callout>
+
+Demander la citation exacte a un effet secondaire que je ne soupçonnais pas : ça rend l'invention **coûteuse**. Inventer une valeur est facile ; inventer une valeur *et* la citation textuelle qui la soutient, dans un document que le système peut relire, l'est beaucoup moins. On ne supprime pas le risque, on le rend vérifiable.
+
+## 2. Un document par contexte — et pourquoi la preuve ne suffit pas
+
+C'est la contrainte que je n'attendais pas, et c'est la plus intéressante.
+
+Le réflexe, quand on traite un corpus, c'est de tout charger dans un même contexte : l'agent voit l'ensemble, il croise, il recoupe. Sauf que ça ouvre une faille que le mécanisme de preuve **ne détecte pas**.
+
+Si dix documents cohabitent dans le contexte, l'agent peut prendre une valeur dans le document B et l'attribuer au document A. Et là, regardez ce qui se passe : la preuve est **authentique**. La citation existe vraiment, mot pour mot. La confiance est élevée, légitimement. Le contrôle passe au vert.
+
+<Callout tone="warn">
+  Une vérification de preuve valide que la citation existe. Elle ne valide pas qu'elle vient du bon fichier. C'est une erreur qu'aucun contrôle de grounding classique n'attrape, parce que rien n'est faux — c'est juste attribué au mauvais document.
+</Callout>
+
+<ContextIsolation lang="fr" />
+
+Le correctif n'est pas un contrôle supplémentaire, c'est une contrainte structurelle : **un seul document par invocation**. La contamination croisée devient impossible parce que les autres documents ne sont pas là.
+
+Bénéfice secondaire, qui compte à l'échelle : le contexte et le coût par appel deviennent **bornés**, quelle que soit la taille du corpus. Dix documents ou dix mille, chaque invocation coûte la même chose. On échange un problème de qualité contre un problème de débit — et le débit, ça se parallélise.
+
+## 3. Le refus est une sortie, pas une erreur
+
+La troisième contrainte est presque culturelle. Dans la plupart des systèmes, « je n'ai pas trouvé » remonte comme un échec : exception, log d'erreur, ticket. Résultat : la pression implicite pousse à retourner *quelque chose*.
+
+Il faut inverser ça. L'absence doit être un **résultat de première classe**, avec le même statut qu'une valeur trouvée. Tant que ne rien trouver ressemble à un dysfonctionnement, le système — modèle comme humains — trouvera un moyen de remplir la case.
+
+## Ce qu'il faut autour pour que ça tienne
+
+Ces contraintes ne survivent pas sans une mécanique d'exécution ennuyeuse mais décisive.
+
+**Écriture idempotente.** Chaque document produit un fichier de résultat au nom déterministe, écrasé à chaque passage. Relancer un traitement interrompu ne duplique rien.
+
+**Fusion explicitement délimitée.** À la fin, on assemble **les résultats des documents qu'on a traités** — pas tout ce qui traîne dans le répertoire. C'est subtil et ça se paie cher : si deux traitements tournent en même temps et que chacun ramasse tout ce qu'il trouve, ils se mangent mutuellement leur travail.
+
+**Publication de ce qu'on a produit, nommément.** On publie la liste exacte des fichiers générés par ce run, jamais le contenu du dossier. Un glob finit toujours par embarquer le résidu d'un run précédent — et le jour où ça arrive, la donnée est déjà partie.
+
+<FileBlock filename="pipeline.py">
+```python
+# Chaque document écrit sa propre part, au nom déterministe → rejouable
+part = parts_dir / f"{template.slug}__{document.slug}.json"
+part.write_text(json.dumps(record))
+
+# La fusion ne prend QUE les documents traités par ce run
+merged = merge_parts(template, documents=batch)
+
+# On publie exactement ces chemins — jamais un glob du répertoire
+publish(sink, paths=merged)
+```
+</FileBlock>
+
+## Ce que ça coûte
+
+**Plus d'appels.** Un document par invocation, c'est autant d'appels que de documents. Le coût total monte ; c'est le prix de la garantie. En échange, il est **prévisible**, ce qu'un contexte qui grossit avec le corpus n'est jamais.
+
+**On perd de la donnée, volontairement.** Supprimer les champs sans preuve veut dire rendre un résultat incomplet là où un système plus laxiste aurait rendu un tableau plein. Il faut assumer cette conversation : préférer un trou visible à un chiffre plausible et faux. C'est une décision produit, pas un réglage technique — et si elle n'est pas prise explicitement en amont, elle sera défaite au premier reporting incomplet.
+
+**Ça ne couvre pas tout.** Ces trois contraintes traitent la fabrication et la contamination croisée. Elles ne traitent pas un document source erroné, ni une mauvaise interprétation d'un tableau ambigu. La garantie est « ce que je dis vient de tel endroit », pas « ce que je dis est vrai ».
+
+## Ce que j'en retiens
+
+Le déplacement utile est celui-là : arrêter de demander au modèle d'être fiable, et concevoir un système dans lequel l'infidélité est **structurellement difficile**. Une valeur sans preuve ne passe pas. Un document seul ne peut pas en contaminer un autre. Ne rien trouver est une réponse valide.
+
+Aucune de ces trois contraintes ne dépend du modèle utilisé. C'est précisément ce qui les rend intéressantes : elles survivent au prochain changement de modèle, ce que votre prompt ne fera probablement pas.

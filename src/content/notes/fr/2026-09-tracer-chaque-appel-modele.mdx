@@ -1,0 +1,90 @@
+---
+title: "Tracer chaque appel modèle : la règle ne tient que si un test la tient"
+date: 2026-09-21
+locale: fr
+translationKey: "2026-09-trace-every-model-call"
+tags: ["ia", "process", "tools"]
+excerpt: "« On trace tout » est une intention, pas une garantie : il suffit d'un nouveau chemin de code pour qu'un trou apparaisse sans que personne le voie. Ce qui tient la règle, c'est un test qui gèle l'inventaire des points d'appel — plus deux pièges qui m'ont coûté du temps."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+
+Sur un système agentique, la question « combien ça coûte ? » n'a pas de réponse si on ne trace pas. Ni « pourquoi ce tour a pris quarante secondes », ni « qu'est-ce que le modèle a réellement reçu comme prompt ». On le sait, et donc on écrit la règle : *tout appel au modèle est tracé*.
+
+Puis le projet grandit. Quelqu'un ajoute un chemin de code — une tâche de fond, un script d'outil dans l'autre langage de la stack, un mode batch. Ce chemin appelle un modèle, et personne n'y attache de handler. Pas par négligence : **la règle était dans un document, et un document ne s'exécute pas.**
+
+Sur un projet récent, la règle tenait. Voici ce qui la tenait, et les deux pièges qui m'ont coûté du temps.
+
+## Ce qui tient la règle : un test qui gèle l'inventaire
+
+L'idée est simple et un peu brutale. Un test énumère **tous les endroits du code qui appellent un modèle** et compare cet inventaire à une liste figée. Un nouveau point d'appel fait échouer la suite.
+
+<Callout tone="info">
+  La subtilité est dans la façon de repasser au vert. La bonne manière est de **câbler la trace**. Ajouter le nouveau chemin à la liste et passer à autre chose transforme le garde-fou en formalité — le test devient un endroit où l'on enregistre ses exceptions.
+</Callout>
+
+Ça a l'air de peu, mais c'est ce qui transforme une intention en propriété. On ne dépend plus de la vigilance d'un relecteur qui devrait remarquer, dans une diff de trois cents lignes, qu'un appel au modèle est apparu sans instrumentation. Le test le remarque à sa place, à chaque fois, sans se fatiguer.
+
+C'est un pattern transposable bien au-delà de l'IA : à chaque fois qu'une règle dit « partout », il faut se demander **qui vérifie le "partout"**. Si la réponse est « nous, à la relecture », la règle est déjà fausse quelque part.
+
+## Piège 1 — attacher deux fois ne couvre pas plus, ça duplique
+
+Mon premier réflexe, face à un doute sur la couverture, a été d'attacher un handler de plus. Par acquit de conscience.
+
+C'est une erreur, et une erreur silencieuse. Un graphe qui porte déjà un handler et qui en reçoit un second ne devient pas « mieux tracé » : **chaque génération est enregistrée deux fois**. Les coûts doublent dans le tableau de bord, les latences deviennent illisibles, et on passe un moment à chercher pourquoi la consommation a explosé.
+
+La formulation qui m'a servi de garde-fou : *tracé veut dire câblé, pas espéré*. Le handler doit arriver par **le point d'entrée qui possède l'appel**, attaché **une seule fois**, là où ce point d'entrée construit son graphe. Pas deux endroits qui s'en chargent « au cas où ».
+
+## Piège 2 — un seul fournisseur global peut réclamer le contexte
+
+Le second piège est plus vicieux, parce qu'il ne se voit qu'à l'exécution.
+
+Les systèmes de tracing basés sur OpenTelemetry réclament souvent le **fournisseur global du processus**. Si deux systèmes le font — le tracing applicatif d'un côté, l'observabilité LLM de l'autre — ils ne cohabitent pas : le second arrive et l'autre se tait.
+
+Concrètement : un processus tourne avec l'un **ou** l'autre, jamais les deux. Ce n'est pas un bug à corriger, c'est une contrainte à documenter. Le coût de ne pas la connaître, c'est un opérateur qui active une option et perd l'autre moitié de ses traces sans qu'aucune erreur ne s'affiche.
+
+<Callout tone="warn">
+  Tout ce qui s'installe comme singleton de processus mérite la même question : est-ce que quelque chose d'autre le réclame déjà ? Les symptômes sont toujours les mêmes — ça marchait, quelqu'un a activé une option ailleurs, et une donnée a disparu sans message.
+</Callout>
+
+## Le contrat on/off : le tracing ne casse jamais un tour
+
+Un point que je trouve sous-estimé : **l'observabilité ne doit jamais être la raison d'un échec fonctionnel.**
+
+Clés absentes, interrupteur d'arrêt activé, variable de configuration invalide, service de tracing injoignable : chacun de ces cas doit produire **un tour non tracé, et rien d'autre**. Pas d'exception, pas de dégradation, pas de tour perdu.
+
+Le corollaire compte autant : quand ça arrive, ce n'est **pas un défaut à investiguer**. C'est le sous-système qui fonctionne comme prévu. Sans cette clause écrite noir sur blanc, chaque run non tracé déclenche une enquête — et au bout de trois fausses alertes, quelqu'un désactive le garde-fou pour avoir la paix.
+
+<FileBlock filename="tracing.py">
+```python
+def tracing_handler() -> Handler | None:
+    """Renvoie None plutôt que de lever : un tour non tracé reste un tour réussi."""
+    if not settings.tracing_enabled:
+        return None
+    if not settings.tracing_keys_present:
+        return None
+    return build_handler(settings)
+```
+</FileBlock>
+
+## Le détail d'exploitation : un port pour les métriques
+
+Un dernier point, trivial mais qui se paie cher si on l'oublie. Si un service est exposé publiquement derrière un reverse proxy, exposer `/metrics` sur le **même port** que l'application le rend **publiquement accessible**. Volumétrie, noms de routes internes, parfois des identifiants de tenants : tout ça se retrouve en ligne.
+
+Le correctif tient en une ligne de configuration : servir les métriques sur un **second port interne**, que le proxy ne route pas. Le collecteur y accède depuis le réseau interne, personne d'autre.
+
+## Ce que ça coûte
+
+**Du travail de câblage à chaque nouveau point d'entrée.** C'est le prix, et c'est exactement ce que le test rend visible au lieu de le laisser filer.
+
+**Une discipline de composition.** Il faut savoir qui possède l'appel, et donc qui attache le handler. Sur une base où trois entrées différentes construisent des graphes, cette question doit avoir une réponse écrite — sinon on retombe dans le double attachement.
+
+**Des traces à regarder.** Une instrumentation que personne ne consulte est un coût sans contrepartie. Le vrai retour arrive le jour où une question précise se pose — « pourquoi ce tour a coûté dix fois le prix habituel ? » — et où la réponse est à trois clics au lieu d'être une hypothèse.
+
+## Ce que j'en retiens
+
+La règle de départ — *tout appel au modèle est tracé* — est facile à écrire et facile à croire acquise. Ce qui la rend réelle tient en une phrase : **quelque chose d'automatique doit échouer quand elle est violée.**
+
+Le reste, les deux pièges et le contrat on/off, ce sont les conditions pour que le garde-fou soit vivable. Un garde-fou qui produit de fausses alertes ou qui casse la production ne survit pas trois mois — quelqu'un finira par le désactiver, et il aura raison.

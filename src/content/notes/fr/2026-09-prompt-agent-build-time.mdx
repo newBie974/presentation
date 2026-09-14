@@ -10,6 +10,7 @@ draft: false
 
 import Callout from "@/components/prose/Callout.astro";
 import FileBlock from "@/components/prose/FileBlock.astro";
+import LifetimeBands from "@/components/prose/LifetimeBands.astro";
 
 Sur un projet récent, j'ai passé une demi-heure à croire que j'avais un bug. J'éditais le prompt système d'un agent, je relançais ma requête, et le comportement ne changeait pas d'un iota. J'ai vidé des caches, relu mon fichier, vérifié que je modifiais bien le bon.
 
@@ -28,6 +29,8 @@ C'est le modèle mental qui m'a débloqué. Dans un agent, chaque élément de c
 | **Par tour** | à chaque appel au modèle | ✅ oui |
 
 Le piège est la ligne du milieu. Un élément « par thread » **semble** live : on ouvre une nouvelle conversation, la modification apparaît, on conclut que tout va bien. Puis on revient sur une conversation existante et l'ancien comportement est toujours là. On cherche un bug de cache alors qu'on regarde un état persisté.
+
+<LifetimeBands lang="fr" />
 
 <Callout tone="info">
   Le fond du problème : dans ces frameworks, l'isolation entre conversations vient d'un checkpointer qui persiste l'état par `thread_id` — pas d'une reconstruction de l'agent. Ce qui est écrit dans l'état d'un thread y reste jusqu'à la fin de ce thread.
