@@ -1,0 +1,212 @@
+---
+title: "I turned Claude into an app-idea scout. Here's what it found on Réunion Island."
+date: 2026-05-25
+locale: en
+translationKey: "2026-05-product-scout-skill"
+tags: ["ia", "claude", "tools", "indie"]
+excerpt: "How I use Claude Skills to brainstorm 10 SaaS ideas scored out of 100, in 15 minutes — with a real run on my local niche, Réunion Island."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+
+Friday evening, beer in hand, I'm wondering what to ship after [VoiceJournal AI](https://aivoicejournal.app).
+
+I open Claude. I type one command: `/product-scout AI mobile apps for Réunion Island`.
+
+Fifteen minutes later I have **10 app ideas scored out of 100, with sourced pain points, competitors listed, pricing figures and a 3-month marketing plan**. Plus 3 recommendations tailored to my stack and my profile.
+
+Not a vague brainstorm. Not an unreadable McKinsey deck. Something I could act on the next morning.
+
+Here's how I did it, what it found, and the full skill you can copy.
+
+## The real problem when you're hunting your next idea
+
+Every indie hacker knows the moment: the current project settles into cruise mode, and the question comes back — *"what do I build next?"*
+
+The usual options:
+
+- **ChatGPT "give me 10 SaaS ideas"** → you get 10 generic B2B dashboards nobody will pay for
+- **Reddit / Indie Hackers** → four hours scrolling US-centric posts, and you come out feeling like you've seen everything except anything actionable
+- **Twitter / TikTok build-in-public** → inspiration, never a framed niche
+
+What's missing is a **dedicated product consultant** who:
+
+1. Does the field research for you
+2. Produces ideas fitted to your profile and your geography
+3. Scores each one honestly (not a cheerleader)
+4. Hands you a plan you can execute
+
+I'd have paid €500 for that. So I built it with Claude instead.
+
+## The solution: Claude Skills
+
+Anthropic recently shipped [Claude Skills](https://www.anthropic.com/news/agent-skills) — a system where you turn Claude into a specialised tool with a `SKILL.md` file dropped into `~/.claude/skills/<name>/`.
+
+In practice, a skill is:
+
+- **A structured system prompt** defining the role, the tone, the process, the output format
+- **Persistent**: you don't re-paste it every conversation, you invoke it with `/skill-name`
+- **Composable**: Claude triggers it automatically when your request matches, or you force it
+
+It's the difference between asking a consultant "give me some ideas" (vague) and handing them **a structured brief they've already internalised** (precise).
+
+## My skill: `product-scout`
+
+I built a skill called `product-scout`. Its mission:
+
+> Generate 10 digital product ideas worth shipping in a given niche, with real web research, scoring out of 100, and a full plan: user need, MVP, competitors, dev time, monetisation, acquisition, marketing budget.
+
+The tone: blunt indie hacker, not a consultant in a suit. Rob Walling × Pieter Levels × Marc Lou. It calls things what they are: "this stinks", "shippable this weekend", "the gap is huge".
+
+Invocation is simple:
+
+```bash
+/product-scout [niche or theme]
+/product-scout [niche] type: [saas|mobile|extension|ai|all]
+/product-scout [niche] audience: [b2b|b2c|creators|personal]
+```
+
+Examples:
+
+- `/product-scout legal freelancers`
+- `/product-scout parents of babies type: mobile`
+- `/product-scout developer productivity type: extension`
+
+## The live test: my own niche
+
+I'm from Réunion Island. Réunion is 870,000 people, a strong identity, a high cost of living, and a geographic niche underserved on mobile AI. So I asked myself: if I had to ship an app for my island, what would it be?
+
+I typed: `/product-scout AI mobile apps for Réunion Island`.
+
+Claude ran 8 web searches (Reddit r/LaReunion, Product Hunt, Creole lexicons, national statistics on cost of living, trail conditions, local press), aggregated the pain points, and produced the report below.
+
+### The TL;DR it generated
+
+> The island is a geographic niche of **~870K people**, fiercely attached to its identity (Creole, food, *péi* culture), and struggling with concrete problems: cost of living (+37% on food versus mainland France), regular cyclones, treacherous mountain weather for hikers, a non-standardised Creole. The local mobile market is **underserved on AI** — most "974" apps are news or institutional portals with 2015-era UI. **A huge gap**: no native AI mobile app combines "local intelligence" with an everyday use case.
+
+### The ranking of the 10 ideas
+
+| Rank | Idea | Type | Score | Difficulty | Revenue potential |
+|---|---|---|---|---|---|
+| 1 | **Kosa Lé** — Creole AI assistant | Conversational AI app | 🔥 87/100 | Medium 🟡 | €3-8K/mo MRR |
+| 2 | **Sa Pou Manzé** — anti-waste AI cooking | AI cooking + fridge scan | 🔥 84/100 | Medium 🟡 | €4-10K/mo |
+| 3 | **Trasé Léker** — hiking/trail AI copilot | Outdoor AI + weather | 🟢 80/100 | Hard 🔴 | €5-12K/mo |
+| 4 | **Lé Moin Cher** — local price comparator | AI + receipt OCR | 🟢 77/100 | Medium 🟡 | €2-6K/mo |
+| 5 | **Ti Marmay** — Creole parenting coach | Family AI app | 🟢 74/100 | Easy 🟢 | €3-7K/mo |
+| 6 | **Kontrol Siklon** — cyclone AI copilot | Crisis AI app | 🟡 68/100 | Medium 🟡 | €1-3K/mo |
+| 7 | **Lambians 974** — Creole voice DJ AI | Audio/creative AI | 🟡 65/100 | Hard 🔴 | €2-5K/mo |
+| 8 | **Diagonale Coach** — Grand Raid AI | Trail training AI | 🟡 63/100 | Medium 🟡 | €1-3K/mo |
+| 9 | **Zistwar Péi** — culture storyteller AI | Youth content AI | 🟠 54/100 | Easy 🟢 | €500-2K/mo |
+| 10 | **Bazar Créole** — sell local via AI | Market seller AI | 🟠 48/100 | Medium 🟡 | €1-3K/mo |
+
+### A closer look at idea #1: Kosa Lé (87/100 🔥)
+
+> **Tagline:** "Learn, translate and speak Réunion Creole like a local."
+
+**The pain it identified:**
+
+> "I was born on Réunion but my parents only spoke French to me — when my grandmother speaks Creole, I understand about 60%. When I have to answer, I'm lost. Google Translate doesn't know Creole."
+
+**The context it surfaced:**
+
+- **Who:** Réunionnais aged 18-45 who partially understand Creole, 2nd/3rd generation diaspora, ~80K mainlanders living on the island
+- **When:** family conversations (grandparents), local social media, coming back from a trip home
+- **How many:** ~870K residents + ~250K French-speaking diaspora — estimated paying target: 30-50K
+- **Why it isn't solved:** Réunion Creole has been an official regional language since 2014, but it's too small for Duolingo and too big for Google Translate. **Indie sweet spot.**
+
+**The MVP it proposes:**
+
+1. Conversational FR ↔ Creole translation on a dataset built from public lexicons and the regional language office
+2. A "Konversasyon" mode: you speak French, the AI answers in Creole with local TTS audio
+3. "5 min/day" themed lessons (cooking, family, market, *kabar*)
+
+**Competitors identified:** Google Translate (no Creole support), web lexicons (static, ugly), Assimil (book + CD, old-school format), the regional language office (institutional, no app — *partnership possible*).
+
+**Pricing:** Free 10 translations/day, Marmay plan €4.99/mo, Family plan €7.99/mo. 12-month target: 3-5K subscribers = **€15-25K MRR**.
+
+**Three-channel acquisition plan:** daily local TikTok, diaspora Facebook groups, partnership with the language office plus local press.
+
+That's the level of detail that changes things. Not "this could be interesting" — but "here's how you ship it".
+
+## The three things it taught me
+
+### 1. Honest scoring forces rigour
+
+If I asked ChatGPT for "10 ideas about Réunion", I'd get 10 ideas with emojis and "this has real potential!". My skill drops Bazar Créole to **48/100** and says, verbatim, "niche is professional but small, thin margins, tech adoption hard with this audience".
+
+That honesty is wired into the skill through:
+
+- An explicit scoring grid (market size, pain intensity, solo feasibility, monetisation, competition, acquisition)
+- One non-negotiable rule: *"If an idea stinks, say so. If the niche is saturated, say so and propose a pivot."*
+
+That's the difference between a flattering brainstorm and a product audit.
+
+### 2. A forced mix breaks the "SaaS only" bias
+
+Left to itself, the model always returns web SaaS. It's in the training data.
+
+So I wired this into the skill:
+
+> *At least 2 mobile ideas, 2 web SaaS ideas, 1 extension/plugin/AI idea. The rest: free.*
+
+The result: on the Réunion run I got 10 mobile apps (because I'd filtered explicitly), but in "all" mode the spread was far more useful. **A creative constraint beats a vague brief.**
+
+### 3. It's a starting point, not an oracle
+
+The report lands in 15 minutes with sourced quotes and real numbers — but it's an initial map, not scripture.
+
+Before writing a line of Kosa Lé, I'd need to:
+
+- Cross-check the quotes (talk to 10 Réunionnais who struggle with Creole)
+- Validate a waitlist (simple landing page, target 200 emails in 7 days)
+- Test the pricing (DM 20 target users: "what would you pay?")
+
+<Callout tone="warn">
+The scout doesn't replace validation. It gives you **10 well-formed hypotheses to validate**, instead of one vague idea. The trap is coding straight off the report — don't.
+</Callout>
+
+## The unexpected bonus
+
+I wanted 10 app ideas. I got 10 app ideas **plus a free audit of my local market**.
+
+I now know:
+
+- The exact size of the addressable Réunionnais diaspora (~250K)
+- How many builders are already on the local AI angle (roughly zero)
+- Estimated acquisition costs for my audience (TikTok CPC €0.15-0.30 on the French-speaking diaspora)
+- Which institutional partnerships are available
+
+<Callout tone="ok">
+Even if I ship none of those 10 ideas tomorrow, I have a mental map that didn't exist before. **The report is worth more than the ideas themselves.**
+</Callout>
+
+## The skill, copyable
+
+The full skill is open source on GitHub: [github.com/newBie974/skills](https://github.com/newBie974/skills/blob/main/product-scout/SKILL.md).
+
+You can drop it straight into your Claude skills folder:
+
+```bash
+mkdir -p ~/.claude/skills/product-scout
+curl -o ~/.claude/skills/product-scout/SKILL.md \
+  https://raw.githubusercontent.com/newBie974/skills/main/product-scout/SKILL.md
+```
+
+Then, in Claude Code or Desktop:
+
+```bash
+/product-scout [your niche]
+```
+
+## Run it on your own niche
+
+The skill is free. Tweak it to your style — the tone, the scoring grid, the product types forced into the mix.
+
+If you try it, **DM me your top 3** — I'll tell you honestly which one I'd ship in your place.
+
+And if you want to see what I build, the app I'm working on right now is [VoiceJournal AI](https://aivoicejournal.app) — voice journaling with AI. Same stack (React Native + Expo + Claude + Supabase + RevenueCat) as what the scout recommends for 80% of the ideas it produced.
+
+What's next? I'll probably pick from the Réunion report. Not Kosa Lé straight away — I need to validate it first — but the scout clearly opened up the map for the next 18 months.
+
+Happy scouting. 🌶️

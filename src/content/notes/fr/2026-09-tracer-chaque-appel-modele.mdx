@@ -10,6 +10,7 @@ draft: false
 
 import Callout from "@/components/prose/Callout.astro";
 import FileBlock from "@/components/prose/FileBlock.astro";
+import DuplicateHandler from "@/components/prose/DuplicateHandler.astro";
 
 Sur un système agentique, la question « combien ça coûte ? » n'a pas de réponse si on ne trace pas. Ni « pourquoi ce tour a pris quarante secondes », ni « qu'est-ce que le modèle a réellement reçu comme prompt ». On le sait, et donc on écrit la règle : *tout appel au modèle est tracé*.
 
@@ -34,6 +35,8 @@ C'est un pattern transposable bien au-delà de l'IA : à chaque fois qu'une règ
 Mon premier réflexe, face à un doute sur la couverture, a été d'attacher un handler de plus. Par acquit de conscience.
 
 C'est une erreur, et une erreur silencieuse. Un graphe qui porte déjà un handler et qui en reçoit un second ne devient pas « mieux tracé » : **chaque génération est enregistrée deux fois**. Les coûts doublent dans le tableau de bord, les latences deviennent illisibles, et on passe un moment à chercher pourquoi la consommation a explosé.
+
+<DuplicateHandler lang="fr" />
 
 La formulation qui m'a servi de garde-fou : *tracé veut dire câblé, pas espéré*. Le handler doit arriver par **le point d'entrée qui possède l'appel**, attaché **une seule fois**, là où ce point d'entrée construit son graphe. Pas deux endroits qui s'en chargent « au cas où ».
 

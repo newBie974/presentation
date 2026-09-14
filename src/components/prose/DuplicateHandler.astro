@@ -1,0 +1,131 @@
+---
+import DiagramFrame from "./DiagramFrame.astro";
+
+interface Props {
+  lang?: "fr" | "en";
+}
+const { lang = "fr" } = Astro.props;
+
+const T = {
+  fr: {
+    good: "1 point d'entrée · 1 handler",
+    bad: "2 handlers « au cas où »",
+    entry: "point d'entrée",
+    graph: "graphe",
+    handler: "handler",
+    gen: "1 génération",
+    genBad: "2 générations",
+    okNote: "couverture correcte",
+    badNote: "mêmes appels, coûts et latences doublés",
+    cap: "Attacher un second handler n'élargit pas la couverture : le même appel est enregistré deux fois. Le tableau de bord double, les latences deviennent illisibles, et rien ne signale l'erreur.",
+    aria: "Comparaison de deux câblages. À gauche, un point d'entrée attache un seul handler au graphe et chaque appel produit une génération. À droite, deux handlers sont attachés au même graphe et chaque appel produit deux générations, ce qui double les coûts affichés sans élargir la couverture.",
+  },
+  en: {
+    good: "1 entry point · 1 handler",
+    bad: "2 handlers, just in case",
+    entry: "entry point",
+    graph: "graph",
+    handler: "handler",
+    gen: "1 generation",
+    genBad: "2 generations",
+    okNote: "correct coverage",
+    badNote: "same calls, doubled cost and latency",
+    cap: "Attaching a second handler doesn't widen coverage: the same call is recorded twice. The dashboard doubles, latencies become unreadable, and nothing flags the mistake.",
+    aria: "A comparison of two wirings. On the left, one entry point attaches a single handler to the graph and each call produces one generation. On the right, two handlers are attached to the same graph and each call produces two generations, doubling reported cost without widening coverage.",
+  },
+}[lang];
+
+const COL = [20, 400];
+---
+
+<DiagramFrame
+  id="dh"
+  viewBox="0 0 760 230"
+  ariaLabel={T.aria}
+  caption={T.cap}
+  maxWidth="44rem"
+>
+  {
+    [
+      { x: COL[0], title: T.good, handlers: 1, gen: T.gen, note: T.okNote },
+      { x: COL[1], title: T.bad, handlers: 2, gen: T.genBad, note: T.badNote },
+    ].map((p) => (
+      <>
+        <text x={p.x} y="16" class="d-kick">
+          {p.title}
+        </text>
+        <rect
+          x={p.x}
+          y="28"
+          width="340"
+          height="150"
+          class="d-box"
+          filter="url(#rough-dh)"
+        />
+
+        <rect
+          x={p.x + 20}
+          y="46"
+          width="120"
+          height="28"
+          class="d-box-plain"
+          filter="url(#rough-dh)"
+        />
+        <text x={p.x + 80} y="65" class="d-sub" text-anchor="middle">
+          {T.entry}
+        </text>
+
+        {Array.from({ length: p.handlers }).map((_, h) => (
+          <>
+            <rect
+              x={p.x + 180}
+              y={40 + h * 34}
+              width="120"
+              height="26"
+              class="d-chip"
+              filter="url(#rough-dh)"
+            />
+            <text
+              x={p.x + 240}
+              y={58 + h * 34}
+              class="d-chip-t"
+              text-anchor="middle"
+            >
+              {T.handler}
+            </text>
+            <path
+              d={`M140 ${0} L 180 ${0}`}
+              transform={`translate(${p.x}, ${53 + h * 34})`}
+              class="d-line"
+              marker-end="url(#head-dh)"
+            />
+          </>
+        ))}
+
+        <rect
+          x={p.x + 20}
+          y="118"
+          width="120"
+          height="28"
+          class="d-box-plain"
+          filter="url(#rough-dh)"
+        />
+        <text x={p.x + 80} y="137" class="d-sub" text-anchor="middle">
+          {T.graph}
+        </text>
+        <path
+          d={`M${p.x + 80} 74 L ${p.x + 80} 112`}
+          class="d-line"
+          marker-end="url(#head-dh)"
+        />
+
+        <text x={p.x + 180} y="137" class="d-lead">
+          {p.gen}
+        </text>
+        <text x={p.x} y="200" class="d-sub">
+          {p.note}
+        </text>
+      </>
+    ))
+  }
+</DiagramFrame>

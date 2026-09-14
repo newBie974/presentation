@@ -10,6 +10,7 @@ draft: false
 
 import Callout from "@/components/prose/Callout.astro";
 import FileBlock from "@/components/prose/FileBlock.astro";
+import DuplicateHandler from "@/components/prose/DuplicateHandler.astro";
 
 On an agentic system, "what does this cost?" has no answer unless you trace. Neither does "why did that turn take forty seconds", nor "what prompt did the model actually receive". Everyone knows this, so the rule gets written: *every model call is traced*.
 
@@ -34,6 +35,8 @@ The pattern transfers well beyond AI: any time a rule says "everywhere", ask **w
 My first instinct, when unsure about coverage, was to attach one more handler. Just to be safe.
 
 That's a mistake, and a silent one. A graph that already carries a handler and receives a second doesn't become "better traced": **every generation is recorded twice**. Costs double on the dashboard, latencies become unreadable, and you spend a while wondering why consumption exploded.
+
+<DuplicateHandler lang="en" />
 
 The phrasing that kept me straight: *traced means wired, not hoped for*. The handler must arrive through **the entry point that owns the call**, attached **once**, where that entry point builds its graph. Not two places doing it "just in case".
 
