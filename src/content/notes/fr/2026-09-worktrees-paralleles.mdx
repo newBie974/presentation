@@ -1,0 +1,116 @@
+---
+title: "Deux branches, deux stacks, zéro collision : le workspace bare repo + worktrees"
+date: 2026-09-10
+locale: fr
+translationKey: "2026-09-parallel-worktrees"
+tags: ["tools", "process", "stack"]
+excerpt: "Quand on délègue à des agents, on a toujours deux ou trois branches en vol. Le `git checkout` classique casse tout : stash, stack Docker qui redémarre, ports qui se marchent dessus. Voici le layout qui m'a débloqué — et ce qu'il coûte vraiment."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+
+Depuis que je délègue du volume à des agents, j'ai un problème que je n'avais pas avant : **je n'ai jamais une seule branche en vol.** Il y en a deux ou trois. Une où un agent finit une feature, une où je débugue, une où je teste une idée à jeter.
+
+Avec un clone git normal, ça ne marche pas. On stash, on `checkout`, la stack Docker redémarre, les dépendances se réinstallent, et on a perdu dix minutes avant d'avoir tapé une ligne. Alors on ne le fait pas — on attend que la branche en cours soit finie. Le parallélisme des agents ne sert plus à rien : c'est **moi** le goulot.
+
+Sur un projet récent, j'ai changé de layout. Voici ce que ça donne.
+
+## Le principe : un dépôt nu, un worktree par branche
+
+Le checkout n'est pas un clone. C'est un **workspace** qui contient un dépôt nu (`--bare`) et un répertoire de travail par branche :
+
+```
+workspace/
+├── .bare/                  # le répertoire git : toutes les branches, aucun fichier
+├── .git                    # fichier : "gitdir: ./.bare"
+└── worktrees/
+    ├── feat-import/        # un checkout complet de cette branche
+    └── fix-auth/           # un autre, à côté, en même temps
+```
+
+`git worktree` n'a rien de nouveau — c'est dans git depuis 2015. Ce qui change, c'est de le traiter comme le mode **par défaut** et non comme un dépannage. Chaque branche a son répertoire, ses `node_modules`, son venv. On ne `checkout` plus jamais : on `cd`.
+
+## Ce qui coince vraiment : l'état partagé
+
+Le piège n'est pas git, c'est tout ce qui **ne doit pas** être dupliqué. Sur un projet un peu sérieux, un worktree fraîchement créé est inutilisable tant qu'il n'a pas :
+
+- les secrets (`.env`, et ceux des sous-projets),
+- les clés de signature,
+- le corpus de données de dev — souvent lourd, parfois impossible à régénérer,
+- les sorties runtime qu'on veut inspecter d'une branche à l'autre.
+
+Les recopier dans chaque worktree, c'est dupliquer des gigas et garantir qu'ils divergent. Les régénérer à chaque fois, c'est repayer le coût d'installation qu'on voulait supprimer.
+
+La réponse est un **overlay partagé** : ces chemins sont stockés **une fois** à la racine du workspace, et chaque worktree reçoit un lien symbolique **au même chemin relatif**.
+
+<Callout tone="info">
+  Le « même chemin relatif » est le détail qui fait tout marcher. Le code ne sait pas qu'il est dans un worktree : il ouvre `data/corpus/` comme d'habitude. Aucune variable d'environnement à ajouter, aucune condition dans le code. C'est la seule version de ce pattern qui ne fuit pas dans l'application.
+</Callout>
+
+Un script d'init pose les liens, et une commande de statut permet de vérifier ce qui est lié, local, ou cassé :
+
+<FileBlock filename="Makefile">
+```make
+worktree-init: ## Prépare ce worktree : liens partagés, ports, dépendances
+	@echo "▸ liens vers l'état partagé"
+	@./ops/link-shared.sh "$(SHARED)" "$(ROOT)" $(SHARED_PATHS)
+	@echo "▸ allocation de ports libres"
+	@./ops/alloc-ports.sh > "$(ROOT)/.ports.mk"
+	@echo "▸ installation des dépendances"
+	@$(MAKE) install
+```
+</FileBlock>
+
+Tout n'est pas partagé, et c'est volontaire. La configuration locale, elle, reste **propre à chaque worktree** : c'est souvent ce qu'on est justement en train de modifier sur la branche.
+
+## Faire tourner deux stacks en même temps
+
+Partager les fichiers ne suffit pas : deux stacks qui démarrent sur le même port, ça échoue. Il faut donc que chaque worktree obtienne :
+
+- **un jeu de ports libres**, alloué à l'init et écrit dans un fichier gitignoré,
+- **son propre nom de projet Docker Compose**, pour que `up` et `down` n'agissent que sur sa stack.
+
+Sans le second point, un `make down` dans un worktree éteint la stack du voisin — et on met un moment à comprendre pourquoi l'agent d'à côté s'est mis à échouer.
+
+Une commande de statut qui affiche branche, liens, ports et identité Compose vaut tout le temps qu'on passe à l'écrire. C'est ce qu'on lit avant de se demander pourquoi rien ne répond.
+
+## Le piège que je n'avais pas vu venir
+
+Les environnements virtuels Python **ne sont pas relocalisables**. Les scripts installés dans `.venv/bin` contiennent un shebang en **chemin absolu**. Déplacez ou recréez le worktree ailleurs, et `pytest` pointe toujours vers l'ancien chemin — avec des erreurs qui n'ont aucun rapport apparent avec le déplacement.
+
+Le correctif est trivial une fois le diagnostic posé : détecter que le shebang ne correspond plus, et recréer le venv.
+
+<FileBlock filename="Makefile">
+```make
+venv-check: ## Recrée le venv s'il a été construit à un autre chemin
+	@venv="$(ROOT)/backend/.venv"; \
+	if [ -f "$$venv/bin/pytest" ] && ! head -1 "$$venv/bin/pytest" | grep -qF "$$venv"; then \
+	  echo "▸ venv construit ailleurs — recréation."; \
+	  cd "$(ROOT)/backend" && uv venv --clear; \
+	fi
+```
+</FileBlock>
+
+<Callout tone="warn">
+  Le même piège existe pour tout ce qui embarque un chemin absolu à l'installation : certains binaires compilés, des caches d'outils, des fichiers de config générés. Si un worktree se comporte bizarrement après un déplacement, cherchez un chemin en dur avant de chercher un bug.
+</Callout>
+
+## Ce que ça coûte
+
+Je ne vais pas vendre ça comme gratuit.
+
+**C'est une machinerie à maintenir.** Un script de liens, un script de ports, deux cibles Make, une liste de chemins partagés à tenir à jour. Le jour où un nouveau répertoire doit être partagé et qu'on oublie de le déclarer, le symptôme est indirect : ça marche dans un worktree, pas dans l'autre.
+
+**Ça suppose un projet qui le mérite.** Sur un site statique, c'est ridicule — `git checkout` coûte une seconde. Le layout ne se rentabilise que quand démarrer l'environnement coûte cher : stack Docker multi-services, dépendances lourdes, données de dev volumineuses.
+
+**Le débutant paie un ticket d'entrée.** Un clone classique, tout le monde sait faire. Là, il faut lire le README avant de taper quoi que ce soit, et `git worktree add` ne suffit pas — il faut aussi l'init.
+
+## Ce que ça m'a rendu
+
+Le vrai gain n'est pas la vitesse de bascule. C'est que **je peux laisser tourner**. Un agent travaille sur une branche pendant que j'en relis une autre, chacun avec sa stack, sans que l'un casse l'environnement de l'autre.
+
+Avant, la question « je lance cet agent maintenant ou j'attends d'avoir fini ? » se posait à chaque fois. Elle ne se pose plus. C'est le genre de friction qu'on ne mesure pas, parce qu'on a arrêté de la ressentir : on a simplement pris l'habitude de ne pas paralléliser.
+
+Si vous déléguez du travail à des agents et que vous vous surprenez à attendre qu'une branche se termine avant d'en lancer une autre, le goulot n'est probablement pas le modèle.

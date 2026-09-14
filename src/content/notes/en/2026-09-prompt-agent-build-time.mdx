@@ -1,0 +1,82 @@
+---
+title: "Your agent isn't re-reading your prompt: the three lifetimes of an agent config"
+date: 2026-09-14
+locale: en
+translationKey: "2026-09-agent-config-lifetimes"
+tags: ["ia", "process", "tools"]
+excerpt: "I kept editing the system prompt, kept re-running, and nothing moved. The culprit wasn't a cache: the graph is built once at startup. Three lifetimes coexist inside an agent, and knowing which one applies changes the feedback loop."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+
+On a recent project I spent half an hour convinced I had a bug. I was editing an agent's system prompt, re-running my request, and the behaviour didn't shift an inch. I cleared caches, re-read my file, checked I was editing the right one.
+
+That wasn't it. **The graph is built once, when the server starts.** My prompt had been read, frozen into the compiled object, and reused as-is for every request after that.
+
+Written down, it sounds obvious. It isn't at all when you're inside it, because agent frameworks mix three lifetimes without telling you.
+
+## The three lifetimes
+
+This is the mental model that unblocked me. In an agent, every piece of configuration is read at one of these three moments:
+
+| Lifetime | Read when | Changes without a restart? |
+| --- | --- | --- |
+| **Build time** | at module import, once | ❌ never |
+| **Per thread** | on the first turn of a conversation, then cached in state | ⚠️ only in a new conversation |
+| **Per turn** | on every model call | ✅ yes |
+
+The middle row is the trap. A "per thread" value **looks** live: you open a new conversation, your change shows up, you conclude everything is fine. Then you go back to an existing conversation and the old behaviour is still there. You go hunting for a cache bug when what you're looking at is persisted state.
+
+<Callout tone="info">
+  The root of it: in these frameworks, isolation between conversations comes from a checkpointer persisting state per `thread_id` — not from rebuilding the agent. Whatever gets written into a thread's state stays there for the life of that thread.
+</Callout>
+
+## Why it's frozen
+
+This isn't an oversight, it's a consequence of typing. When the agent factory accepts a system prompt typed `str | SystemMessage | None`, **it doesn't accept a callable**. So the value passed at construction is necessarily evaluated once, and baked in.
+
+Same logic for the declared skills list: if it's resolved inside a middleware's `__init__`, it's fixed when the object is constructed — which is at startup.
+
+The diagnosis always works the same way: **follow where the value is read**, not where it's written. If the read sits in a constructor or at module level, that's build time. If it sits in a hook the loop calls, that's runtime.
+
+## The fix: move the read into a hook
+
+Nothing needs rewriting from scratch. You just need the value read by something that runs **on every model call** rather than at construction. `langchain` ships a decorator for exactly this:
+
+<FileBlock filename="agent.py">
+```python
+from langchain.agents.middleware import dynamic_prompt
+
+@dynamic_prompt
+def orchestrator_prompt(request) -> str:
+    return load_prompt("orchestrator")   # re-read from disk every turn
+```
+</FileBlock>
+
+Then, where the agent is built: **remove** `system_prompt=…` and **add** that middleware to the list. The prompt stops being a value and becomes a function — and a function can be called again.
+
+## Middleware order isn't cosmetic
+
+This is where I nearly got caught a second time. If another middleware **appends** to the system message — a section listing available skills, say — then the middleware that **sets** the base prompt has to run before it.
+
+The chain nests in list order. Swap the two and the base prompt overwrites the section the other one added: you get an agent that has lost its tools, with no error to tell you.
+
+<Callout tone="warn">
+  A middleware that composes by overwriting rather than appending produces silent failures. When an agent "forgets" a capability it used to have, check composition order before you suspect the model.
+</Callout>
+
+## What it costs
+
+**One disk read per model call.** Next to LLM latency, that's noise. But if loading does more than read a file — template rendering, a network call, heavy parsing — it becomes a per-turn expense, and you want a cache with explicit invalidation rather than a naked re-read.
+
+**You can break a live conversation.** That's the direct flip side of live: editing a file while a conversation is running changes behaviour on the next turn. In development that's exactly what you want. In production it's an unversioned deploy that leaves no trace — a prompt changed hot shows up in no release history.
+
+**It moves the question rather than removing it.** Making a value dynamic doesn't say *when* it should change. You still have to decide what's live in dev and frozen in prod, and own that choice explicitly.
+
+## What I take from it
+
+The real gain is a feedback loop. Before: edit, restart, reopen a conversation, rebuild the context, observe. After: edit, send the message again. When you're iterating on a prompt — and you iterate far more than you'd guess — the difference isn't the time saved, it's the number of attempts you allow yourself.
+
+And above all: next time an agent "ignores" a config change, I won't go looking for a cache. I'll go looking for **where the value is read**. Nine times out of ten, it's read once, somewhere, at startup.

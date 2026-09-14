@@ -1,0 +1,82 @@
+---
+title: "Ton agent ne relit pas ton prompt : les trois durées de vie d'une config d'agent"
+date: 2026-09-14
+locale: fr
+translationKey: "2026-09-agent-config-lifetimes"
+tags: ["ia", "process", "tools"]
+excerpt: "J'éditais le prompt système, je relançais, et rien ne bougeait. Le coupable n'était pas le cache : c'est que le graphe est construit une fois au démarrage. Trois durées de vie cohabitent dans un agent, et savoir laquelle s'applique change la boucle de feedback."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+
+Sur un projet récent, j'ai passé une demi-heure à croire que j'avais un bug. J'éditais le prompt système d'un agent, je relançais ma requête, et le comportement ne changeait pas d'un iota. J'ai vidé des caches, relu mon fichier, vérifié que je modifiais bien le bon.
+
+Le problème n'était pas là. **Le graphe est construit une seule fois, au démarrage du serveur.** Mon prompt avait été lu, figé dans l'objet compilé, et réutilisé tel quel pour toutes les requêtes suivantes.
+
+Ça paraît évident écrit comme ça. Ça ne l'est pas du tout quand on est dedans, parce que les frameworks d'agents mélangent trois durées de vie sans le dire.
+
+## Les trois durées de vie
+
+C'est le modèle mental qui m'a débloqué. Dans un agent, chaque élément de configuration est lu à l'un de ces trois moments :
+
+| Durée de vie | Lu quand | Change sans redémarrer ? |
+| --- | --- | --- |
+| **Build time** | à l'import du module, une fois | ❌ jamais |
+| **Par thread** | au premier tour d'une conversation, puis mis en cache dans l'état | ⚠️ seulement dans une nouvelle conversation |
+| **Par tour** | à chaque appel au modèle | ✅ oui |
+
+Le piège est la ligne du milieu. Un élément « par thread » **semble** live : on ouvre une nouvelle conversation, la modification apparaît, on conclut que tout va bien. Puis on revient sur une conversation existante et l'ancien comportement est toujours là. On cherche un bug de cache alors qu'on regarde un état persisté.
+
+<Callout tone="info">
+  Le fond du problème : dans ces frameworks, l'isolation entre conversations vient d'un checkpointer qui persiste l'état par `thread_id` — pas d'une reconstruction de l'agent. Ce qui est écrit dans l'état d'un thread y reste jusqu'à la fin de ce thread.
+</Callout>
+
+## Pourquoi c'est figé
+
+Ce n'est pas un oubli, c'est une conséquence de typage. Quand la fabrique d'agent accepte un prompt système typé `str | SystemMessage | None`, **elle n'accepte pas de callable**. La valeur passée à la construction est donc nécessairement évaluée une fois, et gravée.
+
+Même logique pour la liste de skills déclarés : si elle est résolue dans le `__init__` d'un middleware, elle est fixée à la construction de l'objet, donc au démarrage.
+
+Le diagnostic se fait toujours pareil : **suivre où la valeur est lue**, pas où elle est écrite. Si la lecture est dans un constructeur ou au niveau module, c'est du build time. Si elle est dans un hook appelé par la boucle, c'est du runtime.
+
+## Le correctif : déplacer la lecture dans un hook
+
+Rien à réécrire de fond en comble. Il suffit de faire lire la valeur par quelque chose qui s'exécute **à chaque appel au modèle** plutôt qu'à la construction. `langchain` expose un décorateur exactement pour ça :
+
+<FileBlock filename="agent.py">
+```python
+from langchain.agents.middleware import dynamic_prompt
+
+@dynamic_prompt
+def orchestrator_prompt(request) -> str:
+    return load_prompt("orchestrator")   # relu sur disque à chaque tour
+```
+</FileBlock>
+
+Puis, dans la construction de l'agent : on **retire** le `system_prompt=…` et on **ajoute** ce middleware à la liste. Le prompt n'est plus une valeur, c'est une fonction — et une fonction, ça se rappelle.
+
+## L'ordre des middlewares n'est pas cosmétique
+
+C'est là que j'ai failli me faire avoir une deuxième fois. Si un autre middleware **ajoute** du texte au message système — une section listant les skills disponibles, par exemple — alors le middleware qui **pose** le prompt de base doit s'exécuter avant lui.
+
+La chaîne s'imbrique dans l'ordre de la liste. Inversez les deux, et le prompt de base écrase la section ajoutée par l'autre : vous obtenez un agent qui a perdu ses outils, sans la moindre erreur pour vous le dire.
+
+<Callout tone="warn">
+  Un middleware qui compose par écrasement plutôt que par ajout produit des pannes silencieuses. Quand un agent « oublie » une capacité qu'il avait, regardez l'ordre de composition avant de suspecter le modèle.
+</Callout>
+
+## Ce que ça coûte
+
+**Une lecture disque par appel au modèle.** Comparé à la latence d'un appel LLM, c'est du bruit. Mais si le chargement fait plus que lire un fichier — rendu de template, appel réseau, parsing lourd — ça devient une dépense à chaque tour, et il faut un cache avec invalidation explicite plutôt qu'une relecture nue.
+
+**On peut casser une conversation en cours.** C'est le revers direct du live : éditer un fichier pendant qu'une conversation tourne change le comportement au tour suivant. En développement, c'est exactement ce qu'on veut. En production, c'est un déploiement non versionné qui ne laisse aucune trace — un prompt modifié à chaud n'apparaît dans aucun historique de release.
+
+**Ça déplace la question, sans la supprimer.** Rendre une valeur dynamique ne dit pas *quand* elle doit changer. Il reste à décider ce qui est live en dev et figé en prod, et à l'assumer explicitement.
+
+## Ce que j'en retiens
+
+Le gain réel est une boucle de feedback. Avant : éditer, redémarrer, réouvrir une conversation, reproduire le contexte, observer. Après : éditer, renvoyer le message. Quand on itère sur un prompt — et on itère beaucoup plus qu'on ne l'imagine — la différence n'est pas le temps gagné, c'est le nombre d'essais qu'on s'autorise.
+
+Et surtout : la prochaine fois qu'un agent « ignore » une modification de config, je ne cherche plus un cache. Je cherche **où la valeur est lue**. Dans neuf cas sur dix, elle est lue une fois, quelque part, au démarrage.
