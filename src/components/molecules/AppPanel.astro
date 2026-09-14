@@ -41,15 +41,17 @@ const backAlt = `${project.title} — ${panel.screenLabels.back[locale]}`;
 
 <style>
   .panel {
-    position: relative;
     isolation: isolate;
     overflow: hidden;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: center;
-    /* Un panneau = un écran. `svh` et non `vh` : sur mobile la barre d'URL
-       ferait sauter la hauteur à chaque scroll. */
-    min-height: 100svh;
+    /* Sticky stack : chaque panneau se fige en haut pendant que son créneau
+       défile, puis le suivant vient le recouvrir. `svh` et non `vh` — sur
+       mobile la barre d'URL ferait sauter la hauteur à chaque scroll. */
+    position: sticky;
+    top: 0;
+    height: 100svh;
     padding: 72px 48px;
     color: var(--panel-fg);
     background: linear-gradient(
@@ -57,8 +59,8 @@ const backAlt = `${project.title} — ${panel.screenLabels.back[locale]}`;
       var(--panel-lit) 0%,
       var(--panel-deep) 100%
     );
-    /* `scroll-padding-top: 64px` sur html (global.css) dégage la nav sticky. */
-    scroll-snap-align: start;
+    /* L'ombre portée vers le haut fait lire le recouvrement comme une pile. */
+    box-shadow: 0 -24px 60px -24px rgb(0 0 0 / 0.55);
   }
 
   @media (max-width: 900px) {

@@ -27,6 +27,14 @@ export interface Project {
   logo?: ImageMetadata;
 }
 
+/** Un chiffre affiché sous le nom d'une app dans la vitrine. Valeurs réelles
+ *  relevées sur les fiches App Store — voir la date de relevé dans
+ *  `src/data/appShowcase.ts`. */
+export interface AppStat {
+  label: { fr: string; en: string };
+  value: { fr: string; en: string };
+}
+
 /** Un panneau plein cadre de la vitrine : la couleur de marque de l'app plus
  *  les deux captures qui flottent dessus. Titre, tagline, stack et liens
  *  viennent du `Project` de même slug — rien n'est dupliqué ici. */
@@ -42,6 +50,7 @@ export interface AppShowcasePanel {
     front: { fr: string; en: string };
     back: { fr: string; en: string };
   };
+  stats: AppStat[];
 }
 
 export interface Experiment {

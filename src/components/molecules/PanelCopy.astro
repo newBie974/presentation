@@ -13,9 +13,8 @@ interface Props {
 }
 
 const { entry, locale } = Astro.props;
-const { project, position, total, href } = entry;
+const { panel, project, position, total, href } = entry;
 const t = useTranslations(locale);
-const visibleTech = project.techStack.slice(0, 3);
 ---
 
 <div class="copy">
@@ -27,9 +26,16 @@ const visibleTech = project.techStack.slice(0, 3);
   />
   <h3 class="name">{project.title}</h3>
   <p class="tagline">{project.tagline[locale]}</p>
-  <ul class="tech" role="list">
-    {visibleTech.map((tech) => <li>{tech}</li>)}
-  </ul>
+  <dl class="stats">
+    {
+      panel.stats.map((stat) => (
+        <div class="stat">
+          <dt>{stat.label[locale]}</dt>
+          <dd>{stat.value[locale]}</dd>
+        </div>
+      ))
+    }
+  </dl>
   <a class="cta" href={href}>
     <span>{t("showcase.discover")}</span>
     <Icon name="lucide:arrow-right" size={17} />
@@ -53,21 +59,28 @@ const visibleTech = project.techStack.slice(0, 3);
     line-height: 1.45;
     text-wrap: pretty;
   }
-  .tech {
+  .stats {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin: 0 0 32px;
-    padding: 0;
-    list-style: none;
+    gap: 14px 32px;
+    margin: 0 0 34px;
+    padding: 20px 0 0;
+    border-top: var(--border-w) solid
+      color-mix(in srgb, var(--panel-fg) 32%, transparent);
   }
-  .tech li {
-    padding: 6px 12px;
-    border: var(--border-w) solid
-      color-mix(in srgb, var(--panel-fg) 40%, transparent);
-    border-radius: 3px;
+  .stat dt {
+    margin-bottom: 5px;
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    opacity: 0.72;
+  }
+  .stat dd {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
   .cta {
     display: inline-flex;
@@ -93,7 +106,7 @@ const visibleTech = project.techStack.slice(0, 3);
       .copy {
         animation: panel-copy-in linear both;
         animation-timeline: view();
-        animation-range: entry 16% cover 34%;
+        animation-range: entry 15% entry 95%;
       }
       @keyframes panel-copy-in {
         from {

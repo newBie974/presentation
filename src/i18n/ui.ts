@@ -6,6 +6,7 @@ export const ui = {
   fr: {
     "nav.home": "Accueil",
     "nav.about": "À propos",
+    "nav.apps": "Réalisations",
     "nav.notes": "Notes",
     "nav.work": "Collaborer",
     "nav.ariaPrimary": "Navigation principale",
@@ -83,6 +84,7 @@ export const ui = {
   en: {
     "nav.home": "Home",
     "nav.about": "About",
+    "nav.apps": "Shipped",
     "nav.notes": "Writing",
     "nav.work": "Work together",
     "nav.ariaPrimary": "Primary navigation",
