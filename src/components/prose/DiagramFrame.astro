@@ -1,0 +1,125 @@
+---
+// Cadre partagé des schémas de prose : <figure>, viewBox, filtre "tracé à main
+// levée", pointe de flèche et vocabulaire de classes. Les schémas n'apportent
+// que leurs formes — voir ContextIsolation, LifetimeBands, WorktreeOverlay.
+interface Props {
+  /** Identifiant court et stable : préfixe le filtre et le marqueur de ce schéma. */
+  id: string;
+  viewBox: string;
+  ariaLabel: string;
+  caption?: string;
+  maxWidth?: string;
+}
+
+const { id, viewBox, ariaLabel, caption, maxWidth = "46rem" } = Astro.props;
+---
+
+<figure class="dgm" style={`--dgm-max:${maxWidth}`}>
+  <svg viewBox={viewBox} role="img" aria-label={ariaLabel}>
+    <defs>
+      <filter id={`rough-${id}`} x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.009"
+          numOctaves="2"
+          seed="7"
+          result="n"></feTurbulence>
+        <feDisplacementMap
+          in="SourceGraphic"
+          in2="n"
+          scale="1.6"
+          xChannelSelector="R"
+          yChannelSelector="G"></feDisplacementMap>
+      </filter>
+      <marker
+        id={`head-${id}`}
+        markerWidth="9"
+        markerHeight="9"
+        refX="6"
+        refY="3"
+        orient="auto"
+      >
+        <path d="M0,0 L6,3 L0,6" class="d-head"></path>
+      </marker>
+    </defs>
+    <slot />
+  </svg>
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style is:global>
+  .dgm {
+    margin: 1.8rem auto;
+    max-width: var(--dgm-max, 46rem);
+  }
+  .dgm svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .dgm figcaption {
+    margin-top: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+  .dgm text {
+    font-family: var(--font-mono);
+  }
+  .dgm .d-box {
+    fill: var(--color-bg-soft);
+    stroke: var(--color-border);
+    stroke-width: 2;
+  }
+  .dgm .d-box-plain {
+    fill: var(--color-bg);
+    stroke: var(--color-border);
+    stroke-width: 2;
+  }
+  .dgm .d-line {
+    fill: none;
+    stroke: var(--color-text);
+    stroke-width: 2;
+  }
+  .dgm .d-line-soft {
+    fill: none;
+    stroke: var(--color-text-muted);
+    stroke-width: 2;
+    stroke-dasharray: 5 4;
+  }
+  .dgm .d-head {
+    fill: none;
+    stroke: var(--color-text);
+    stroke-width: 1.6;
+  }
+  .dgm .d-chip {
+    fill: var(--color-accent);
+  }
+  .dgm .d-chip-t {
+    fill: var(--color-on-accent);
+    font-weight: 700;
+    font-size: 10.5px;
+  }
+  .dgm .d-kick {
+    font-size: 11px;
+    fill: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .dgm .d-lead {
+    font-size: 13px;
+    font-weight: 700;
+    fill: var(--color-text);
+  }
+  .dgm .d-sub {
+    font-size: 10.5px;
+    fill: var(--color-text-muted);
+  }
+  .dgm .d-warn {
+    fill: none;
+    stroke: var(--color-text);
+    stroke-width: 2;
+    stroke-dasharray: 3 3;
+  }
+</style>

@@ -1,0 +1,144 @@
+---
+import DiagramFrame from "./DiagramFrame.astro";
+
+interface Props {
+  lang?: "fr" | "en";
+}
+const { lang = "fr" } = Astro.props;
+
+const T = {
+  fr: {
+    left: "1 contexte · N documents",
+    right: "1 contexte · 1 document",
+    doc: "doc",
+    record: "fiche doc A",
+    leak: "valeur prise dans B",
+    verdict: "preuve authentique — mauvais fichier",
+    ok: "contamination impossible",
+    cap: "À gauche, le contrôle de preuve passe au vert : la citation existe vraiment, elle vient juste du mauvais document. À droite, les autres documents ne sont pas là.",
+    aria: "Comparaison de deux montages. À gauche, trois documents partagent un même contexte et une valeur du document B se retrouve attribuée à la fiche du document A, avec une preuve authentique. À droite, chaque document est traité dans son propre contexte, ce qui rend la contamination croisée impossible.",
+  },
+  en: {
+    left: "1 context · N documents",
+    right: "1 context · 1 document",
+    doc: "doc",
+    record: "record doc A",
+    leak: "value taken from B",
+    verdict: "genuine evidence — wrong file",
+    ok: "contamination impossible",
+    cap: "On the left the evidence check goes green: the quote really exists, it just came from the wrong document. On the right, the other documents aren't there.",
+    aria: "A comparison of two setups. On the left, three documents share one context and a value from document B ends up attributed to document A's record, carrying genuine evidence. On the right, each document is processed in its own context, making cross-contamination impossible.",
+  },
+}[lang];
+
+const docs = ["A", "B", "C"];
+---
+
+<DiagramFrame
+  id="ci"
+  viewBox="0 0 760 250"
+  ariaLabel={T.aria}
+  caption={T.cap}
+  maxWidth="44rem"
+>
+  {/* ── Montage fautif : un seul contexte partagé ── */}
+  <text x="20" y="16" class="d-kick">{T.left}</text>
+  <rect
+    x="20"
+    y="28"
+    width="330"
+    height="160"
+    class="d-box"
+    filter="url(#rough-ci)"></rect>
+
+  {
+    docs.map((d, i) => (
+      <>
+        <rect
+          x={40 + i * 100}
+          y={46}
+          width="80"
+          height="34"
+          class="d-box-plain"
+          filter="url(#rough-ci)"
+        />
+        <text x={80 + i * 100} y={68} class="d-lead" text-anchor="middle">
+          {T.doc} {d}
+        </text>
+      </>
+    ))
+  }
+
+  {/* La valeur de B atterrit dans la fiche de A */}
+  <path
+    d="M140 84 C 140 112, 110 112, 110 136"
+    class="d-warn"
+    marker-end="url(#head-ci)"></path>
+  <text x="150" y="112" class="d-sub">{T.leak}</text>
+
+  <rect
+    x="40"
+    y="136"
+    width="140"
+    height="34"
+    class="d-box-plain"
+    filter="url(#rough-ci)"></rect>
+  <text x="110" y="158" class="d-lead" text-anchor="middle">{T.record}</text>
+
+  <rect
+    x="196"
+    y="140"
+    width="140"
+    height="26"
+    class="d-chip"
+    filter="url(#rough-ci)"></rect>
+  <text x="266" y="157" class="d-chip-t" text-anchor="middle">✓</text>
+  <text x="20" y="208" class="d-sub">{T.verdict}</text>
+
+  {/* ── Montage contraint : un document par invocation ── */}
+  <text x="410" y="16" class="d-kick">{T.right}</text>
+
+  {
+    docs.map((d, i) => (
+      <>
+        <rect
+          x={410}
+          y={28 + i * 56}
+          width="330"
+          height="44"
+          class="d-box"
+          filter="url(#rough-ci)"
+        />
+        <rect
+          x={426}
+          y={38 + i * 56}
+          width="76"
+          height="24"
+          class="d-box-plain"
+          filter="url(#rough-ci)"
+        />
+        <text x={464} y={55 + i * 56} class="d-sub" text-anchor="middle">
+          {T.doc} {d}
+        </text>
+        <path
+          d={`M510 ${50 + i * 56} L 576 ${50 + i * 56}`}
+          class="d-line"
+          marker-end="url(#head-ci)"
+        />
+        <rect
+          x={584}
+          y={38 + i * 56}
+          width="140"
+          height="24"
+          class="d-box-plain"
+          filter="url(#rough-ci)"
+        />
+        <text x={654} y={55 + i * 56} class="d-sub" text-anchor="middle">
+          {T.doc} {d}
+        </text>
+      </>
+    ))
+  }
+
+  <text x="410" y="208" class="d-sub">{T.ok}</text>
+</DiagramFrame>

@@ -1,0 +1,96 @@
+---
+import DiagramFrame from "./DiagramFrame.astro";
+
+interface Props {
+  lang?: "fr" | "en";
+}
+const { lang = "fr" } = Astro.props;
+
+const T = {
+  fr: {
+    cols: ["démarrage", "tour 1", "tour 2", "tour 3", "nouvelle conv."],
+    rows: [
+      ["build time", "figé jusqu'au redémarrage"],
+      ["par thread", "ne rebouge qu'en nouvelle conversation"],
+      ["par tour", "live"],
+    ],
+    read: "lecture",
+    cap: "Une lecture par ligne, aux moments marqués. La ligne du milieu est celle qui trompe : elle bouge quand on ouvre une conversation neuve, donc elle a l'air live.",
+    aria: "Frise comparant trois durées de vie de configuration. Le build time n'est lu qu'au démarrage. Le par-thread est lu au premier tour d'une conversation puis au premier tour d'une nouvelle conversation. Le par-tour est lu à chaque tour.",
+  },
+  en: {
+    cols: ["startup", "turn 1", "turn 2", "turn 3", "new conv."],
+    rows: [
+      ["build time", "frozen until restart"],
+      ["per thread", "only moves in a new conversation"],
+      ["per turn", "live"],
+    ],
+    read: "read",
+    cap: "One read per row, at the marked moments. The middle row is the deceptive one: it moves when you open a fresh conversation, so it looks live.",
+    aria: "A timeline comparing three configuration lifetimes. Build time is read only at startup. Per-thread is read on the first turn of a conversation and again on the first turn of a new conversation. Per-turn is read on every turn.",
+  },
+}[lang];
+
+const X = [150, 268, 386, 504, 640];
+const ROW_Y = [78, 134, 190];
+// Colonnes où chaque durée de vie relit sa valeur.
+const MARKS = [[0], [1, 4], [1, 2, 3, 4]];
+---
+
+<DiagramFrame
+  id="lb"
+  viewBox="0 0 760 240"
+  ariaLabel={T.aria}
+  caption={T.cap}
+  maxWidth="44rem"
+>
+  {
+    T.cols.map((c, i) => (
+      <text x={X[i]} y="30" class="d-kick" text-anchor="middle">
+        {c}
+      </text>
+    ))
+  }
+  <path d="M120 44 L 700 44" class="d-line-soft"></path>
+
+  {
+    T.rows.map(([name, note], r) => (
+      <>
+        <rect
+          x="20"
+          y={ROW_Y[r] - 22}
+          width="680"
+          height="40"
+          class="d-box"
+          filter="url(#rough-lb)"
+        />
+        <text x="36" y={ROW_Y[r] - 2} class="d-lead">
+          {name}
+        </text>
+        <text x="36" y={ROW_Y[r] + 12} class="d-sub">
+          {note}
+        </text>
+        {MARKS[r].map((c) => (
+          <>
+            <rect
+              x={X[c] - 26}
+              y={ROW_Y[r] - 12}
+              width="52"
+              height="22"
+              class="d-chip"
+              filter="url(#rough-lb)"
+            />
+            <text
+              x={X[c]}
+              y={ROW_Y[r] + 3}
+              class="d-chip-t"
+              text-anchor="middle"
+            >
+              {T.read}
+            </text>
+          </>
+        ))}
+      </>
+    ))
+  }
+</DiagramFrame>

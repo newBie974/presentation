@@ -1,0 +1,132 @@
+---
+import DiagramFrame from "./DiagramFrame.astro";
+
+interface Props {
+  lang?: "fr" | "en";
+}
+const { lang = "fr" } = Astro.props;
+
+const T = {
+  fr: {
+    bare: ".bare/",
+    bareSub: "toutes les branches, aucun fichier",
+    shared: "état partagé — stocké une fois",
+    sharedItems: [".env", "ops/keys/", "data/corpus/"],
+    link: "lié au même chemin relatif",
+    trees: [
+      { name: "worktrees/feat-import", ports: "ports 8801 · projet wt-import" },
+      { name: "worktrees/fix-auth", ports: "ports 8811 · projet wt-auth" },
+    ],
+    cap: "Les chemins partagés sont stockés une fois et liés dans chaque worktree au même endroit relatif : le code ne sait pas qu'il est dans un worktree. Ports et projet Compose, eux, sont propres à chacun.",
+    aria: "Schéma du workspace : un dépôt nu contient toutes les branches, un répertoire d'état partagé stocke une fois les secrets, clés et données, et chaque worktree reçoit ces chemins par lien symbolique au même emplacement relatif, avec son propre jeu de ports et son propre projet Compose.",
+  },
+  en: {
+    bare: ".bare/",
+    bareSub: "every branch, no files",
+    shared: "shared state — stored once",
+    sharedItems: [".env", "ops/keys/", "data/corpus/"],
+    link: "linked at the identical relative path",
+    trees: [
+      {
+        name: "worktrees/feat-import",
+        ports: "ports 8801 · project wt-import",
+      },
+      { name: "worktrees/fix-auth", ports: "ports 8811 · project wt-auth" },
+    ],
+    cap: "Shared paths are stored once and linked into every worktree at the same relative place: the code has no idea it's in a worktree. Ports and Compose project, by contrast, belong to each one.",
+    aria: "Diagram of the workspace: a bare repository holds every branch, a shared state directory stores secrets, keys and data once, and each worktree receives those paths as symlinks at the identical relative location, with its own port set and its own Compose project.",
+  },
+}[lang];
+
+const TREE_X = [40, 400];
+---
+
+<DiagramFrame
+  id="wo"
+  viewBox="0 0 760 290"
+  ariaLabel={T.aria}
+  caption={T.cap}
+  maxWidth="44rem"
+>
+  {/* Dépôt nu */}
+  <rect
+    x="20"
+    y="20"
+    width="230"
+    height="72"
+    class="d-box"
+    filter="url(#rough-wo)"></rect>
+  <text x="38" y="46" class="d-lead">{T.bare}</text>
+  <text x="38" y="66" class="d-sub">{T.bareSub}</text>
+
+  {/* Overlay partagé */}
+  <rect
+    x="280"
+    y="20"
+    width="440"
+    height="72"
+    class="d-box"
+    filter="url(#rough-wo)"></rect>
+  <text x="298" y="42" class="d-kick">{T.shared}</text>
+  {
+    T.sharedItems.map((item, i) => (
+      <>
+        <rect
+          x={298 + i * 140}
+          y={54}
+          width="126"
+          height="24"
+          class="d-box-plain"
+          filter="url(#rough-wo)"
+        />
+        <text x={361 + i * 140} y={70} class="d-sub" text-anchor="middle">
+          {item}
+        </text>
+      </>
+    ))
+  }
+
+  {/* Liens vers chaque worktree */}
+  <path
+    d="M420 92 C 420 130, 200 130, 200 168"
+    class="d-line-soft"
+    marker-end="url(#head-wo)"></path>
+  <path
+    d="M580 92 C 580 130, 560 130, 560 168"
+    class="d-line-soft"
+    marker-end="url(#head-wo)"></path>
+  <text x="300" y="126" class="d-sub">{T.link}</text>
+
+  {/* Worktrees */}
+  {
+    T.trees.map((t, i) => (
+      <>
+        <rect
+          x={TREE_X[i]}
+          y="168"
+          width="320"
+          height="96"
+          class="d-box"
+          filter="url(#rough-wo)"
+        />
+        <text x={TREE_X[i] + 18} y="194" class="d-lead">
+          {t.name}
+        </text>
+        <rect
+          x={TREE_X[i] + 18}
+          y="206"
+          width="126"
+          height="24"
+          class="d-chip"
+          filter="url(#rough-wo)"
+        />
+        <text x={TREE_X[i] + 81} y="222" class="d-chip-t" text-anchor="middle">
+          data/corpus/
+        </text>
+        <text x={TREE_X[i] + 18} y="250" class="d-sub">
+          {t.ports}
+        </text>
+      </>
+    ))
+  }
+</DiagramFrame>
