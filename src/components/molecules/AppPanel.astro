@@ -59,8 +59,13 @@ const backAlt = `${project.title} — ${panel.screenLabels.back[locale]}`;
       var(--panel-lit) 0%,
       var(--panel-deep) 100%
     );
-    /* L'ombre portée vers le haut fait lire le recouvrement comme une pile. */
-    box-shadow: 0 -24px 60px -24px rgb(0 0 0 / 0.55);
+    /* Sans arête visible, une carte qui en recouvre une autre se lit comme un
+       bug de rendu : deux aplats de valeur proche coupés net. Le coin arrondi,
+       le filet clair et l'ombre portée vers le haut donnent son bord à la
+       carte qui arrive. */
+    border-radius: 28px 28px 0 0;
+    border-top: var(--border-w) solid rgb(255 255 255 / 0.14);
+    box-shadow: 0 -30px 70px -18px rgb(0 0 0 / 0.75);
   }
 
   @media (max-width: 900px) {
