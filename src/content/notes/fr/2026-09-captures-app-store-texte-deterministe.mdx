@@ -1,0 +1,110 @@
+---
+title: "Les modèles d'image ne savent pas écrire — alors j'écris le texte avant eux"
+date: 2026-09-12
+locale: fr
+translationKey: "2026-09-deterministic-screenshot-text"
+tags: ["ia", "tools", "mobile"]
+excerpt: "Demander une capture App Store à un modèle d'image donne un visuel superbe avec un titre illisible. J'ai inversé l'ordre : un script dessine le texte, le modèle n'a plus le droit d'y toucher. Plus le calcul qui m'a coûté un jeu complet de captures."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+import SafeArea from "@/components/prose/SafeArea.astro";
+
+La première fois que j'ai voulu générer les captures App Store d'une de mes apps, j'ai fait comme tout le monde : décrire l'image voulue à un modèle, avec le titre dedans.
+
+Le rendu était magnifique. Le titre disait **« PARTAGF LA CHARGF MENTAIE »**.
+
+J'ai reformulé, insisté, mis le texte en majuscules dans le prompt, essayé un autre modèle. Toujours une lettre qui saute, un accent avalé, un mot inventé. Sur une fiche App Store, le titre **est** l'argument de vente — ce n'est pas un défaut cosmétique, c'est le produit qui devient illisible.
+
+Puis j'ai arrêté de demander au modèle de faire quelque chose qu'il ne sait pas faire.
+
+## L'inversion
+
+Un modèle d'image ne compose pas du texte, il **dessine quelque chose qui ressemble à du texte**. C'est une différence de nature, pas de qualité : aucune version suivante ne la réglera de manière fiable.
+
+Donc le texte ne passe plus par lui. Un script Python le dessine — police exacte, taille calculée, position au pixel — avec le cadre d'iPhone et la vraie capture d'écran dedans. Le résultat s'appelle un **scaffold**. Le modèle le reçoit ensuite avec une consigne en deux blocs :
+
+- **GARDE STRICTEMENT** : le texte, mot pour mot. Le personnage. Les couleurs.
+- **AMÉLIORE** : le fondu, les ornements, la lumière, la finition typographique.
+
+Il ne crée plus l'image, il la **finit**. Et sur cette tâche-là, il est excellent.
+
+<FileBlock filename="prompt.txt">
+```text
+KEEP EXACTLY AS-IS:
+- The headline text: "PARTAGE" in terracotta, then "LA CHARGE MENTALE,
+  ENFIN À DEUX" in charcoal — same wording, same position, same
+  approximate size, same colors
+
+ENHANCE AND POLISH:
+- Blend the mascot seamlessly into the background (remove the visible
+  rectangular box behind him), keep his soft drop shadow
+- Typography crisp and bold, professional print quality
+```
+</FileBlock>
+
+<Callout tone="info">
+  Le détail qui change tout : **recopier le texte mot pour mot dans le prompt**. Écrire « garde le titre » ne suffit pas — le modèle le réécrit de mémoire, et sa mémoire invente. Lui donner la chaîne exacte lui donne une référence à comparer.
+</Callout>
+
+## Le calcul qui m'a coûté un jeu complet
+
+Voilà la partie que je n'avais vue nulle part, et qui m'a fait refaire six captures.
+
+Les modèles d'image produisent du **9:16**. Apple veut du **1290 × 2796**. Ce ne sont pas les mêmes proportions :
+
+```
+9:16                 = 0,5625
+1290 / 2796          = 0,4614
+```
+
+L'image du modèle est donc **plus large** que la cible. Le recadrage retire la différence **sur les côtés**. Environ **82 % de la largeur survit** — le reste est perdu, silencieusement.
+
+<SafeArea lang="fr" />
+
+Mon premier jeu était parfait à l'écran. Après recadrage, chaque titre était amputé de ses deux extrémités.
+
+D'où une marge de sécurité fixée à **72 %**, et pas 82. Les dix points d'écart absorbent la dérive du modèle : même en lui décrivant précisément le cadre, il ajoute un ornement qui déborde, décale un badge, élargit une composition. Le script contrôle ce qu'il dessine ; le prompt doit répéter la contrainte pour ce que le modèle ajoute.
+
+## Le bug que je n'ai vu qu'en empaquetant
+
+En transformant ces scripts en outil partageable, j'ai relu la fonction qui ajuste la taille du titre. Elle réduit la police tant que le texte dépasse la largeur sûre, jusqu'à un plancher de 60 px.
+
+Et si à 60 px ça ne tient toujours pas ? Elle retournait la police quand même. **Le texte débordait en silence.**
+
+C'est-à-dire : exactement le défaut que la zone de sécurité existe pour empêcher, reproduit par le garde-fou lui-même. Sur un titre un peu long, le script produisait sereinement une capture dont le texte allait être coupé — sans un mot.
+
+<FileBlock filename="compose.py">
+```python
+    font = ImageFont.truetype(path, 60)
+    if draw.textlength(text, font=font) > max_width:
+        print(f'WARNING: "{text}" overflows the safe width even at 60px — '
+              f'it will be cropped. Shorten it or split it over two lines.',
+              file=sys.stderr)
+    return font
+```
+</FileBlock>
+
+<Callout tone="warn">
+  Une fonction « ajuste au mieux » qui échoue sans le dire est pire que pas de fonction du tout : elle donne la confiance sans la garantie. Quand un repli silencieux existe dans du code que tu ne relis plus, il finit par s'exécuter.
+</Callout>
+
+Je ne l'ai trouvé qu'en faisant tourner le script sur un cas que je n'avais jamais eu dans mon app. C'est l'argument le plus solide pour empaqueter son outillage : **on ne relit vraiment son propre code que lorsqu'on le donne à quelqu'un d'autre.**
+
+## Ce que ça coûte
+
+**Il faut écrire le composeur.** Environ cent lignes de Pillow : ajustement du titre, cadre d'appareil avec bordure et coins arrondis, placement. Ce n'est pas difficile, mais ce n'est pas gratuit, et ça ne se délègue pas au modèle — c'est précisément le point.
+
+**La mise en page est figée dans du code.** Changer la composition veut dire éditer un script, pas déplacer un calque. Pour un jeu de six captures qu'on refait à chaque version majeure, c'est gagnant. Pour une image unique, Figma est plus rapide.
+
+**Le modèle reste indispensable.** Le scaffold seul est correct et un peu froid. Le fondu du personnage, les ornements, la finition : c'est lui. L'idée n'est pas de s'en passer, c'est de lui retirer la seule tâche qu'il rate systématiquement.
+
+## Ce que j'en retiens
+
+Le réflexe, face à un modèle qui échoue, est de mieux formuler la demande. Parfois c'est juste : le prompt était vague. Mais quand l'échec porte toujours sur **la même chose** — ici la typographie —, ce n'est pas un problème de formulation, c'est une limite de nature.
+
+La bonne réponse n'est pas un meilleur prompt. C'est de retirer cette tâche du périmètre du modèle, de la confier à du code déterministe, et de ne lui laisser que ce qu'il fait mieux que toi.
+
+Les trois scripts sont publics, dans mon dépôt de skills : [`screenshot-scaffold`](https://github.com/newBie974/skills/tree/main/screenshot-scaffold). Composeur, appel au modèle, recadrage — plus les tailles exactes d'Apple et les pièges, dans une référence à part.

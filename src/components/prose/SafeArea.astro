@@ -1,0 +1,117 @@
+---
+import DiagramFrame from "./DiagramFrame.astro";
+
+interface Props {
+  lang?: "fr" | "en";
+}
+const { lang = "fr" } = Astro.props;
+
+const T = {
+  fr: {
+    model: "sortie du modèle · 9:16",
+    apple: "cible Apple · 1290 × 2796",
+    lost: "rogné",
+    kept: "82 % conservés",
+    safe: "zone sûre · 72 %",
+    margin: "10 points de marge",
+    ok: "PARTAGE",
+    ko: "PARTAG",
+    cap: "Le recadrage retire la différence de proportions sur les côtés. 82 % de la largeur survit ; la marge de sécurité est fixée à 72 % parce que le modèle ajoute des éléments qu'on n'a pas dessinés.",
+    aria: "Schéma du recadrage. L'image produite par le modèle en 9:16 est plus large que la capture Apple : les côtés sont rognés à parts égales et environ 82 pour cent de la largeur survit. La zone sûre est fixée plus bas, à 72 pour cent, pour absorber les éléments que le modèle ajoute de lui-même.",
+  },
+  en: {
+    model: "model output · 9:16",
+    apple: "Apple target · 1290 × 2796",
+    lost: "cropped",
+    kept: "82% survives",
+    safe: "safe area · 72%",
+    margin: "10 points of margin",
+    ok: "SHARE",
+    ko: "SHAR",
+    cap: "The crop takes the ratio difference off the sides. 82% of the width survives; the safe area sits lower, at 72%, because the model adds elements you never drew.",
+    aria: "Diagram of the crop. The model's 9:16 render is wider than Apple's screenshot: the sides are cropped evenly and roughly 82 percent of the width survives. The safe area is set lower, at 72 percent, to absorb elements the model adds on its own.",
+  },
+}[lang];
+
+// Le cadre du modèle fait 460 px de large dans le viewBox ; 82 % survivent.
+const X0 = 150;
+const W = 460;
+const KEPT = Math.round(W * 0.82);
+const SAFE = Math.round(W * 0.72);
+const keptX = X0 + Math.round((W - KEPT) / 2);
+const safeX = X0 + Math.round((W - SAFE) / 2);
+---
+
+<DiagramFrame
+  id="sa"
+  viewBox="0 0 760 320"
+  ariaLabel={T.aria}
+  caption={T.cap}
+  maxWidth="40rem"
+>
+  {/* Bandes rognées */}
+  <rect
+    x={X0}
+    y="40"
+    width={keptX - X0}
+    height="230"
+    class="d-box"
+    filter="url(#rough-sa)"></rect>
+  <rect
+    x={keptX + KEPT}
+    y="40"
+    width={X0 + W - keptX - KEPT}
+    height="230"
+    class="d-box"
+    filter="url(#rough-sa)"></rect>
+
+  {/* Ce qui survit */}
+  <rect
+    x={keptX}
+    y="40"
+    width={KEPT}
+    height="230"
+    class="d-box-plain"
+    filter="url(#rough-sa)"></rect>
+
+  {/* Zone sûre */}
+  <rect
+    x={safeX}
+    y="62"
+    width={SAFE}
+    height="120"
+    class="d-chip"
+    filter="url(#rough-sa)"></rect>
+  <text x={X0 + W / 2} y="112" class="d-chip-t" text-anchor="middle"
+    >{T.ok}</text
+  >
+  <text x={X0 + W / 2} y="136" class="d-chip-t" text-anchor="middle"
+    >{T.safe}</text
+  >
+
+  {/* Cadre du modèle, en pointillés par-dessus */}
+  <rect x={X0} y="40" width={W} height="230" class="d-warn"></rect>
+
+  {/* Légendes */}
+  <text x={X0} y="30" class="d-kick">{T.model}</text>
+  <text x={keptX} y="292" class="d-lead">{T.kept}</text>
+  <text x={keptX} y="310" class="d-sub">{T.apple}</text>
+
+  <text x="20" y="150" class="d-sub">{T.lost}</text>
+  <path
+    d={`M78 144 L ${keptX - 6} 144`}
+    class="d-line"
+    marker-end="url(#head-sa)"></path>
+
+  <text x={X0 + W + 24} y="150" class="d-sub">{T.lost}</text>
+  <path
+    d={`M${X0 + W + 20} 144 L ${keptX + KEPT + 6} 144`}
+    class="d-line"
+    marker-end="url(#head-sa)"></path>
+
+  <text x={X0 + W + 24} y="210" class="d-sub">{T.margin}</text>
+  <path
+    d={`M${X0 + W + 20} 204 L ${safeX + SAFE + 6} 204`}
+    class="d-line-soft"
+    marker-end="url(#head-sa)"></path>
+</DiagramFrame>

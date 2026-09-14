@@ -1,0 +1,110 @@
+---
+title: "Image models can't write — so I write the text before they see it"
+date: 2026-09-12
+locale: en
+translationKey: "2026-09-deterministic-screenshot-text"
+tags: ["ia", "tools", "mobile"]
+excerpt: "Ask an image model for an App Store screenshot and you get a beautiful visual with an unreadable headline. I inverted the order: a script draws the text, and the model isn't allowed near it. Plus the bit of arithmetic that cost me a full set of screenshots."
+draft: false
+---
+
+import Callout from "@/components/prose/Callout.astro";
+import FileBlock from "@/components/prose/FileBlock.astro";
+import SafeArea from "@/components/prose/SafeArea.astro";
+
+The first time I went to generate App Store screenshots for one of my apps, I did what everyone does: describe the image I wanted to a model, headline included.
+
+The render was gorgeous. The headline read **"SHARF THE MENTAI LOAD"**.
+
+I rephrased, insisted, put the text in caps inside the prompt, tried another model. Always a letter dropped, an accent swallowed, a word invented. On a store listing the headline **is** the pitch — that's not a cosmetic defect, it's the product becoming unreadable.
+
+Then I stopped asking the model to do something it cannot do.
+
+## The inversion
+
+An image model doesn't set type, it **draws something shaped like type**. That's a difference in kind, not in quality: no future version fixes it reliably.
+
+So the text stops going through it. A Python script draws it — exact font, computed size, pixel-placed — along with the device frame and the real capture inside. The result is a **scaffold**. The model then receives it with a two-block instruction:
+
+- **KEEP EXACTLY AS-IS**: the text, word for word. The character. The colours.
+- **ENHANCE**: blending, ornament, light, print-quality finish.
+
+It no longer creates the image, it **finishes** it. And at that job it's excellent.
+
+<FileBlock filename="prompt.txt">
+```text
+KEEP EXACTLY AS-IS:
+- The headline text: "SHARE" in terracotta, then "THE MENTAL LOAD,
+  FINALLY SPLIT" in charcoal — same wording, same position, same
+  approximate size, same colors
+
+ENHANCE AND POLISH:
+- Blend the mascot seamlessly into the background (remove the visible
+  rectangular box behind him), keep his soft drop shadow
+- Typography crisp and bold, professional print quality
+```
+</FileBlock>
+
+<Callout tone="info">
+  The detail that changes everything: **copy the text verbatim into the prompt**. Writing "keep the headline" isn't enough — the model rewrites it from memory, and its memory invents. Giving it the exact string gives it something to compare against.
+</Callout>
+
+## The arithmetic that cost me a full set
+
+Here's the part I'd seen written nowhere, and which made me redo six screenshots.
+
+Image models emit **9:16**. Apple wants **1290 × 2796**. Those are not the same proportions:
+
+```
+9:16                 = 0.5625
+1290 / 2796          = 0.4614
+```
+
+The model's image is therefore **wider** than the target. The crop takes the difference off the **sides**. Roughly **82% of the width survives** — the rest is gone, silently.
+
+<SafeArea lang="en" />
+
+My first set looked perfect on screen. After the crop, every headline had lost both its ends.
+
+Hence a safe area set at **72%**, not 82. The ten-point gap absorbs the model's drift: however precisely you describe the frame, it adds an ornament that spills, nudges a badge, widens a composition. The script controls what it draws; the prompt has to repeat the constraint for what the model adds.
+
+## The bug I only found while packaging it
+
+Turning these scripts into something shareable, I reread the function that fits the headline. It shrinks the font while the text exceeds the safe width, down to a 60px floor.
+
+And if it still doesn't fit at 60px? It returned the font anyway. **The text overflowed in silence.**
+
+Which is to say: exactly the defect the safe area exists to prevent, reproduced by the guardrail itself. On a slightly long headline, the script would calmly produce a screenshot whose text was going to be cut off — without a word.
+
+<FileBlock filename="compose.py">
+```python
+    font = ImageFont.truetype(path, 60)
+    if draw.textlength(text, font=font) > max_width:
+        print(f'WARNING: "{text}" overflows the safe width even at 60px — '
+              f'it will be cropped. Shorten it or split it over two lines.',
+              file=sys.stderr)
+    return font
+```
+</FileBlock>
+
+<Callout tone="warn">
+  A "best fit" function that fails without saying so is worse than no function: it gives confidence without the guarantee. When a silent fallback sits in code you no longer reread, it eventually runs.
+</Callout>
+
+I only found it by running the script on a case I'd never had in my own app. That's the strongest argument for packaging your tooling: **you only really reread your own code when you hand it to someone else.**
+
+## What it costs
+
+**You have to write the composer.** Around a hundred lines of Pillow: headline fitting, device frame with bezel and rounded corners, placement. Not hard, not free, and not delegable to the model — that's precisely the point.
+
+**Layout lives in code.** Changing the composition means editing a script, not dragging a layer. For a set of six screenshots you redo every major release, that's a win. For a one-off image, Figma is faster.
+
+**The model stays essential.** The scaffold alone is correct and a little cold. Blending the character, the ornament, the finish: that's the model. The idea isn't to drop it, it's to take away the one task it reliably fails.
+
+## What I take from it
+
+The instinct, facing a model that fails, is to phrase the request better. Sometimes that's right: the prompt was vague. But when the failure is always about **the same thing** — here, typography — it isn't a phrasing problem, it's a limit in kind.
+
+The right answer isn't a better prompt. It's removing that task from the model's scope, handing it to deterministic code, and leaving the model only what it does better than you.
+
+The three scripts are public, in my skills repo: [`screenshot-scaffold`](https://github.com/newBie974/skills/tree/main/screenshot-scaffold). Composer, model call, crop — plus Apple's exact sizes and the traps, in a separate reference.
