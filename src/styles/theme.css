@@ -45,3 +45,39 @@
   --container-content: 900px;
   --container-narrow: 720px;
 }
+
+/* `static` obligatoire : Tailwind 4 n'émet une variable de `@theme` que si
+   une classe utilitaire l'utilise. Ces tokens-là ne servent qu'en CSS scopé
+   (AppPanel), donc sans `static` ils seraient élagués et les panneaux
+   perdraient leur couleur. */
+@theme static {
+  /* Marques des apps — utilisées uniquement par la vitrine AppsShowcase, où
+     chaque panneau prend la couleur de son app au lieu de l'accent global.
+     Par app : `-lit` = extrémité claire du dégradé, donc le pire cas de
+     contraste puisque le texte est posé de ce côté ; `-deep` = extrémité
+     sombre ; `on-brand-*` = texte du panneau ; `-cta` / `on-*-cta` = bouton.
+     Chaque couple est vérifié par scripts/validate-contrast.mjs. */
+  --color-brand-noan-lit: #5f7c5a;
+  --color-brand-noan-deep: #30422b;
+  --color-on-brand-noan: #ffffff;
+  --color-brand-noan-cta: #131a0f;
+  --color-on-brand-noan-cta: #e8f0e4;
+
+  --color-brand-voicejournal-lit: #3a4162;
+  --color-brand-voicejournal-deep: #0b0d14;
+  --color-on-brand-voicejournal: #edeff8;
+  --color-brand-voicejournal-cta: #ffb95a;
+  --color-on-brand-voicejournal-cta: #2a1800;
+
+  --color-brand-tiboug-lit: #ffa64f;
+  --color-brand-tiboug-deep: #c04e0b;
+  --color-on-brand-tiboug: #2a1508;
+  --color-brand-tiboug-cta: #2a1508;
+  --color-on-brand-tiboug-cta: #ffe6ce;
+
+  --color-brand-tookta-lit: #5358e4;
+  --color-brand-tookta-deep: #241682;
+  --color-on-brand-tookta: #ffffff;
+  --color-brand-tookta-cta: #ff5464;
+  --color-on-brand-tookta-cta: #2b0710;
+}

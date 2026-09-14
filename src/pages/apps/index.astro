@@ -1,0 +1,78 @@
+---
+import MainLayout from "@/layouts/MainLayout.astro";
+import Nav from "@/components/organisms/Nav.astro";
+import Footer from "@/components/organisms/Footer.astro";
+import Highlight from "@/components/atoms/Highlight.astro";
+import AppsShowcase from "@/components/organisms/AppsShowcase.astro";
+import CollabBand from "@/components/organisms/CollabBand.astro";
+import JsonLd from "@/components/atoms/JsonLd.astro";
+import { useTranslations } from "@/i18n/utils";
+import { buildPersonJsonLd, buildSoftwareAppJsonLd } from "@/lib/jsonLd";
+
+const locale = "fr" as const;
+const t = useTranslations(locale);
+const title = "Mes réalisations — Aymeric Dijoux, apps iOS en production";
+const description = t("showcase.pageDeck");
+---
+
+<MainLayout
+  title={title}
+  description={description}
+  locale={locale}
+  routeKey="apps"
+>
+  <Fragment slot="head">
+    <JsonLd data={[buildPersonJsonLd(), ...buildSoftwareAppJsonLd()]} />
+  </Fragment>
+  <Nav slot="nav" locale={locale} />
+
+  <section class="page-hero">
+    <h1>
+      {t("showcase.pageTitleLead")}<Highlight>
+        {t("showcase.pageTitleAccent")}
+      </Highlight>.
+    </h1>
+    <p class="deck">{description}</p>
+  </section>
+
+  <AppsShowcase locale={locale} />
+
+  <CollabBand locale={locale} />
+  <Footer slot="footer" locale={locale} />
+</MainLayout>
+
+<style is:global>
+  /* Le snap est propre à cette page : chaque panneau se cale sous la nav.
+     `proximity` et non `mandatory` — mandatory piègerait le scroll dans le
+     hero et la bande de fin, qui ne sont pas des cibles de snap. */
+  html {
+    scroll-snap-type: y proximity;
+  }
+</style>
+
+<style>
+  .page-hero {
+    max-width: var(--container-content);
+    margin: 0 auto;
+    padding: 64px 48px 40px;
+  }
+  h1 {
+    margin: 14px 0;
+    font-size: clamp(32px, 6vw, 48px);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .deck {
+    margin: 0;
+    max-width: 560px;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+  }
+  @media (max-width: 720px) {
+    .page-hero {
+      padding-inline: 20px;
+    }
+  }
+</style>

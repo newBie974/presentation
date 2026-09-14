@@ -1,0 +1,24 @@
+---
+import AppPanel from "@/components/molecules/AppPanel.astro";
+import { loadShowcaseEntries } from "@/lib/appShowcase";
+import type { Locale } from "@/types";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const entries = loadShowcaseEntries(locale);
+---
+
+<section class="showcase" data-reveal>
+  {entries.map((entry) => <AppPanel entry={entry} locale={locale} />)}
+</section>
+
+<style>
+  .showcase {
+    display: flex;
+    flex-direction: column;
+    border-bottom: var(--border-w) solid var(--color-border-soft);
+  }
+</style>

@@ -48,12 +48,31 @@ const heading = locale === "fr" ? headingFR : headingEN;
   <div class="grid">
     {projects.map((project) => <AppCell project={project} locale={locale} />)}
   </div>
+  <a class="more" href={t.path("apps")}>{t("showcase.seeAll")} →</a>
 </section>
 
 <style>
   .apps {
     padding: 40px 48px;
     border-bottom: var(--border-w) solid var(--color-border-soft);
+  }
+  .more {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 6px 12px;
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    border-radius: var(--radius-base);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: filter 120ms ease-out;
+  }
+  .more:hover {
+    filter: brightness(1.08);
   }
   .head {
     display: flex;

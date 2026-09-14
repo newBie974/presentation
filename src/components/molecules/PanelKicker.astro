@@ -1,0 +1,53 @@
+---
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+
+/** La ligne d'identité en tête d'un panneau : le logo de l'app, son rang dans
+ *  la vitrine et son statut. Le logo est décoratif — le nom de l'app est juste
+ *  en dessous en titre, le répéter en alt serait redondant pour un lecteur
+ *  d'écran. */
+interface Props {
+  logo?: ImageMetadata;
+  position: string;
+  total: string;
+  status: string;
+}
+
+const { logo, position, total, status } = Astro.props;
+---
+
+<p class="kicker">
+  {
+    logo && (
+      <Image
+        class="logo"
+        src={logo}
+        alt=""
+        aria-hidden="true"
+        width={44}
+        height={44}
+      />
+    )
+  }
+  <span>{position} / {total} — {status}</span>
+</p>
+
+<style>
+  .kicker {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0 0 36px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.82;
+  }
+  .logo {
+    inline-size: 44px;
+    block-size: 44px;
+    border-radius: 13px;
+    box-shadow: 0 14px 32px -12px rgb(0 0 0 / 0.6);
+  }
+</style>

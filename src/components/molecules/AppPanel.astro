@@ -1,0 +1,77 @@
+---
+import PanelBackdrop from "@/components/molecules/PanelBackdrop.astro";
+import PanelCopy from "@/components/molecules/PanelCopy.astro";
+import PanelScreens from "@/components/molecules/PanelScreens.astro";
+import type { Locale } from "@/types";
+import type { ShowcaseEntry } from "@/lib/appShowcase";
+
+interface Props {
+  entry: ShowcaseEntry;
+  locale: Locale;
+}
+
+const { entry, locale } = Astro.props;
+const { panel, project } = entry;
+
+// Le panneau prend la couleur de son app : on branche les tokens de marque sur
+// des variables locales, que les enfants héritent pour le halo, les bordures
+// et le bouton.
+const brandStyle = [
+  `--panel-lit: var(--color-brand-${panel.brand}-lit)`,
+  `--panel-deep: var(--color-brand-${panel.brand}-deep)`,
+  `--panel-fg: var(--color-on-brand-${panel.brand})`,
+  `--panel-cta-bg: var(--color-brand-${panel.brand}-cta)`,
+  `--panel-cta-fg: var(--color-on-brand-${panel.brand}-cta)`,
+].join(";");
+
+const frontAlt = `${project.title} — ${panel.screenLabels.front[locale]}`;
+const backAlt = `${project.title} — ${panel.screenLabels.back[locale]}`;
+---
+
+<article class="panel" style={brandStyle}>
+  <PanelBackdrop haze={panel.frontScreen} />
+  <PanelCopy entry={entry} locale={locale} />
+  <PanelScreens
+    front={panel.frontScreen}
+    back={panel.backScreen}
+    frontAlt={frontAlt}
+    backAlt={backAlt}
+  />
+</article>
+
+<style>
+  .panel {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    /* Un panneau = un écran. `svh` et non `vh` : sur mobile la barre d'URL
+       ferait sauter la hauteur à chaque scroll. */
+    min-height: 100svh;
+    padding: 72px 48px;
+    color: var(--panel-fg);
+    background: linear-gradient(
+      118deg,
+      var(--panel-lit) 0%,
+      var(--panel-deep) 100%
+    );
+    /* `scroll-padding-top: 64px` sur html (global.css) dégage la nav sticky. */
+    scroll-snap-align: start;
+  }
+
+  @media (max-width: 900px) {
+    .panel {
+      grid-template-columns: 1fr;
+      align-items: start;
+      align-content: center;
+      padding: 48px 20px 0;
+      background: linear-gradient(
+        168deg,
+        var(--panel-lit) 0%,
+        var(--panel-deep) 100%
+      );
+    }
+  }
+</style>

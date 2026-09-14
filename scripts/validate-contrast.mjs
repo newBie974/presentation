@@ -8,6 +8,10 @@ const THEME_PATH = "src/styles/theme.css";
 const AA_NORMAL = 4.5;
 const AA_NONTEXT = 3; // WCAG 2.1 AA §1.4.11 — boundaries of UI components
 
+// AppsShowcase: each panel drops the global accent for its app's own colour.
+// The text sits on the lit end of the gradient, so that end is the worst case.
+const SHOWCASE_BRANDS = ["noan", "voicejournal", "tiboug", "tookta"];
+
 // Real foreground/background pairs used in the UI (single dark theme).
 const CHECKS = [
   { id: "body text", fg: "color-text", bg: solid("color-bg") },
@@ -46,7 +50,23 @@ const CHECKS = [
     bg: tint("color-accent", 10, "color-bg-soft"),
   },
   { id: "danger on bg", fg: "color-danger", bg: solid("color-bg") },
+  ...buildShowcaseChecks(),
 ];
+
+function buildShowcaseChecks() {
+  return SHOWCASE_BRANDS.flatMap((brand) => [
+    {
+      id: `${brand} panel text`,
+      fg: `color-on-brand-${brand}`,
+      bg: solid(`color-brand-${brand}-lit`),
+    },
+    {
+      id: `${brand} panel CTA`,
+      fg: `color-on-brand-${brand}-cta`,
+      bg: solid(`color-brand-${brand}-cta`),
+    },
+  ]);
+}
 
 // Non-text contrast (§1.4.11): the border IS the only boundary of these
 // controls, so it must clear 3:1 against every surface it sits on. Neither
@@ -103,10 +123,13 @@ function parseBlocks(css) {
   return blocks;
 }
 
+// theme.css déclare plusieurs blocs @theme (dont un `static` pour les tokens
+// qu'aucune classe utilitaire n'utilise) : on les fusionne tous.
 function buildTokens(css) {
   const blocks = parseBlocks(css);
-  const key = Object.keys(blocks).find((k) => k.includes("@theme"));
-  return blocks[key];
+  return Object.entries(blocks)
+    .filter(([selector]) => selector.includes("@theme"))
+    .reduce((tokens, [, decls]) => Object.assign(tokens, decls), {});
 }
 
 function hexToRgb(hex) {

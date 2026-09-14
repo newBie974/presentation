@@ -1,0 +1,116 @@
+---
+import Icon from "@/components/atoms/Icon.astro";
+import PanelKicker from "@/components/molecules/PanelKicker.astro";
+import { useTranslations } from "@/i18n/utils";
+import type { Locale } from "@/types";
+import type { ShowcaseEntry } from "@/lib/appShowcase";
+
+/** La colonne texte d'un panneau de vitrine. Les couleurs viennent des
+ *  variables `--panel-*` posées par le panneau parent. */
+interface Props {
+  entry: ShowcaseEntry;
+  locale: Locale;
+}
+
+const { entry, locale } = Astro.props;
+const { project, position, total, href } = entry;
+const t = useTranslations(locale);
+const visibleTech = project.techStack.slice(0, 3);
+---
+
+<div class="copy">
+  <PanelKicker
+    logo={project.logo}
+    position={position}
+    total={total}
+    status={t("showcase.inProduction")}
+  />
+  <h3 class="name">{project.title}</h3>
+  <p class="tagline">{project.tagline[locale]}</p>
+  <ul class="tech" role="list">
+    {visibleTech.map((tech) => <li>{tech}</li>)}
+  </ul>
+  <a class="cta" href={href}>
+    <span>{t("showcase.discover")}</span>
+    <Icon name="lucide:arrow-right" size={17} />
+  </a>
+</div>
+
+<style>
+  .copy {
+    max-width: 30rem;
+  }
+  .name {
+    margin: 0 0 24px;
+    font-size: clamp(48px, 7vw, 92px);
+    font-weight: 700;
+    line-height: 0.9;
+    letter-spacing: -0.045em;
+  }
+  .tagline {
+    margin: 0 0 28px;
+    font-size: clamp(17px, 1.5vw, 21px);
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+  .tech {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 32px;
+    padding: 0;
+    list-style: none;
+  }
+  .tech li {
+    padding: 6px 12px;
+    border: var(--border-w) solid
+      color-mix(in srgb, var(--panel-fg) 40%, transparent);
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 26px;
+    border-radius: var(--radius-base);
+    background: var(--panel-cta-bg);
+    color: var(--panel-cta-fg);
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: filter 120ms ease-out;
+  }
+  .cta:hover {
+    filter: brightness(1.1);
+  }
+
+  /* Entrée pilotée par le scroll, sans observer JS. Sans support
+     (Safari < 26, Firefox), le texte s'affiche simplement. */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .copy {
+        animation: panel-copy-in linear both;
+        animation-timeline: view();
+        animation-range: entry 16% cover 34%;
+      }
+      @keyframes panel-copy-in {
+        from {
+          opacity: 0;
+          transform: translateY(26px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 900px) {
+    .copy {
+      max-width: none;
+    }
+  }
+</style>

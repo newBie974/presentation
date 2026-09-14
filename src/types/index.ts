@@ -27,6 +27,23 @@ export interface Project {
   logo?: ImageMetadata;
 }
 
+/** Un panneau plein cadre de la vitrine : la couleur de marque de l'app plus
+ *  les deux captures qui flottent dessus. Titre, tagline, stack et liens
+ *  viennent du `Project` de même slug — rien n'est dupliqué ici. */
+export interface AppShowcasePanel {
+  slug: string;
+  /** Suffixe des tokens `--color-brand-<brand>-*` de theme.css. */
+  brand: string;
+  /** Capture nette au premier plan. */
+  frontScreen: ImageMetadata;
+  /** Capture en retrait derrière, plus petite et atténuée. */
+  backScreen: ImageMetadata;
+  screenLabels: {
+    front: { fr: string; en: string };
+    back: { fr: string; en: string };
+  };
+}
+
 export interface Experiment {
   slug: string;
   title: string;

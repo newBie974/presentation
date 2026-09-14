@@ -1,0 +1,88 @@
+---
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+
+/** Les deux captures d'un panneau de vitrine : celle de devant nette, celle
+ *  de derrière plus petite et atténuée. Elles débordent volontairement du bas
+ *  du panneau, comme un écran qui monte dans le cadre. */
+interface Props {
+  front: ImageMetadata;
+  back: ImageMetadata;
+  frontAlt: string;
+  backAlt: string;
+}
+
+const { front, back, frontAlt, backAlt } = Astro.props;
+---
+
+<div class="screens">
+  <Image class="screen back" src={back} alt={backAlt} />
+  <Image class="screen front" src={front} alt={frontAlt} />
+</div>
+
+<style>
+  .screens {
+    position: relative;
+    justify-self: end;
+    align-self: stretch;
+    inline-size: min(100%, 520px);
+  }
+  .screen {
+    position: absolute;
+    height: auto;
+    border-radius: 24px;
+    box-shadow: 0 64px 118px -32px rgb(8 12 16 / 0.92);
+  }
+  .back {
+    inline-size: 58%;
+    inset-inline-start: 0;
+    inset-block-start: 58px;
+    border-radius: 20px;
+    opacity: 0.58;
+  }
+  .front {
+    inline-size: 76%;
+    inset-inline-end: 0;
+    inset-block-start: 0;
+  }
+  /* Les captures montent dans le cadre au fil du scroll, en CSS pur. */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .screens {
+        animation: screens-rise linear both;
+        animation-timeline: view();
+        animation-range: entry 10% cover 42%;
+      }
+      @keyframes screens-rise {
+        from {
+          opacity: 0;
+          transform: translateY(72px) scale(0.965);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 900px) {
+    .screens {
+      justify-self: stretch;
+      inline-size: 100%;
+      block-size: 400px;
+      margin-block-start: 40px;
+    }
+    .back {
+      inline-size: 44%;
+      inset-inline-start: auto;
+      inset-inline-end: -6%;
+      inset-block-start: 26px;
+    }
+    .front {
+      inline-size: 62%;
+      inset-inline-end: auto;
+      inset-inline-start: 4%;
+    }
+  }
+</style>
