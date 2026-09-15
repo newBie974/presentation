@@ -70,10 +70,15 @@ const backAlt = `${project.title} — ${panel.screenLabels.back[locale]}`;
 
   @media (max-width: 900px) {
     .panel {
+      /* Le texte se pose en haut et les captures prennent ce qui reste : sur
+         un écran court, centrer un contenu plus haut que le panneau le rognait
+         des deux côtés — le logo et le compteur passaient au-dessus du bord.
+         Le padding haut dégage la nav sticky, qui tient sur deux lignes ici. */
       grid-template-columns: 1fr;
+      grid-template-rows: auto minmax(0, 1fr);
       align-items: start;
-      align-content: center;
-      padding: 48px 20px 0;
+      align-content: stretch;
+      padding: 88px 20px 0;
       background: linear-gradient(
         168deg,
         var(--panel-lit) 0%,

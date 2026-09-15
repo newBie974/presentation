@@ -68,10 +68,14 @@ const { front, back, frontAlt, backAlt } = Astro.props;
 
   @media (max-width: 900px) {
     .screens {
+      /* Deuxième rangée de la grille du panneau : les captures absorbent la
+         hauteur restante au lieu d'imposer la leur, et débordent en bas. */
       justify-self: stretch;
+      align-self: stretch;
       inline-size: 100%;
-      block-size: 360px;
-      margin-block-start: 40px;
+      block-size: auto;
+      min-block-size: 240px;
+      margin-block-start: 28px;
     }
     .back {
       inline-size: 44%;
